@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { ref, onValue, set, push, remove, update, get } from 'firebase/database';
-import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig } from '../types';
+import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 // The category data stored in DB has a different shape than the UI one
@@ -66,6 +66,34 @@ export const saveCategory = (category: { name: string; iconUrl: string; productC
 export const deleteCategory = (categoryId: string) => {
     const categoryRef = ref(db, `categories/${categoryId}`);
     return remove(categoryRef);
+};
+
+// Variant Options
+export const onVariantOptionsChange = (callback: (options: VariantOption[]) => void) => {
+  const optionsRef = ref(db, 'variantOptions');
+  return onValue(optionsRef, (snapshot) => {
+    const data = snapshot.val();
+    const optionsArray = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
+    callback(optionsArray);
+  }, (error) => {
+    console.error("Firebase onVariantOptionsChange failed: ", error);
+  });
+};
+
+export const saveVariantOption = (option: Omit<VariantOption, 'id'>, optionId?: string) => {
+  if (optionId) {
+    const optionRef = ref(db, `variantOptions/${optionId}`);
+    return update(optionRef, option);
+  } else {
+    const optionsRef = ref(db, 'variantOptions');
+    const newOptionRef = push(optionsRef);
+    return set(newOptionRef, option);
+  }
+};
+
+export const deleteVariantOption = (optionId: string) => {
+  const optionRef = ref(db, `variantOptions/${optionId}`);
+  return remove(optionRef);
 };
 
 // Store Settings

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BotIcon, UserIcon } from '../shared/icons';
 import { getAiAssistantResponse, generateProductImage, generateProductDescription } from '../../services/geminiService';
 import { onProductsValueChange, fetchAllOrders, onAllUsersAndRolesValueChange, saveProduct } from '../../services/databaseService';
-import type { Product, Order, UserRoleInfo } from '../../types';
+import type { Product, Order, UserRoleInfo, Variant } from '../../types';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -104,10 +104,10 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                 } else if (name === 'addProduct') {
                     // This remains for adding products without an image
                     try {
-                        // FIX: Object literal may only specify known properties. Product requires a `variants` array instead of price/stock.
                         const newProductData: Omit<Product, 'id'> = {
                             name: args.name, category: args.category,
-                            variants: [{ id: `v_${Date.now()}`, name: 'Standard', price: args.price, stock: args.stock }],
+                            // FIX: The 'Variant' type requires an 'options' property. Added an empty object for standard variants.
+                            variants: [{ id: `v_${Date.now()}`, name: 'Standard', options: {}, price: args.price, stock: args.stock } as Variant],
                             description: 'Product added by AI. Please review and update the description.',
                             imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(args.name)}/400/300`],
                             rating: 0, reviews: 0,

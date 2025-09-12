@@ -10,12 +10,13 @@ import Settings from './Settings';
 import AnalyticsPage from './AnalyticsPage';
 import AiAssistantPage from './AiAssistantPage';
 import StorefrontSettings from './StorefrontSettings';
+import VariantOptionManagement from './VariantOptionManagement';
 import { useAuth } from '../../contexts/AuthContext';
 import { onProductsValueChange, saveProduct, onAllOrdersValueChange, onAllUsersAndRolesValueChange } from '../../services/databaseService';
 import type { Product, Order, UserRoleInfo, Notification } from '../../types';
 import { formatCurrency } from '../shared/utils';
 
-type AdminPage = 'dashboard' | 'products' | 'categories' | 'storefront-settings' | 'orders' | 'users' | 'analytics' | 'ai-assistant' | 'settings';
+type AdminPage = 'dashboard' | 'products' | 'categories' | 'variant-options' | 'storefront-settings' | 'orders' | 'users' | 'analytics' | 'ai-assistant' | 'settings';
 
 interface AdminDashboardProps {
   onSwitchToUser: () => void;
@@ -242,6 +243,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
         />;
       case 'categories':
         return <CategoryManagement onViewCategoryProducts={handleViewCategoryProducts} />;
+      case 'variant-options':
+        return <VariantOptionManagement />;
       case 'storefront-settings':
         return <StorefrontSettings />;
       case 'orders':

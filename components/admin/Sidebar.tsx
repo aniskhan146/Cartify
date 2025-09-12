@@ -1,7 +1,7 @@
 import React from 'react';
-import { LayoutDashboardIcon, PackageIcon, ListOrderedIcon, UsersIcon, BarChart3Icon, SettingsIcon, ShoppingCartIcon, BotIcon } from '../shared/icons';
+import { LayoutDashboardIcon, PackageIcon, ListOrderedIcon, UsersIcon, BarChart3Icon, SettingsIcon, ShoppingCartIcon, BotIcon, ClipboardIcon } from '../shared/icons';
 
-type AdminPage = 'dashboard' | 'products' | 'categories' | 'orders' | 'users' | 'analytics' | 'storefront-settings' | 'ai-assistant' | 'settings';
+type AdminPage = 'dashboard' | 'products' | 'categories' | 'variant-options' | 'orders' | 'users' | 'analytics' | 'storefront-settings' | 'ai-assistant' | 'settings';
 
 interface SidebarProps {
   activePage: string;
@@ -13,6 +13,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onSwitchTo
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboardIcon },
     { id: 'categories', label: 'Categories', icon: ListOrderedIcon },
+    { id: 'variant-options', label: 'Variant Options', icon: ClipboardIcon },
     { id: 'products', label: 'Products', icon: PackageIcon },
     { id: 'storefront-settings', label: 'Storefront', icon: ShoppingCartIcon },
     { id: 'orders', label: 'Orders', icon: ListOrderedIcon },

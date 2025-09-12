@@ -18,6 +18,13 @@
         ".validate": "newData.hasChildren(['name', 'iconUrl', 'productCount']) && newData.child('name').isString() && newData.child('iconUrl').isString() && newData.child('productCount').isNumber()"
       }
     },
+    "variantOptions": {
+      ".read": true,
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$optionId": {
+        ".validate": "newData.hasChildren(['name', 'values']) && newData.child('name').isString() && newData.child('values').hasChildren()"
+      }
+    },
 
     // User data is restricted.
     "users": {

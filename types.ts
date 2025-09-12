@@ -6,9 +6,21 @@ export interface Category {
   iconUrl: string;
 }
 
+export interface VariantOptionValue {
+  name: string;
+  colorCode?: string;
+}
+
+export interface VariantOption {
+  id: string;
+  name: string; // e.g., "Color", "Size"
+  values: VariantOptionValue[]; // e.g., [{ name: "Red", colorCode: "#ff0000" }], [{ name: "Small" }]
+}
+
 export interface Variant {
   id: string; // SKU or unique ID for the variant
-  name: string; // e.g., "Color: Red, Size: M"
+  name: string; // e.g., "Red / Small" - generated for display
+  options: { [key: string]: string }; // e.g., { "Color": "Red", "Size": "Small" }
   price: number;
   originalPrice?: number;
   stock: number;

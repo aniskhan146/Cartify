@@ -18,7 +18,7 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
 
     const handleAddToCartClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const firstAvailableVariant = product.variants.find(v => v.stock > 0);
+        const firstAvailableVariant = product.variants?.find(v => v.stock > 0);
         if (!firstAvailableVariant) return;
         addToCart(product, firstAvailableVariant);
     };
@@ -37,7 +37,7 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
     const totalStock = product.variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
     const hasStock = totalStock > 0;
     
-    const displayVariant = product.variants[0];
+    const displayVariant = product.variants?.[0];
 
     const discountPercent = displayVariant?.originalPrice
       ? Math.round(((displayVariant.originalPrice - displayVariant.price) / displayVariant.originalPrice) * 100)
@@ -47,7 +47,7 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
         <div className="flex flex-col h-full">
             <div className="relative block aspect-square w-full overflow-hidden">
                 <img
-                    src={product.imageUrls[0]}
+                    src={product.imageUrls?.[0] || ''}
                     alt={product.name} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />

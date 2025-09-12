@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Product, Variant } from '../../types';
 import { StarIcon, XIcon, HeartIcon, TruckIcon } from '../shared/icons';
 import { useCart } from '../../contexts/CartContext';
@@ -18,72 +18,121 @@ interface QuickViewModalProps {
 }
 
 const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNavigateToCheckout }) => {
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [mainImage, setMainImage] = useState(product.imageUrls[0]);
+    const { addToCart } = useCart();
+    const { currentUser } = useAuth();
+    const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+    const [showToast, setShowToast] = useState(false);
+    
+    // Variant selection state
+    const [selectedOptions, setSelectedOptions] = useState<{ [key: string]: string }>({});
+    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+    const [quantity, setQuantity] = useState(1);
+    const [mainImage, setMainImage] = useState(product.imageUrls?.[0] || '');
 
-  useEffect(() => {
-    const firstAvailableVariant = product.variants.find(v => v.stock > 0) || product.variants[0] || null;
-    setSelectedVariant(firstAvailableVariant);
-    addProductToRecentlyViewed(product.id);
-  }, [product]);
+    const optionTypes = useMemo(() => {
+        if (!product.variants || product.variants.length === 0) return [];
+        return Object.keys(product.variants[0].options || {});
+    }, [product.variants]);
 
-  useEffect(() => {
-    // Update main image when variant changes, if it has a specific image
-    if (selectedVariant?.imageUrl) {
-      setMainImage(selectedVariant.imageUrl);
-    } else {
-      setMainImage(product.imageUrls[0]); // Fallback to first general image
-    }
-  }, [selectedVariant, product.imageUrls]);
+    const availableOptions = useMemo(() => {
+        const options: { [key: string]: string[] } = {};
+        const variants = product.variants || [];
+        optionTypes.forEach(type => {
+            options[type] = [...new Set(variants.map(v => v.options[type]))];
+        });
+        return options;
+    }, [product.variants, optionTypes]);
+    
+    const isOptionAvailable = useCallback((type: string, value: string): boolean => {
+        const tempSelection = { ...selectedOptions };
+        delete tempSelection[type];
+        
+        return (product.variants || []).some(variant => 
+             variant.options[type] === value &&
+             Object.entries(tempSelection).every(([otherType, otherValue]) => variant.options[otherType] === otherValue)
+        );
+    }, [product.variants, selectedOptions]);
 
+    useEffect(() => {
+        addProductToRecentlyViewed(product.id);
+        const variants = product.variants || [];
+        const firstAvailableVariant = variants.find(v => v.stock > 0) || variants[0];
+        if (firstAvailableVariant) {
+            setSelectedOptions(firstAvailableVariant.options || {});
+        }
+    }, [product]);
 
-  const { addToCart } = useCart();
-  const { currentUser } = useAuth();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
-  
-  const [quantity, setQuantity] = useState(1);
-  const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
+    useEffect(() => {
+        const variants = product.variants || [];
+        const allOptionsSelected = optionTypes.every(type => selectedOptions[type]);
+        if (allOptionsSelected) {
+            const foundVariant = variants.find(v => 
+                optionTypes.every(type => (v.options || {})[type] === selectedOptions[type])
+            );
+            setSelectedVariant(foundVariant || null);
+        } else {
+            setSelectedVariant(null);
+        }
+        setQuantity(1);
+    }, [selectedOptions, product.variants, optionTypes]);
 
-  const [showToast, setShowToast] = useState(false);
+    useEffect(() => {
+        setMainImage(selectedVariant?.imageUrl || product.imageUrls?.[0] || '');
+    }, [selectedVariant, product.imageUrls]);
 
-  const handleAddToCart = () => {
-    if (isOutOfStock || !selectedVariant) return;
-    addToCart(product, selectedVariant, quantity);
-  };
+    const handleOptionSelect = (type: string, value: string) => {
+        setSelectedOptions(prev => {
+            const newSelection = { ...prev, [type]: value };
+            optionTypes.forEach(otherType => {
+                if (otherType !== type && newSelection[otherType]) {
+                    const tempSelection = { ...newSelection };
+                    delete tempSelection[otherType];
+                    const isStillValid = (product.variants || []).some(variant => 
+                        variant.options[otherType] === newSelection[otherType] &&
+                        Object.entries(tempSelection).every(([key, val]) => variant.options[key] === val)
+                    );
+                    if (!isStillValid) {
+                        delete newSelection[otherType];
+                    }
+                }
+            });
+            return newSelection;
+        });
+    };
 
-  const handleBuyNow = () => {
-    if (isOutOfStock || !selectedVariant) return;
-    handleAddToCart();
-    setShowToast(true);
+    const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
 
-    setTimeout(() => {
-        onClose(); // Close modal first
-        onNavigateToCheckout();
-    }, 2000);
-  };
+    const handleAddToCart = () => {
+        if (isOutOfStock || !selectedVariant) return;
+        addToCart(product, selectedVariant, quantity);
+    };
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product);
-    }
-  };
+    const handleBuyNow = () => {
+        if (isOutOfStock || !selectedVariant) return;
+        handleAddToCart();
+        setShowToast(true);
 
-  const decreaseQuantity = () => {
-    setQuantity(q => Math.max(1, q - 1));
-  };
+        setTimeout(() => {
+            onClose();
+            onNavigateToCheckout();
+        }, 2000);
+    };
 
-  const increaseQuantity = () => {
-    if (!selectedVariant) return;
-    setQuantity(q => Math.min(selectedVariant.stock, q + 1));
-  };
+    const handleWishlistToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (isInWishlist(product.id)) {
+            removeFromWishlist(product.id);
+        } else {
+            addToWishlist(product);
+        }
+    };
 
-  const handleVariantSelect = (variant: Variant) => {
-    setSelectedVariant(variant);
-    setQuantity(1); // Reset quantity on variant change
-  };
+    const decreaseQuantity = () => setQuantity(q => Math.max(1, q - 1));
+    const increaseQuantity = () => {
+        if (selectedVariant) {
+            setQuantity(q => Math.min(selectedVariant.stock, q + 1));
+        }
+    };
 
   return (
     <>
@@ -108,7 +157,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                     className="w-full h-auto max-h-[400px] object-contain rounded-lg"
                 />
             </div>
-            {product.imageUrls.length > 1 && (
+            {(product.imageUrls?.length || 0) > 1 && (
               <div className="flex space-x-2 overflow-x-auto p-1 mt-2">
                 {product.imageUrls.map((url, index) => (
                   <button 
@@ -136,26 +185,33 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                 <span className="text-sm text-muted-foreground ml-2">{product.rating} ({product.reviews} reviews)</span>
             </div>
             <div className="mb-4">
-              <span className="text-xl font-bold text-foreground">{formatCurrency(selectedVariant?.price ?? 0)}</span>
+              <span className="text-xl font-bold text-foreground">{formatCurrency(selectedVariant?.price ?? product.variants?.[0]?.price ?? 0)}</span>
               {selectedVariant?.originalPrice && (
                 <span className="text-md text-muted-foreground line-through ml-3">{formatCurrency(selectedVariant.originalPrice)}</span>
               )}
             </div>
             
-            <div className="mb-4">
-                <h3 className="text-sm font-semibold text-background bg-foreground mb-2 px-2 py-1 rounded-md inline-block">Select Variant:</h3>
-                <div className="flex flex-wrap gap-2">
-                    {product.variants.map(variant => (
-                        <button key={variant.id} onClick={() => handleVariantSelect(variant)} disabled={variant.stock === 0} className={cn(
-                            "px-3 py-1.5 rounded-md text-xs font-medium border-2 transition-all",
-                            selectedVariant?.id === variant.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50",
-                            variant.stock === 0 && "opacity-50 cursor-not-allowed line-through"
-                        )}>
-                            {variant.name}
-                        </button>
-                    ))}
-                </div>
+            <div className="space-y-4 mb-4">
+                {optionTypes.map(type => (
+                    <div key={type}>
+                        <h3 className="text-sm font-semibold text-background bg-foreground mb-2 px-2 py-1 rounded-md inline-block">{type}:</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {availableOptions[type].map(value => {
+                                const isAvailable = isOptionAvailable(type, value);
+                                return (
+                                <button key={value} onClick={() => handleOptionSelect(type, value)} disabled={!isAvailable} className={cn(
+                                    "px-3 py-1.5 rounded-md text-xs font-medium border-2 transition-all",
+                                    selectedOptions[type] === value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50",
+                                    !isAvailable && "opacity-50 cursor-not-allowed line-through"
+                                )}>
+                                    {value}
+                                </button>
+                            )})}
+                        </div>
+                    </div>
+                ))}
             </div>
+
 
             <p className="text-muted-foreground mb-5 leading-relaxed text-sm max-h-28 overflow-y-auto">
               {product.description || 'No description available for this product.'}
@@ -201,11 +257,13 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                         <AnimatedCartButton
                             onAddToCart={(e) => { e.stopPropagation(); handleAddToCart(); }}
                             className="flex-1 font-semibold"
+                            disabled={!selectedVariant}
                         />
                         <AnimatedCartButton
                             onAddToCart={handleBuyNow}
                             text="Buy Now"
                             className="flex-1 bg-secondary text-secondary-foreground hover:bg-accent"
+                            disabled={!selectedVariant}
                         />
                     </>
                 )}

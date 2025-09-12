@@ -57,7 +57,7 @@ const DashboardHome: React.FC = () => {
                     setTopProducts(sortedTopProducts.slice(0, 5));
 
                     // FIX: Property 'price' and 'stock' do not exist on type 'Product'. Calculate inventory value by iterating over variants for each product.
-                    const totalInventoryValue = allProducts.reduce((sum, p) => sum + p.variants.reduce((variantSum, v) => variantSum + v.price * v.stock, 0), 0);
+                    const totalInventoryValue = allProducts.reduce((sum, p) => sum + (p.variants || []).reduce((variantSum, v) => variantSum + v.price * v.stock, 0), 0);
 
                     const unsubscribeUsers = onAllUsersAndRolesValueChange((allUsers) => {
                         // All data is now available, perform calculations
@@ -238,13 +238,13 @@ const DashboardHome: React.FC = () => {
                     <ul className="space-y-4">
                         {topProducts.map(p => (
                             <li key={p.id} className="flex items-center space-x-3">
-                                <img src={p.imageUrls[0]} alt={p.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
+                                <img src={p.imageUrls?.[0] || ''} alt={p.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
                                     <p className="text-xs text-muted-foreground">{p.category}</p>
                                 </div>
                                 {/* FIX: Property 'price' does not exist on type 'Product'. Display the price of the first variant. */}
-                                <p className="font-semibold text-sm">{formatCurrency(p.variants[0]?.price ?? 0)}</p>
+                                <p className="font-semibold text-sm">{formatCurrency(p.variants?.[0]?.price ?? 0)}</p>
                             </li>
                         ))}
                     </ul>

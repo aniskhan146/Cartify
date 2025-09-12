@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Product, Variant } from '../../types';
-import { MoreVerticalIcon, ClipboardIcon, DownloadIcon, Trash2Icon, SearchIcon, UploadIcon } from '../shared/icons';
+import type { Product, Variant, VariantOption, VariantOptionValue } from '../../types';
+import { MoreVerticalIcon, ClipboardIcon, DownloadIcon, Trash2Icon, SearchIcon, UploadIcon, XIcon } from '../shared/icons';
 import { generateProductDescription } from '../../services/geminiService';
-import { saveProduct, deleteProduct, onCategoriesValueChange, saveCategory, DbCategory } from '../../services/databaseService';
+import { saveProduct, deleteProduct, onCategoriesValueChange, saveCategory, DbCategory, onVariantOptionsChange } from '../../services/databaseService';
 import { formatCurrency } from '../shared/utils';
 import ConfirmationModal from './ConfirmationModal';
 import { cn } from '../../lib/utils';
@@ -15,6 +15,24 @@ const initialFormState: Omit<Product, 'id' | 'rating' | 'reviews' | 'variants'> 
     imageUrls: [],
     variants: [],
     deliveryTimescale: '',
+};
+
+// Helper function for Cartesian product
+const cartesian = <T,>(...args: T[][]): T[][] => {
+  const r: T[][] = [];
+  const max = args.length - 1;
+  const helper = (arr: T[], i: number) => {
+    for (let j = 0; j < args[i].length; j++) {
+      const a = [...arr, args[i][j]];
+      if (i === max) {
+        r.push(a);
+      } else {
+        helper(a, i + 1);
+      }
+    }
+  };
+  helper([], 0);
+  return r;
 };
 
 
@@ -42,6 +60,16 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
     const [isDraggingOver, setIsDraggingOver] = useState(false);
     const [newImageUrl, setNewImageUrl] = useState('');
     const [imageUrlError, setImageUrlError] = useState('');
+    
+    // New state for variant generation
+    const [allVariantOptions, setAllVariantOptions] = useState<VariantOption[]>([]);
+    const [selectedOptionTypes, setSelectedOptionTypes] = useState<VariantOption[]>([]);
+    const [selectedOptionValues, setSelectedOptionValues] = useState<{ [key: string]: string[] }>({});
+
+     useEffect(() => {
+        const unsubscribe = onVariantOptionsChange(setAllVariantOptions);
+        return () => unsubscribe();
+    }, []);
 
     useEffect(() => {
         setFormError(formErrorExt);
@@ -57,12 +85,32 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                 variants: product.variants || [],
                 deliveryTimescale: product.deliveryTimescale || '',
             });
+            // Pre-fill variant options based on existing product variants
+            if (product.variants && product.variants.length > 0) {
+                const firstVariantOptions = product.variants[0].options || {};
+                const optionNames = Object.keys(firstVariantOptions);
+                const matchingOptions = allVariantOptions.filter(opt => optionNames.includes(opt.name));
+                setSelectedOptionTypes(matchingOptions);
+                
+                const initialValues: { [key: string]: string[] } = {};
+                matchingOptions.forEach(opt => {
+                    const values = [...new Set(product.variants.map(v => v.options[opt.name]).filter(Boolean))];
+                    initialValues[opt.id] = values;
+                });
+                setSelectedOptionValues(initialValues);
+            } else {
+                 setSelectedOptionTypes([]);
+                 setSelectedOptionValues({});
+            }
+
         } else {
             setFormData(initialFormState);
+            setSelectedOptionTypes([]);
+            setSelectedOptionValues({});
         }
         setNewImageUrl('');
         setImageUrlError('');
-    }, [product]);
+    }, [product, allVariantOptions]);
 
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -131,7 +179,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
         }
     };
     
-    const handleVariantChange = (index: number, field: keyof Variant, value: string | number) => {
+    const handleVariantChange = (index: number, field: keyof Omit<Variant, 'options'>, value: string | number) => {
         const updatedVariants = [...formData.variants];
         const variantToUpdate = { ...updatedVariants[index] };
         (variantToUpdate[field] as any) = value;
@@ -139,13 +187,77 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
         setFormData(prev => ({ ...prev, variants: updatedVariants }));
     };
     
-    const addVariant = () => {
-        const newVariant: Variant = { id: uuidv4(), name: '', price: 0, stock: 0 };
-        setFormData(prev => ({ ...prev, variants: [...prev.variants, newVariant] }));
-    };
-    
     const removeVariant = (indexToRemove: number) => {
         setFormData(prev => ({ ...prev, variants: prev.variants.filter((_, i) => i !== indexToRemove) }));
+    };
+
+    const handleOptionTypeSelect = (optionId: string) => {
+        const option = allVariantOptions.find(opt => opt.id === optionId);
+        if (option && !selectedOptionTypes.some(opt => opt.id === optionId)) {
+            setSelectedOptionTypes(prev => [...prev, option]);
+        }
+    };
+    
+    const handleRemoveOptionType = (optionId: string) => {
+        setSelectedOptionTypes(prev => prev.filter(opt => opt.id !== optionId));
+        setSelectedOptionValues(prev => {
+            const newValues = { ...prev };
+            delete newValues[optionId];
+            return newValues;
+        });
+    };
+
+    const handleOptionValueToggle = (optionId: string, value: string) => {
+        setSelectedOptionValues(prev => {
+            const currentValues = prev[optionId] || [];
+            const newValues = currentValues.includes(value)
+                ? currentValues.filter(v => v !== value)
+                : [...currentValues, value];
+            return { ...prev, [optionId]: newValues };
+        });
+    };
+    
+    const handleGenerateVariants = () => {
+        if (selectedOptionTypes.length === 0) {
+            setFormError("Please select at least one option type to generate variants.");
+            return;
+        }
+    
+        const valueArrays = selectedOptionTypes.map(opt => selectedOptionValues[opt.id] || []);
+    
+        if (valueArrays.some(arr => arr.length === 0)) {
+            setFormError("Please select at least one value for each option type.");
+            return;
+        }
+    
+        const combinations = cartesian(...valueArrays);
+    
+        const newVariants: Variant[] = combinations.map(combo => {
+            const options: { [key: string]: string } = {};
+            selectedOptionTypes.forEach((opt, i) => {
+                options[opt.name] = combo[i];
+            });
+    
+            const name = selectedOptionTypes.map(opt => options[opt.name]).join(' / ');
+            
+            // Try to find an existing variant to preserve its data
+            const existingVariant = formData.variants.find(v => 
+                Object.entries(options).every(([key, value]) => v.options[key] === value)
+            );
+    
+            return {
+                id: existingVariant?.id || uuidv4(),
+                options,
+                name,
+                price: existingVariant?.price || 0,
+                originalPrice: existingVariant?.originalPrice,
+                stock: existingVariant?.stock || 0,
+                imageUrl: existingVariant?.imageUrl || '',
+            };
+        });
+    
+        setFormData(prev => ({ ...prev, variants: newVariants }));
+        setFormError("");
     };
 
 
@@ -184,7 +296,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
             return;
         }
         if (formData.variants.length === 0) {
-            setFormError("Product must have at least one variant.");
+            setFormError("Product must have at least one variant. Please generate variants.");
             return;
         }
 
@@ -193,10 +305,6 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
             const price = Number(variant.price);
             const stock = Number(variant.stock);
             const originalPrice = variant.originalPrice ? Number(variant.originalPrice) : undefined;
-            if (!variant.name.trim()) {
-                setFormError(`All variants must have a name.`);
-                return;
-            }
             if (isNaN(price) || price < 0 || isNaN(stock) || stock < 0) {
                 setFormError(`Price and stock for variant "${variant.name}" must be positive numbers.`);
                 return;
@@ -325,25 +433,87 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
 
               <div>
                 <h3 className="text-lg font-semibold mb-3 border-b border-border pb-2">Product Variants</h3>
-                <div className="space-y-3">
+                 <div className="bg-muted/50 p-4 rounded-lg border border-border space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                           <label className="block text-sm font-medium text-muted-foreground mb-1">1. Add Option Types</label>
+                            <select onChange={(e) => handleOptionTypeSelect(e.target.value)} className="w-full p-2 border border-input rounded-md bg-background" value="">
+                                <option value="" disabled>Choose an option type...</option>
+                                {allVariantOptions.filter(opt => !selectedOptionTypes.some(sOpt => sOpt.id === opt.id)).map(opt => (
+                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                             <label className="block text-sm font-medium text-muted-foreground mb-1">Selected Types</label>
+                            <div className="space-x-2">
+                                {selectedOptionTypes.length > 0 ? selectedOptionTypes.map(opt => (
+                                    <span key={opt.id} className="inline-flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm font-medium">
+                                        {opt.name}
+                                        <button type="button" onClick={() => handleRemoveOptionType(opt.id)} className="ml-1.5 text-secondary-foreground hover:text-foreground"><XIcon className="h-4 w-4"/></button>
+                                    </span>
+                                )) : <p className="text-xs text-muted-foreground pt-2">No option types selected.</p>}
+                            </div>
+                        </div>
+                    </div>
+                    {selectedOptionTypes.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-medium text-muted-foreground mb-2">2. Select Values for Each Type</label>
+                            <div className="space-y-3">
+                            {selectedOptionTypes.map(opt => (
+                                <div key={opt.id}>
+                                    <p className="font-semibold text-sm mb-1">{opt.name}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(opt.values || []).map(valObj => {
+                                            // Handle old string data gracefully
+                                            const value = typeof valObj === 'string' ? { name: valObj } : valObj;
+                                            return (
+                                            <button type="button" key={value.name} onClick={() => handleOptionValueToggle(opt.id, value.name)}
+                                                className={cn("px-3 py-1.5 rounded-md text-xs font-medium border-2 transition-all flex items-center gap-2",
+                                                (selectedOptionValues[opt.id] || []).includes(value.name) ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50"
+                                                )}
+                                            >
+                                            {value.colorCode && <span className="w-3 h-3 rounded-full border border-border" style={{ backgroundColor: value.colorCode }} />}
+                                            {value.name}
+                                            </button>
+                                        )})}
+                                    </div>
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                    )}
+                     <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">3. Generate Variants</label>
+                        <button type="button" onClick={handleGenerateVariants} className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm">
+                            Generate {formData.variants.length > 0 ? 'and Overwrite' : ''} Variants
+                        </button>
+                    </div>
+                </div>
+
+                {formData.variants.length > 0 && (
+                <div className="mt-4 space-y-2 max-h-64 overflow-y-auto pr-1">
+                     <p className="text-sm font-medium text-muted-foreground mb-2">4. Configure Generated Variants</p>
                     {formData.variants.map((variant, index) => (
                         <div key={variant.id} className="bg-muted/50 p-3 rounded-lg border border-border">
+                            <div className="flex justify-between items-center mb-2">
+                                <p className="font-semibold text-sm">{variant.name}</p>
+                                <button type="button" onClick={() => removeVariant(index)} className="text-destructive hover:text-destructive/80"><Trash2Icon className="h-4 w-4" /></button>
+                            </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <input placeholder="Variant Name (e.g., Red, Small)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm col-span-2" required/>
                                 <input type="number" placeholder="Price" value={variant.price} onChange={e => handleVariantChange(index, 'price', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm" required/>
                                 <input type="number" placeholder="Stock" value={variant.stock} onChange={e => handleVariantChange(index, 'stock', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm" required/>
-                                <input type="number" placeholder="Original Price (optional)" value={variant.originalPrice || ''} onChange={e => handleVariantChange(index, 'originalPrice', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm" />
-                                <input placeholder="Variant Image URL (optional)" value={variant.imageUrl || ''} onChange={e => handleVariantChange(index, 'imageUrl', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm col-span-2"/>
-                                <button type="button" onClick={() => removeVariant(index)} className="bg-destructive text-destructive-foreground px-3 py-1 rounded-lg font-semibold hover:bg-destructive/90 transition-colors text-sm">Remove</button>
+                                <input type="number" placeholder="Original Price" value={variant.originalPrice || ''} onChange={e => handleVariantChange(index, 'originalPrice', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm" />
+                                <input placeholder="Image URL (optional)" value={variant.imageUrl || ''} onChange={e => handleVariantChange(index, 'imageUrl', e.target.value)} className="p-2 border border-input rounded-md bg-background text-sm col-span-4 md:col-span-1"/>
                             </div>
                         </div>
                     ))}
                 </div>
-                <button type="button" onClick={addVariant} className="mt-3 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors text-sm">Add Variant</button>
+                )}
               </div>
 
               <div>
-                  <h3 className="text-lg font-semibold mb-3 border-b border-border pb-2">General Images</h3>
+                  <h3 className="text-lg font-semibold mb-3 border-b border-border pb-2">General Images (Fallbacks)</h3>
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
                       {formData.imageUrls.map((url, index) => (
                           <div key={index} className="relative group">
@@ -480,13 +650,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
     
     const handleExportCSV = () => {
         if (!products.length) return;
-        const headers = ['ID', 'Name', 'Category', 'Description', 'Variant ID', 'Variant Name', 'Price', 'OriginalPrice', 'Stock'];
+        const headers = ['ID', 'Name', 'Category', 'Description', 'Variant SKU', 'Variant Name', 'Price', 'OriginalPrice', 'Stock'];
         let csvRows: string[] = [];
 
         const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`;
         
         products.forEach(p => {
-            p.variants.forEach(v => {
+            (p.variants || []).forEach(v => {
                  const row = [p.id, p.name, p.category, p.description, v.id, v.name, v.price, v.originalPrice, v.stock].map(escapeCsv).join(',');
                  csvRows.push(row);
             });
@@ -628,7 +798,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
                                 <tr key={product.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
                                     <td className="px-4 py-3 font-medium text-foreground">
                                         <div className="flex items-center space-x-3">
-                                            <img src={product.imageUrls[0]} alt={product.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
+                                            <img src={product.imageUrls?.[0] || ''} alt={product.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
                                             <span>{product.name}</span>
                                         </div>
                                     </td>
