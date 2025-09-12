@@ -2,7 +2,7 @@
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
 import "firebase/compat/database";
-import "firebase/compat/functions"; // Import functions compat library
+import "firebase/compat/functions";
 
 // Firebase configuration provided by the user.
 const firebaseConfig = {
@@ -25,5 +25,5 @@ const app = firebase.initializeApp(firebaseConfig);
 // FIX: Used v8 compat syntax to get auth and database services.
 export const auth = firebase.auth();
 export const db = firebase.database();
-export const functions = firebase.app().functions('asia-southeast1'); // Initialize and export functions
+export const functions = firebase.functions();
 export const googleProvider = new firebase.auth.GoogleAuthProvider();

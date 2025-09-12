@@ -42,43 +42,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let unsubscribe: firebase.Unsubscribe = () => {};
-
-        const initializeAuth = async () => {
-            try {
-                // FIX: Set auth persistence to in-memory to resolve environment support issues.
-                // The error 'auth/operation-not-supported-in-this-environment' occurs in sandboxed
-                // environments (like some web IDEs) where localStorage or popups are restricted.
-                // Using `NONE` stores auth state in memory for the current session only, bypassing
-                // web storage requirements and allowing Google Sign-In to function.
-                // The user will need to log in again if they refresh the page.
-                await auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
-            } catch (error) {
-                console.error("Firebase persistence error:", error);
-            } finally {
-                unsubscribe = auth.onAuthStateChanged(async (user) => {
-                    setCurrentUser(user);
-                    if (user) {
-                        // Check for an existing profile. If it doesn't exist, create one.
-                        // This ensures that any user in Firebase Auth gets an entry in the Realtime Database upon logging in.
-                        let profile = await getUserProfile(user.uid);
-                        if (!profile) {
-                            console.log(`User ${user.uid} from Auth not found in DB. Creating profile now.`);
-                            await createUserRoleAndProfile(user.uid, user.email!);
-                            // Re-fetch the profile after creating it.
-                            profile = await getUserProfile(user.uid);
-                        }
-                        setUserProfile(profile);
-                    } else {
-                        setUserProfile(null);
-                    }
-                    setLoading(false);
-                });
+        const unsubscribe = auth.onAuthStateChanged(async (user) => {
+            setCurrentUser(user);
+            if (user) {
+                // Check for an existing profile. If it doesn't exist, create one.
+                // This ensures that any user in Firebase Auth gets an entry in the Realtime Database upon logging in.
+                let profile = await getUserProfile(user.uid);
+                if (!profile) {
+                    console.log(`User ${user.uid} from Auth not found in DB. Creating profile now.`);
+                    await createUserRoleAndProfile(user.uid, user.email!);
+                    // Re-fetch the profile after creating it.
+                    profile = await getUserProfile(user.uid);
+                }
+                setUserProfile(profile);
+            } else {
+                setUserProfile(null);
             }
-        };
+            setLoading(false);
+        });
         
-        initializeAuth();
-
         return () => unsubscribe(); // Cleanup subscription on unmount
     }, []);
 

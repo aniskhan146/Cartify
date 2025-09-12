@@ -1,121 +1,100 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
 const { GoogleGenAI, Type } = require("@google/genai");
 
-admin.initializeApp();
+// Get Gemini API Key from Firebase Functions configuration
+const API_KEY = functions.config().gemini?.key;
 
-// Initialize the Gemini AI client using the API key from environment variables.
-// This key MUST be set in your Firebase environment using secrets.
-// `firebase functions:secrets:set API_KEY`
-let ai;
-if (process.env.API_KEY) {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-} else {
-  console.warn("API_KEY environment variable not set. AI functions will fail.");
+if (!API_KEY) {
+  console.error("Gemini API Key not set in Firebase Functions config. Run: firebase functions:config:set gemini.key='YOUR_API_KEY'");
 }
 
-const checkApiKey = () => {
-  if (!ai) {
-    throw new functions.https.HttpsError(
-      "failed-precondition",
-      "The Gemini API key is not configured on the server. Please contact the administrator."
-    );
-  }
+const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Helper function to handle errors and throw a structured HTTPS error
+const handleError = (error, context) => {
+  console.error("AI Function Error:", error.message, {
+    // Adding context for better debugging
+    auth: context.auth ? { uid: context.auth.uid } : "No auth",
+  });
+  throw new functions.https.HttpsError("internal", "An error occurred while communicating with the AI service.", error.message);
 };
 
-// Callable function to get a hex code for a color name.
-exports.getHexCode = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(async (data, context) => {
-  checkApiKey();
+// --- Callable Functions ---
+
+/**
+ * A modular function to handle Gemini API calls.
+ * This can be adapted in the future to call other models (e.g., OpenAI).
+ */
+const callGeminiModel = async (options) => {
+    return await ai.models.generateContent(options);
+};
+
+exports.getHexCodeForColorName = functions.https.onCall(async (data, context) => {
   const colorName = data.colorName;
-  if (!colorName || typeof colorName !== 'string') {
-    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a "colorName" string argument.');
+  if (!colorName) {
+    throw new functions.https.HttpsError("invalid-argument", "The function must be called with one argument 'colorName'.");
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const response = await callGeminiModel({
+      model: "gemini-2.5-flash",
       contents: `Analyze the following color name and return its most likely hex color code. Color name: "${colorName}"`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
-          properties: {
-            hexCode: {
-              type: Type.STRING,
-              description: "The hex color code, starting with a '#' (e.g., '#FFFFFF')."
-            }
-          },
-          required: ["hexCode"]
-        }
-      }
+          properties: { hexCode: { type: Type.STRING, description: "The hex color code, starting with '#'." } },
+          required: ["hexCode"],
+        },
+      },
     });
-
     const jsonResponse = JSON.parse(response.text);
     return { hexCode: jsonResponse.hexCode };
   } catch (error) {
-    console.error(`Gemini API error in getHexCode for "${colorName}":`, error);
-    throw new functions.https.HttpsError('internal', 'Failed to get hex code from Gemini API.');
+    handleError(error, context);
   }
 });
 
-// Callable function to generate a product description.
-exports.generateDescription = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(async (data, context) => {
-  checkApiKey();
-  const { productName, keywords } = data;
-  if (!productName || typeof productName !== 'string') {
-    throw new functions.https.HttpsError('invalid-argument', 'Missing "productName" string argument.');
-  }
-
-  try {
-    const prompt = `Generate a compelling and concise e-commerce product description for a product named "${productName}". 
-    Incorporate the following keywords: "${keywords || ''}". 
-    The description should be marketing-focused, highlighting key benefits for the customer. 
-    Keep it under 100 words.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
-    
-    return response.text;
-  } catch (error) {
-    console.error(`Gemini API error in generateDescription for "${productName}":`, error);
-    throw new functions.https.HttpsError('internal', 'Failed to generate product description.');
-  }
-});
-
-// Callable function to identify an image from a base64 string.
-exports.identifyImage = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(async (data, context) => {
-    checkApiKey();
-    const { base64ImageData } = data;
-    if (!base64ImageData || typeof base64ImageData !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'Missing "base64ImageData" string argument.');
+exports.generateProductDescription = functions.https.onCall(async (data, context) => {
+    const { productName, keywords } = data;
+    if (!productName) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing 'productName' argument.");
     }
+    try {
+        const prompt = `Generate a compelling and concise e-commerce product description for a product named "${productName}". Incorporate the following keywords: "${keywords || ''}". The description should be marketing-focused, highlighting key benefits for the customer. Keep it under 100 words.`;
+        const response = await callGeminiModel({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return { description: response.text };
+    } catch (error) {
+        handleError(error, context);
+    }
+});
 
+exports.identifyImage = functions.https.onCall(async (data, context) => {
+    const { base64ImageData } = data;
+    if (!base64ImageData) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing 'base64ImageData' argument.");
+    }
     try {
         const imagePart = { inlineData: { mimeType: 'image/jpeg', data: base64ImageData } };
         const textPart = { text: 'Identify the main object in this image. Provide a brief, engaging description suitable for an e-commerce platform, as if you were a helpful shopping assistant.' };
-        
-        const response = await ai.models.generateContent({
+        const response = await callGeminiModel({
             model: 'gemini-2.5-flash',
             contents: { parts: [imagePart, textPart] },
         });
-
-        return response.text;
+        return { description: response.text };
     } catch (error) {
-        console.error("Gemini API error in identifyImage:", error);
-        throw new functions.https.HttpsError('internal', 'Failed to identify the image.');
+        handleError(error, context);
     }
 });
 
-// Callable function to generate a product image.
-exports.generateImage = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(async (data, context) => {
-    checkApiKey();
+exports.generateProductImage = functions.https.onCall(async (data, context) => {
     const { prompt } = data;
-    if (!prompt || typeof prompt !== 'string') {
-        throw new functions.https.HttpsError('invalid-argument', 'Missing "prompt" string argument.');
+    if (!prompt) {
+        throw new functions.https.HttpsError("invalid-argument", "Missing 'prompt' argument.");
     }
-    
     try {
         const response = await ai.models.generateImages({
             model: 'imagen-4.0-generate-001',
@@ -128,22 +107,23 @@ exports.generateImage = functions.runWith({ secrets: ["API_KEY"] }).https.onCall
         });
 
         if (response.generatedImages && response.generatedImages.length > 0) {
-            return { b64Image: response.generatedImages[0].image.imageBytes };
-        } else {
-            throw new Error("AI did not return an image.");
+            return { base64Image: response.generatedImages[0].image.imageBytes };
         }
+        throw new Error("AI did not return an image.");
     } catch (error) {
-        console.error(`Gemini API error in generateImage for prompt "${prompt}":`, error);
-        throw new functions.https.HttpsError('internal', 'Failed to generate product image.');
+        handleError(error, context);
     }
 });
 
-// Callable function for the AI Assistant.
-exports.aiAssistant = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(async (data, context) => {
-    checkApiKey();
-    const { prompt, history, storeData, viewContext } = data;
+exports.getAiAssistantResponse = functions.https.onCall(async (data, context) => {
+  const { prompt, history, storeData, viewContext } = data;
+  
+  if (!prompt) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing 'prompt' argument.");
+  }
 
-    const isFilteredView = viewContext && viewContext.products.length < storeData.products.length;
+  try {
+    const isFilteredView = viewContext && storeData && viewContext.products.length < storeData.products.length;
 
     const systemInstruction = `You are "Cartify AI", a helpful e-commerce assistant for the admin of an online store called Cartify. 
     Your role is to analyze the provided store data (products, orders, users) to answer questions and help with management tasks.
@@ -177,29 +157,27 @@ exports.aiAssistant = functions.runWith({ secrets: ["API_KEY"] }).https.onCall(a
         name: 'generateProductDescription', description: 'Generates a compelling e-commerce product description.',
         parameters: { type: Type.OBJECT, properties: { productName: { type: Type.STRING }, keywords: { type: Type.STRING } }, required: ['productName', 'keywords'] },
     };
-
+    
     const mappedHistory = (history || []).map(h => ({ ...h, role: h.role === 'assistant' ? 'model' : 'user' }));
     if (prompt) {
         mappedHistory.push({ role: 'user', parts: [{ text: prompt }] });
     }
-
-    try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: mappedHistory,
-            config: {
-                systemInstruction,
-                tools: [{ functionDeclarations: [addProductTool, generateImageForProductTool, generateProductDescriptionTool] }],
-            },
-        });
-        
-        if (response.functionCalls && response.functionCalls.length > 0) {
-            return { functionCall: response.functionCalls[0] };
-        }
     
-        return response.text;
-    } catch (error) {
-        console.error("Gemini API error in aiAssistant:", error);
-        throw new functions.https.HttpsError('internal', 'Failed to get a response from the AI assistant.');
+    const response = await callGeminiModel({
+        model: 'gemini-2.5-flash',
+        contents: mappedHistory,
+        config: {
+            systemInstruction,
+            tools: [{ functionDeclarations: [addProductTool, generateImageForProductTool, generateProductDescriptionTool] }],
+        },
+    });
+
+    if (response.functionCalls && response.functionCalls.length > 0) {
+        return { functionCall: response.functionCalls[0] };
     }
+
+    return { text: response.text };
+  } catch (error) {
+    handleError(error, context);
+  }
 });

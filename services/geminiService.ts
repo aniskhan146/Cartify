@@ -1,30 +1,25 @@
-import type { Product } from '../types';
 import { functions } from './firebase';
+import type { Product, Order, UserRoleInfo } from '../types';
 
-// Helper to create callable functions
-const createCallable = <T, R>(name: string) => functions.httpsCallable(name) as (data: T) => Promise<{ data: R }>;
-
-// Create callable functions for each backend endpoint
-const getHexCodeCallable = createCallable<{ colorName: string }, { hexCode: string }>('getHexCode');
-const generateDescriptionCallable = createCallable<{ productName: string; keywords: string }, string>('generateDescription');
-const identifyImageCallable = createCallable<{ base64ImageData: string }, string>('identifyImage');
-const generateImageCallable = createCallable<{ prompt: string }, { b64Image: string }>('generateImage');
-const aiAssistantCallable = createCallable<any, string | { functionCall: any }>('aiAssistant');
-
+// Create callable function references
+const getHexCodeFn = functions.httpsCallable('getHexCodeForColorName');
+const generateDescFn = functions.httpsCallable('generateProductDescription');
+const identifyImgFn = functions.httpsCallable('identifyImage');
+const generateImgFn = functions.httpsCallable('generateProductImage');
+const aiAssistantFn = functions.httpsCallable('getAiAssistantResponse');
 
 export const getHexCodeForColorName = async (colorName: string): Promise<string> => {
     try {
-        const result = await getHexCodeCallable({ colorName });
-        const hexCode = result.data.hexCode;
-        if (hexCode && /^#[0-9a-fA-F]{6}$/.test(hexCode)) {
-             return hexCode;
+        const result = await getHexCodeFn({ colorName });
+        const data = result.data as { hexCode: string };
+        if (data.hexCode && /^#[0-9a-fA-F]{6}$/.test(data.hexCode)) {
+            return data.hexCode;
         }
-        console.warn("Invalid hex code format received from function:", hexCode);
+        console.warn("Invalid hex code format received:", data.hexCode);
         return '#000000'; // Fallback
     } catch (error) {
-        console.error(`Error calling getHexCode function for "${colorName}":`, error);
-        // Fallback to a default color on error to avoid breaking the UI
-        return '#000000';
+        console.error(`Error calling getHexCodeForColorName function:`, error);
+        return '#000000'; // Fallback
     }
 };
 
@@ -33,18 +28,20 @@ export const generateProductDescription = async (
   keywords: string
 ): Promise<string> => {
   try {
-    const result = await generateDescriptionCallable({ productName, keywords });
-    return result.data;
+    const result = await generateDescFn({ productName, keywords });
+    const data = result.data as { description: string };
+    return data.description;
   } catch (error) {
-    console.error("Error calling generateDescription function:", error);
+    console.error("Error calling generateProductDescription function:", error);
     throw new Error("Failed to generate description from AI. Please try again.");
   }
 };
 
 export const identifyImage = async (base64ImageData: string): Promise<string> => {
    try {
-        const result = await identifyImageCallable({ base64ImageData });
-        return result.data;
+        const result = await identifyImgFn({ base64ImageData });
+        const data = result.data as { description: string };
+        return data.description;
     } catch (error) {
         console.error("Error calling identifyImage function:", error);
         throw new Error("Failed to identify the image using AI. Please try again.");
@@ -53,14 +50,11 @@ export const identifyImage = async (base64ImageData: string): Promise<string> =>
 
 export const generateProductImage = async (prompt: string): Promise<string> => {
     try {
-        const result = await generateImageCallable({ prompt });
-        if (result.data.b64Image) {
-            return result.data.b64Image;
-        } else {
-            throw new Error("AI function did not return an image.");
-        }
+        const result = await generateImgFn({ prompt });
+        const data = result.data as { base64Image: string };
+        return data.base64Image;
     } catch (error) {
-        console.error("Error calling generateImage function:", error);
+        console.error("Error calling generateProductImage function:", error);
         throw new Error("Failed to generate image from AI.");
     }
 };
@@ -72,11 +66,15 @@ export const getAiAssistantResponse = async (
   viewContext?: { products: Product[] }
 ): Promise<string | { functionCall: any }> => {
   try {
-    const payload = { prompt, history, storeData, viewContext };
-    const result = await aiAssistantCallable(payload);
-    return result.data;
+    const result = await aiAssistantFn({ prompt, history, storeData, viewContext });
+    const data = result.data as { text?: string; functionCall?: any };
+
+    if (data.functionCall) {
+        return { functionCall: data.functionCall };
+    }
+    return data.text || '';
   } catch (error) {
-    console.error("Error calling aiAssistant function:", error);
+    console.error("Error getting AI assistant response:", error);
     throw new Error("Failed to get response from AI. Please try again.");
   }
 };
