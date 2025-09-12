@@ -8,7 +8,7 @@ import { UserIcon } from '../shared/icons';
 
 interface CheckoutPageProps {
   onBackToShop: () => void;
-  onOrderPlaced: () => void;
+  onOrderPlaced: (orderId: string) => void;
   onLoginClick: () => void;
 }
 
@@ -75,9 +75,9 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
         };
 
         try {
-            await placeOrder(currentUser.uid, orderData);
+            const newOrderId = await placeOrder(currentUser.uid, orderData);
             setIsPlacingOrder(false);
-            onOrderPlaced();
+            onOrderPlaced(newOrderId);
         } catch (err) {
             console.error("Failed to place order:", err);
             alert("There was an issue placing your order. Please try again.");

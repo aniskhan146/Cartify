@@ -15,6 +15,8 @@ import SearchModal from './SearchModal';
 import AllProductsPage from './AllProductsPage';
 import QuickViewModal from './QuickViewModal';
 import TrackOrderPage from './TrackOrderPage';
+import OrderConfirmationPage from './OrderConfirmationPage';
+import RecentlyViewedSection from './RecentlyViewedSection';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
@@ -37,6 +39,7 @@ type ViewState =
   | { name: 'wishlist' }
   | { name: 'profile' }
   | { name: 'trackOrder' }
+  | { name: 'orderConfirmation'; payload: { orderId: string } }
   | { name: 'allProducts'; payload?: { initialCategory?: string } };
 
 const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClick }) => {
@@ -116,10 +119,9 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOrderPlaced = () => {
-    alert("Thank you! Your order has been placed successfully.");
+  const handleOrderPlaced = (orderId: string) => {
     clearCart();
-    setView({ name: 'shop' });
+    setView({ name: 'orderConfirmation', payload: { orderId } });
   };
   
   const handleProductClick = (product: Product) => {
@@ -185,6 +187,8 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         return <ProfilePage onBackToShop={() => setView({ name: 'shop' })} />;
       case 'trackOrder':
         return <TrackOrderPage onBackToShop={() => setView({ name: 'shop' })} />;
+       case 'orderConfirmation':
+        return <OrderConfirmationPage orderId={view.payload.orderId} onContinueShopping={() => setView({ name: 'shop' })} onTrackOrder={() => setView({ name: 'trackOrder' })} />;
       case 'allProducts':
         return (
             <AllProductsPage
@@ -256,6 +260,8 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         {renderContent()}
       </main>
       
+      {view.name === 'shop' && <RecentlyViewedSection allProducts={allProducts} onProductClick={handleProductClick} />}
+
       {showHeaderAndAdminButton && (
         <div className="w-full flex justify-center py-12 bg-background">
           <button

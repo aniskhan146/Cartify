@@ -33,7 +33,7 @@ export const GlowingCard: React.FC<GlowingCardProps> = ({
     <div
       onClick={onClick}
       className={cn(
-        "group relative flex-1 min-w-[16rem] cursor-pointer rounded-2xl text-black dark:text-white",
+        "group relative w-full cursor-pointer rounded-2xl text-black dark:text-white",
         "bg-card border border-border",
         "transition-all duration-400 ease-out h-full",
         className
@@ -112,8 +112,8 @@ export const GlowingCards: React.FC<GlowingCardsProps> = ({
       >
         <div
           className={cn(
-            "flex items-stretch justify-start flex-wrap gap-[var(--gap)]",
-             responsive && "flex-row"
+            "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--gap)]",
+             responsive && "flex-row" // This class is now irrelevant
           )}
         >
           {children}
@@ -134,8 +134,8 @@ export const GlowingCards: React.FC<GlowingCardsProps> = ({
           >
             <div
               className={cn(
-                "flex items-stretch justify-start flex-wrap gap-[var(--gap)]",
-                 responsive && "flex-row"
+                 "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[var(--gap)]",
+                 responsive && "flex-row" // This class is now irrelevant
               )}
               style={{ padding: "var(--padding)" }}
             >

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import type { Product } from '../../types';
+import React, { useState, useEffect } from 'react';
+import type { Product, Variant } from '../../types';
 import { useCart } from '../../contexts/CartContext';
 import { formatCurrency } from '../shared/utils';
 import AnimatedCartButton from '../shared/AnimatedCartButton';
 import Toast from '../shared/Toast';
 import { cn } from '../../lib/utils';
+import { TruckIcon } from '../shared/icons';
+import { addProductToRecentlyViewed } from '../../services/recentlyViewedService';
 
 interface ProductDetailPageProps {
   product: Product;
@@ -16,27 +18,35 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack, 
     const [quantity, setQuantity] = useState(1);
     const { addToCart } = useCart();
     const [showToast, setShowToast] = useState(false);
+    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
     
-    // FIX: Product properties like stock, price are on variants. This page does not have a variant selector,
-    // so we will use the first variant as the basis for display and actions.
-    const firstVariant = product.variants[0];
-    // FIX: Property 'stock' does not exist on type 'Product'. Check stock from the selected variant.
-    const isOutOfStock = !firstVariant || firstVariant.stock <= 0;
+    useEffect(() => {
+        const firstAvailableVariant = product.variants.find(v => v.stock > 0) || product.variants[0] || null;
+        setSelectedVariant(firstAvailableVariant);
+        setQuantity(1);
+        addProductToRecentlyViewed(product.id);
+    }, [product]);
+    
+    const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
+    const mainImage = selectedVariant?.imageUrl || product.imageUrls[0];
 
     const decreaseQuantity = () => {
         setQuantity(q => Math.max(1, q - 1));
     };
 
     const increaseQuantity = () => {
-        // FIX: Property 'stock' does not exist on type 'Product'. Use stock from the selected variant.
-        setQuantity(q => Math.min(firstVariant.stock, q + 1));
+        if (!selectedVariant) return;
+        setQuantity(q => Math.min(selectedVariant.stock, q + 1));
+    };
+    
+    const handleVariantSelect = (variant: Variant) => {
+        setSelectedVariant(variant);
+        setQuantity(1); // Reset quantity on variant change
     };
 
     const handleAddToCart = () => {
-        if (isOutOfStock) return;
-        
-        // FIX: Expected 2-3 arguments, but got 1. The `addToCart` function requires a product and a variant.
-        addToCart(product, firstVariant, quantity);
+        if (isOutOfStock || !selectedVariant) return;
+        addToCart(product, selectedVariant, quantity);
     };
     
     const handleBuyNow = () => {
@@ -68,7 +78,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack, 
                         {/* Product Image Section */}
                         <div className="relative w-full md:w-1/2 flex justify-center items-center">
                             <img
-                                src={product.imageUrls[0]}
+                                src={mainImage}
                                 alt={product.name}
                                 className="object-cover w-full h-48 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none transition-transform transform hover:scale-105 duration-300 ease-in-out"
                             />
@@ -80,19 +90,39 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack, 
                                     {product.name}
                                 </h1>
                                 <div className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-300">
-                                    {/* FIX: Property 'price' does not exist on type 'Product'. Use price from the selected variant. */}
-                                    Price - {formatCurrency(firstVariant.price)}
-                                    {/* FIX: Property 'originalPrice' does not exist on type 'Product'. Use originalPrice from the selected variant. */}
-                                    {firstVariant.originalPrice && (
-                                      // FIX: Property 'originalPrice' does not exist on type 'Product'. Use originalPrice from the selected variant.
-                                      <span className="text-sm line-through text-gray-500 dark:text-gray-400 ml-3">{formatCurrency(firstVariant.originalPrice)}</span>
+                                    Price - {formatCurrency(selectedVariant?.price ?? 0)}
+                                    {selectedVariant?.originalPrice && (
+                                      <span className="text-sm line-through text-gray-500 dark:text-gray-400 ml-3">{formatCurrency(selectedVariant.originalPrice)}</span>
                                     )}
                                 </div>
                             </div>
-                            <div className="mb-4 text-xs md:text-sm font-medium text-gray-500 dark:text-gray-300">
-                                <p className={isOutOfStock ? "text-red-500" : "text-green-500"}>
-                                    {isOutOfStock ? "Out of stock" : "In stock"}
-                                </p>
+
+                             <div className="space-y-4">
+                                <div className="mb-4">
+                                    <h3 className="text-sm font-semibold text-background bg-foreground mb-2 px-2 py-1 rounded-md inline-block">Select Variant:</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.variants.map(variant => (
+                                            <button key={variant.id} onClick={() => handleVariantSelect(variant)} disabled={variant.stock === 0} className={cn(
+                                                "px-3 py-1.5 rounded-md text-xs font-medium border-2 transition-all",
+                                                selectedVariant?.id === variant.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50",
+                                                variant.stock === 0 && "opacity-50 cursor-not-allowed line-through"
+                                            )}>
+                                                {variant.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="text-xs md:text-sm font-medium text-gray-500 dark:text-gray-300">
+                                    <p className={isOutOfStock ? "text-red-500" : "text-green-500"}>
+                                        {isOutOfStock ? "Out of stock" : `${selectedVariant?.stock} in stock`}
+                                    </p>
+                                </div>
+                                {product.deliveryTimescale && (
+                                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                    <TruckIcon className="h-5 w-5" />
+                                    <span>{product.deliveryTimescale}</span>
+                                  </div>
+                                )}
                             </div>
                             
                             <p className="text-sm text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto">
@@ -123,8 +153,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack, 
                                             type="button"
                                             className="px-3 py-1 bg-gray-200 rounded-lg dark:bg-gray-700 text-gray-800 dark:text-gray-300 disabled:opacity-50"
                                             onClick={increaseQuantity}
-                                            // FIX: Property 'stock' does not exist on type 'Product'. Use stock from the selected variant.
-                                            disabled={quantity >= firstVariant.stock}
+                                            disabled={!selectedVariant || quantity >= selectedVariant.stock}
                                         >
                                             +
                                         </button>

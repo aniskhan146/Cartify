@@ -24,6 +24,7 @@ export interface Product {
   rating: number;
   reviews: number;
   variants: Variant[];
+  deliveryTimescale?: string;
 }
 
 export interface OrderItem {

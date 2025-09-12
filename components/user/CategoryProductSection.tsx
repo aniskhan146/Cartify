@@ -40,7 +40,7 @@ const CategoryProductSection: React.FC<CategoryProductSectionProps> = ({ categor
             <div ref={scrollContainerRef} className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar -mx-4 px-4 pb-4">
                 <div className="flex gap-4">
                     {products.map((product) => (
-                        <div key={product.id} className="snap-start w-64 flex-shrink-0">
+                        <div key={product.id} className="snap-start w-56 flex-shrink-0">
                            <div className="bg-card border border-border rounded-lg h-full overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                                 <ProductCard
                                     product={product}

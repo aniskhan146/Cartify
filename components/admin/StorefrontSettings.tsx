@@ -70,16 +70,31 @@ const StorefrontSettings: React.FC = () => {
     };
 
     const handleAddImage = () => {
-        if (newImageUrl && !heroImages.includes(newImageUrl)) {
-            try {
-                // Basic URL structure validation is sufficient.
-                // The browser can handle various image links if the server provides the correct MIME type.
-                new URL(newImageUrl);
-                setHeroImages([...heroImages, newImageUrl]);
-                setNewImageUrl('');
-                setError('');
-            } catch (_) {
-                setError('Please enter a valid image URL.');
+        setError('');
+        if (newImageUrl.trim()) {
+            const urls = newImageUrl.split(/[\n,]+/).map(url => url.trim()).filter(Boolean);
+            const validUrls: string[] = [];
+            const invalidUrls: string[] = [];
+            
+            urls.forEach(url => {
+                try {
+                    new URL(url);
+                    if (!heroImages.includes(url)) {
+                        validUrls.push(url);
+                    }
+                } catch (_) {
+                    invalidUrls.push(url);
+                }
+            });
+    
+            if (validUrls.length > 0) {
+                setHeroImages(prev => [...prev, ...validUrls]);
+            }
+            
+            if (invalidUrls.length > 0) {
+                setError(`Some URLs were invalid and were not added. Please check them.`);
+            } else {
+                setNewImageUrl(''); // Clear only if all were valid
             }
         }
     };
@@ -178,16 +193,17 @@ const StorefrontSettings: React.FC = () => {
 
                         <div className="mb-4">
                             <label htmlFor="newImageUrl" className="block text-sm font-medium text-muted-foreground mb-1">Add Image by URL</label>
-                            <div className="flex items-center space-x-2">
-                                <input
+                            <p className="text-xs text-muted-foreground mb-2">Enter one or more image URLs, separated by commas or new lines.</p>
+                            <div className="flex items-start space-x-2">
+                                <textarea
                                     id="newImageUrl"
-                                    type="text"
+                                    rows={3}
                                     value={newImageUrl}
                                     onChange={(e) => setNewImageUrl(e.target.value)}
-                                    placeholder="https://example.com/image.png"
+                                    placeholder="https://example.com/image1.png, https://example.com/image2.png"
                                     className="flex-grow p-2 border border-input rounded-md bg-background"
                                 />
-                                <button onClick={handleAddImage} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors">Add</button>
+                                <button onClick={handleAddImage} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors self-center">Add</button>
                             </div>
                         </div>
 

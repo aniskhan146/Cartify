@@ -14,6 +14,7 @@ const initialFormState: Omit<Product, 'id' | 'rating' | 'reviews' | 'variants'> 
     description: '',
     imageUrls: [],
     variants: [],
+    deliveryTimescale: '',
 };
 
 
@@ -54,6 +55,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                 description: product.description || '',
                 imageUrls: product.imageUrls || [],
                 variants: product.variants || [],
+                deliveryTimescale: product.deliveryTimescale || '',
             });
         } else {
             setFormData(initialFormState);
@@ -98,16 +100,33 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
 
     const handleImageUrlAdd = () => {
         setImageUrlError('');
-        if (newImageUrl && !formData.imageUrls.includes(newImageUrl)) {
-            try {
-                new URL(newImageUrl);
+        if (newImageUrl.trim()) {
+            const urls = newImageUrl.split(/[\n,]+/).map(url => url.trim()).filter(Boolean);
+            const validUrls: string[] = [];
+            const invalidUrls: string[] = [];
+    
+            urls.forEach(url => {
+                try {
+                    new URL(url);
+                    if (!formData.imageUrls.includes(url)) {
+                        validUrls.push(url);
+                    }
+                } catch (_) {
+                    invalidUrls.push(url);
+                }
+            });
+    
+            if (validUrls.length > 0) {
                 setFormData(prev => ({
                     ...prev,
-                    imageUrls: [...prev.imageUrls, newImageUrl],
+                    imageUrls: [...prev.imageUrls, ...validUrls],
                 }));
-                setNewImageUrl('');
-            } catch (_) {
-                setImageUrlError('Please enter a valid image URL.');
+            }
+            
+            if (invalidUrls.length > 0) {
+                setImageUrlError(`Some URLs were invalid and were not added. Please check them.`);
+            } else {
+                 setNewImageUrl(''); // Clear only if all are valid
             }
         }
     };
@@ -204,6 +223,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
             })),
             rating: product?.rating || parseFloat((Math.random() * (5 - 3.5) + 3.5).toFixed(1)),
             reviews: product?.reviews || Math.floor(Math.random() * 2000),
+            deliveryTimescale: formData.deliveryTimescale,
         };
 
         const success = await onSubmit(productData, product?.id);
@@ -292,6 +312,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                         </select>
                         <button type="button" onClick={onAddNewCategory} className="flex-shrink-0 bg-muted text-foreground p-2 rounded-lg font-semibold hover:bg-accent h-full text-lg transition-colors">+</button>
                     </div>
+                    <input name="deliveryTimescale" placeholder="Delivery Timescale (e.g., 2-4 business days)" value={formData.deliveryTimescale} onChange={handleFormChange} className="w-full p-2 border border-input rounded-md bg-background md:col-span-2"/>
                 </div>
                  <div className="mt-4">
                   <div className="flex justify-between items-center mb-1">
@@ -339,9 +360,17 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                     <div className="flex items-center my-4"><div className="flex-grow border-t border-border"></div><span className="flex-shrink mx-4 text-xs text-muted-foreground uppercase">Or</span><div className="flex-grow border-t border-border"></div></div>
                     <div>
                         <label htmlFor="newImageUrl" className="block text-sm font-medium text-muted-foreground mb-1">Add Image by URL</label>
-                        <div className="flex items-center space-x-2">
-                            <input id="newImageUrl" type="text" value={newImageUrl} onChange={(e) => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" className="flex-grow p-2 border border-input rounded-md bg-background" />
-                            <button type="button" onClick={handleImageUrlAdd} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors">Add</button>
+                        <p className="text-xs text-muted-foreground mb-2">Enter one or more image URLs, separated by commas or new lines.</p>
+                        <div className="flex items-start space-x-2">
+                            <textarea 
+                                id="newImageUrl" 
+                                rows={3}
+                                value={newImageUrl} 
+                                onChange={(e) => setNewImageUrl(e.target.value)} 
+                                placeholder="https://example.com/image1.png, https://example.com/image2.png" 
+                                className="flex-grow p-2 border border-input rounded-md bg-background" 
+                            />
+                            <button type="button" onClick={handleImageUrlAdd} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors self-center">Add</button>
                         </div>
                         {imageUrlError && <p className="text-red-500 text-xs mt-1">{imageUrlError}</p>}
                     </div>

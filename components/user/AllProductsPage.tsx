@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { Product, Category } from '../../types';
 import FilterSidebar from './FilterSidebar';
 import { ProductCardContent } from './ProductCardContent';
@@ -20,11 +20,11 @@ interface AllProductsPageProps {
   initialCategory?: string;
 }
 
+const PRODUCTS_PER_PAGE = 12;
+
 const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categories, onProductClick, onBack, initialCategory }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const glowColors = ['#FF1B8D', '#00F2FF', '#ADFF00', '#FF5733', '#BF40BF', '#00BFFF'];
-
-    // FIX: Property 'price' does not exist on type 'Product'. Calculate maxPrice from all variants of all products.
     const maxPrice = useMemo(() => Math.ceil(Math.max(...allProducts.flatMap(p => p.variants.map(v => v.price)), 0)), [allProducts]);
 
     const [filters, setFilters] = useState<Filters>({
@@ -34,6 +34,11 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
         stockStatus: 'all',
     });
     
+    const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const observerRef = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
         if (maxPrice > 0) {
             setFilters(f => ({ ...f, priceRange: [0, maxPrice] }));
@@ -49,22 +54,23 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
 
             const matchesCategory = filters.categories.length === 0 || filters.categories.includes(product.category);
 
-            // FIX: Property 'price' does not exist on type 'Product'. Check if any variant's price is within the range.
             const matchesPrice = product.variants.some(v => v.price >= filters.priceRange[0] && v.price <= filters.priceRange[1]);
             
             const matchesRating = product.rating >= filters.rating;
 
-            // FIX: Property 'stock' does not exist on type 'Product'. Check total stock from all variants.
             const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
             const matchesStock = filters.stockStatus === 'all' ||
-                // FIX: Property 'stock' does not exist on type 'Product'. Check total stock from all variants.
                 (filters.stockStatus === 'inStock' && totalStock > 0) ||
-                // FIX: Property 'stock' does not exist on type 'Product'. Check total stock from all variants.
                 (filters.stockStatus === 'outOfStock' && totalStock === 0);
 
             return matchesSearch && matchesCategory && matchesPrice && matchesRating && matchesStock;
         });
     }, [allProducts, searchQuery, filters]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        setDisplayedProducts(filteredProducts.slice(0, PRODUCTS_PER_PAGE));
+    }, [filteredProducts]);
 
     const handleFilterChange = (newFilters: Partial<Filters>) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
@@ -79,6 +85,51 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
         });
         setSearchQuery('');
     };
+
+    const loadMoreProducts = useCallback(() => {
+        if (isLoadingMore) return;
+
+        setIsLoadingMore(true);
+        // Simulate network delay for smoother UX
+        setTimeout(() => {
+            const nextPage = currentPage + 1;
+            const nextProducts = filteredProducts.slice(
+                currentPage * PRODUCTS_PER_PAGE,
+                nextPage * PRODUCTS_PER_PAGE
+            );
+            setDisplayedProducts(prev => [...prev, ...nextProducts]);
+            setCurrentPage(nextPage);
+            setIsLoadingMore(false);
+        }, 500);
+    }, [currentPage, filteredProducts, isLoadingMore]);
+
+    const hasMoreProducts = displayedProducts.length < filteredProducts.length;
+
+    const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMoreProducts && !isLoadingMore) {
+            loadMoreProducts();
+        }
+    }, [hasMoreProducts, isLoadingMore, loadMoreProducts]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(handleObserver, {
+            root: null,
+            rootMargin: '0px',
+            threshold: 1.0,
+        });
+
+        const currentObserverRef = observerRef.current;
+        if (currentObserverRef) {
+            observer.observe(currentObserverRef);
+        }
+
+        return () => {
+            if (currentObserverRef) {
+                observer.unobserve(currentObserverRef);
+            }
+        };
+    }, [handleObserver]);
 
     return (
         <div className="bg-background py-12">
@@ -115,9 +166,9 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
                             </div>
                         </div>
                         
-                        {filteredProducts.length > 0 ? (
-                             <GlowingCards className="justify-center sm:justify-start" padding="0">
-                                {filteredProducts.map((product, index) => (
+                        {displayedProducts.length > 0 ? (
+                             <GlowingCards padding="0">
+                                {displayedProducts.map((product, index) => (
                                     <GlowingCard 
                                         key={product.id} 
                                         glowColor={glowColors[index % glowColors.length]}
@@ -127,13 +178,26 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
                                     </GlowingCard>
                                 ))}
                             </GlowingCards>
-                        ) : (
+                        ) : !isLoadingMore ? (
                             <div className="text-center py-16 bg-card rounded-lg border border-border min-h-96 flex flex-col justify-center items-center">
                                 <p className="text-xl text-muted-foreground">No products found.</p>
                                 <p className="text-md text-muted-foreground mt-2">Try adjusting your search or filters.</p>
                             </div>
+                        ) : null}
+
+                        {hasMoreProducts && <div ref={observerRef} />}
+                        
+                        {isLoadingMore && (
+                            <div className="flex justify-center items-center py-8">
+                                <div className="w-8 h-8 border-4 border-t-transparent border-primary rounded-full animate-spin"></div>
+                            </div>
                         )}
 
+                        {!isLoadingMore && !hasMoreProducts && displayedProducts.length > 0 && (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <p>You've reached the end of the list.</p>
+                            </div>
+                        )}
                     </main>
                 </div>
             </div>

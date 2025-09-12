@@ -1,6 +1,7 @@
 import { db } from './firebase';
 import { ref, onValue, set, push, remove, update, get } from 'firebase/database';
 import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 // The category data stored in DB has a different shape than the UI one
 export interface DbCategory {
@@ -104,12 +105,14 @@ export const saveCheckoutConfig = (config: CheckoutConfig) => {
 
 
 // Orders
-export const placeOrder = (userId: string, orderData: Omit<Order, 'id'>) => {
+export const placeOrder = async (userId: string, orderData: Omit<Order, 'id'>): Promise<string> => {
   const userOrdersRef = ref(db, `orders/${userId}`);
   const newOrderRef = push(userOrdersRef);
-  // We need to get the key to return it or use it. Firebase returns the ref, which has the key.
-  // The push operation automatically generates a unique ID, which we will use as our order ID.
-  return set(newOrderRef, orderData);
+  await set(newOrderRef, orderData);
+  if (!newOrderRef.key) {
+    throw new Error("Failed to create a new order: No key returned from Firebase.");
+  }
+  return newOrderRef.key;
 };
 
 
@@ -132,6 +135,20 @@ export const findOrderById = async (orderIdToFind: string): Promise<Order | null
         throw new Error("Failed to search for the order.");
     }
 };
+
+export const fetchOrderById = async (userId: string, orderId: string): Promise<Order | null> => {
+  const orderRef = ref(db, `orders/${userId}/${orderId}`);
+  try {
+    const snapshot = await get(orderRef);
+    if (snapshot.exists()) {
+      return { ...snapshot.val(), id: orderId };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching order by ID:", error);
+    throw new Error("Failed to fetch the order details.");
+  }
+}
 
 
 export const onUserOrdersValueChange = (userId: string, callback: (orders: Order[]) => void) => {

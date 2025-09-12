@@ -28,6 +28,7 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         imageUrls: ['https://picsum.photos/seed/headphones/400/300', 'https://picsum.photos/seed/headphones2/400/300'],
         rating: 4.8,
         reviews: 1250,
+        deliveryTimescale: "Ships in 2-4 business days",
         variants: [
             { id: 'HDP-BLK', name: 'Color: Midnight Black', price: 8500, originalPrice: 10000, stock: 75 },
             { id: 'HDP-WHT', name: 'Color: Arctic White', price: 8500, originalPrice: 10000, stock: 60 },
@@ -41,6 +42,7 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         imageUrls: ['https://picsum.photos/seed/camera/400/300', 'https://picsum.photos/seed/camera2/400/300'],
         rating: 4.6,
         reviews: 890,
+        deliveryTimescale: "Ships in 1-3 business days",
         variants: [
             { id: 'AC4K-STD', name: 'Standard', price: 15000, stock: 50 }
         ]
@@ -76,6 +78,7 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         imageUrls: ['https://picsum.photos/seed/speaker/400/300', 'https://picsum.photos/seed/speaker2/400/300'],
         rating: 4.5,
         reviews: 750,
+        deliveryTimescale: "Ships in 3-5 business days",
         variants: [
             { id: 'SHS-CHR', name: 'Color: Charcoal', price: 7000, stock: 60 },
             { id: 'SHS-WHT', name: 'Color: Chalk', price: 7000, stock: 0 },

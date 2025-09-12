@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Product, Variant } from '../../types';
-import { StarIcon, XIcon, HeartIcon } from '../shared/icons';
+import { StarIcon, XIcon, HeartIcon, TruckIcon } from '../shared/icons';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
@@ -8,6 +8,7 @@ import { formatCurrency } from '../shared/utils';
 import AnimatedCartButton from '../shared/AnimatedCartButton';
 import Toast from '../shared/Toast';
 import { cn } from '../../lib/utils';
+import { addProductToRecentlyViewed } from '../../services/recentlyViewedService';
 
 
 interface QuickViewModalProps {
@@ -23,6 +24,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
   useEffect(() => {
     const firstAvailableVariant = product.variants.find(v => v.stock > 0) || product.variants[0] || null;
     setSelectedVariant(firstAvailableVariant);
+    addProductToRecentlyViewed(product.id);
   }, [product]);
 
   useEffect(() => {
@@ -91,8 +93,8 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
         onClose={() => setShowToast(false)}
         duration={2000}
     />
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[100] modal-backdrop" onClick={onClose}>
-      <div className="bg-card rounded-lg shadow-xl w-full max-w-4xl h-auto max-h-[90vh] flex flex-col md:flex-row relative border border-border modal-content" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex justify-center items-center z-[100] modal-backdrop" onClick={onClose}>
+      <div className="bg-card/70 backdrop-blur-lg rounded-lg shadow-xl w-full max-w-4xl h-auto max-h-[90vh] flex flex-col md:flex-row relative border border-white/20 modal-content" onClick={e => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-3 right-4 text-muted-foreground hover:text-foreground z-10">
             <XIcon className="h-6 w-6" />
         </button>
@@ -141,12 +143,12 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
             </div>
             
             <div className="mb-4">
-                <h3 className="text-sm font-semibold text-foreground mb-2">Select Variant:</h3>
+                <h3 className="text-sm font-semibold text-background bg-foreground mb-2 px-2 py-1 rounded-md inline-block">Select Variant:</h3>
                 <div className="flex flex-wrap gap-2">
                     {product.variants.map(variant => (
                         <button key={variant.id} onClick={() => handleVariantSelect(variant)} disabled={variant.stock === 0} className={cn(
                             "px-3 py-1.5 rounded-md text-xs font-medium border-2 transition-all",
-                            selectedVariant?.id === variant.id ? "border-primary bg-primary/10 text-primary-foreground" : "border-border bg-background hover:border-primary/50",
+                            selectedVariant?.id === variant.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:border-primary/50",
                             variant.stock === 0 && "opacity-50 cursor-not-allowed line-through"
                         )}>
                             {variant.name}
@@ -221,6 +223,12 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
              <p className={`text-sm font-semibold mt-3 ${isOutOfStock ? 'text-destructive' : 'text-green-600'}`}>
                 {isOutOfStock ? 'Currently unavailable' : `${selectedVariant?.stock} in stock`}
               </p>
+            {product.deliveryTimescale && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-3">
+                <TruckIcon className="h-5 w-5" />
+                <span>{product.deliveryTimescale}</span>
+              </div>
+            )}
         </div>
       </div>
     </div>

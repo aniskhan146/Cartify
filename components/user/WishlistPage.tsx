@@ -21,7 +21,7 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ onBackToShop, onProductClic
         <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-8 text-center">My Wishlist</h1>
         
         {wishlistItems.length > 0 ? (
-          <GlowingCards className="justify-center">
+          <GlowingCards>
             {wishlistItems.map((product, index) => (
                 <GlowingCard 
                     key={product.id} 
