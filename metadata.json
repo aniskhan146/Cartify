@@ -1,0 +1,7 @@
+{
+  "name": "Cartify",
+  "description": "A comprehensive e-commerce platform with a user-facing storefront and a powerful admin dashboard. Rebuilt for a fresh start.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

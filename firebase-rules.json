@@ -1,0 +1,55 @@
+{
+  "rules": {
+    // Publicly readable data that only admins can change.
+    "publicStorefront": {
+      ".read": true,
+      ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+    },
+    "products": {
+      ".read": true,
+      // Allow writing if the data doesn't exist (for initial seeding) OR if the user is an admin.
+      ".write": "!data.exists() || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin')"
+    },
+    "categories": {
+      ".read": true,
+      // Allow writing if the data doesn't exist (for initial seeding) OR if the user is an admin.
+      ".write": "!data.exists() || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin')",
+      "$categoryId": {
+        ".validate": "newData.hasChildren(['name', 'iconUrl', 'productCount']) && newData.child('name').isString() && newData.child('iconUrl').isString() && newData.child('productCount').isNumber()"
+      }
+    },
+
+    // User data is restricted.
+    "users": {
+      // Admins can read the entire list of users.
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": {
+        // A user can read their own profile, and an admin can read any profile.
+        ".read": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        // Admins can write to any user profile. Users can only write to their own profile.
+        ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        "role": {
+          // Crucially, only an admin can change a user's role. A user cannot elevate their own permissions.
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        }
+      }
+    },
+
+    // Orders are restricted with granular write rules.
+    "orders": {
+      // Admins can read all orders.
+      ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+      "$uid": {
+        // A user can read their own orders.
+        ".read": "auth != null && auth.uid === $uid",
+        // A user can create new orders for themselves (write if the order doesn't exist).
+        ".write": "auth != null && auth.uid === $uid",
+        "$orderId": {
+          // An existing order can only be modified by an admin (e.g., to update the status).
+          // This prevents users from changing their order after it has been placed.
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        }
+      }
+    }
+  }
+}

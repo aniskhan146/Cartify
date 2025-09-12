@@ -1,0 +1,245 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { LogoIcon, SearchIcon, UserIcon, MenuIcon, XIcon, SunIcon, MoonIcon } from '../shared/icons';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import BorderBeam from './BorderBeam';
+import type { Category } from '../../types';
+
+const navItems = [
+  { name: "Home", action: "reload" },
+  { name: "All Products", href: "#", action: "viewAll" },
+  { name: "Deals", href: "#promo-section" },
+];
+
+interface HeaderProps {
+    onSearchClick: () => void;
+    onLoginClick: () => void;
+    categories: Category[];
+    onCategoryClick: (categoryId: string) => void;
+    onViewAllProductsClick: () => void;
+    onHomeClick: () => void;
+}
+
+interface CategoryPopupPanelProps {
+    isOpen: boolean;
+    onClose: () => void;
+    categories: Category[];
+    onCategoryClick: (category: Category) => void;
+}
+
+const CategoryPopupPanel: React.FC<CategoryPopupPanelProps> = ({ isOpen, onClose, categories, onCategoryClick }) => {
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex justify-center items-center"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, y: -20, opacity: 0 }}
+                        animate={{ scale: 1, y: 0, opacity: 1 }}
+                        exit={{ scale: 0.95, y: -20, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="bg-card rounded-xl shadow-2xl w-full max-w-3xl relative border border-border p-6"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold text-foreground">All Categories</h2>
+                            <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Close categories panel">
+                                <XIcon className="h-6 w-6" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                            {categories.map(category => (
+                                <button
+                                    key={category.id}
+                                    onClick={() => onCategoryClick(category)}
+                                    className="flex flex-col items-center justify-center gap-3 p-4 rounded-lg hover:bg-accent cursor-pointer transition-colors text-center aspect-square"
+                                >
+                                    <img src={category.iconUrl} alt={category.name} className="h-10 w-10 object-contain" />
+                                    <span className="text-sm font-medium text-foreground">{category.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+
+const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories, onCategoryClick, onViewAllProductsClick, onHomeClick }) => {
+    const [showHeader, setShowHeader] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const { currentUser } = useAuth();
+    const { theme, setTheme } = useTheme();
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                setShowHeader(false); // Scrolling down
+            } else {
+                setShowHeader(true); // Scrolling up
+            }
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [lastScrollY]);
+
+    const handleScrollTo = (id: string) => {
+        const element = document.querySelector(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+        setIsMobileMenuOpen(false);
+    };
+    
+    const handleNavItemClick = (item: typeof navItems[0]) => {
+        if (item.action === 'reload') {
+            onHomeClick();
+            return;
+        }
+        if (item.action === 'viewAll') {
+            onViewAllProductsClick();
+            setIsMobileMenuOpen(false);
+        } else if (item.href) {
+            handleScrollTo(item.href);
+        }
+    };
+
+
+    const handleCategoryLinkClick = (category: Category) => {
+        onCategoryClick(category.id);
+        setIsCategoryModalOpen(false);
+    };
+
+    const menuVariants: Variants = {
+        open: { clipPath: "circle(1200px at 95% 5%)", transition: { type: "spring", stiffness: 20, restDelta: 2 } },
+        closed: { clipPath: "circle(24px at 95% 5%)", transition: { type: "spring", stiffness: 400, damping: 40, delay: 0.2 } },
+    };
+    const listVariants: Variants = {
+        open: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } },
+        closed: { transition: { staggerChildren: 0.05, staggerDirection: -1 } },
+    };
+    const itemVariants: Variants = {
+        open: { y: 0, opacity: 1, transition: { y: { stiffness: 1000, velocity: -100 } } },
+        closed: { y: 50, opacity: 0, transition: { y: { stiffness: 1000 } } },
+    };
+
+    return (
+        <>
+            <AnimatePresence>
+                {showHeader && (
+                    <motion.header
+                        initial={{ y: -100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -100, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4"
+                    >
+                        <div className="relative border border-border backdrop-blur-xl w-full max-w-screen-2xl rounded-full flex items-center justify-between px-6 py-2 shadow-lg">
+                             <BorderBeam size={200} duration={8} delay={0} />
+                            <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="flex items-center gap-2 cursor-pointer">
+                                <LogoIcon className="h-6 w-6 text-primary" />
+                                <span className="font-bold text-lg text-foreground hidden sm:inline">Cartify</span>
+                            </a>
+
+                            <nav className="hidden md:flex flex-1 justify-center">
+                                <ul className="flex space-x-6 items-center">
+                                    {navItems.map((item) => (
+                                        <li key={item.name} className="relative group text-sm font-medium text-muted-foreground transition-colors">
+                                            <button onClick={() => handleNavItemClick(item)} className="cursor-pointer hover:text-foreground">
+                                                {item.name}
+                                            </button>
+                                            <motion.span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full" initial={{ scaleX: 0 }} whileHover={{ scaleX: 1 }} transition={{ duration: 0.3 }} style={{ transformOrigin: 'center' }}/>
+                                        </li>
+                                    ))}
+                                    <li className="relative group text-sm font-medium text-muted-foreground transition-colors">
+                                        <button onClick={() => setIsCategoryModalOpen(true)} className="cursor-pointer hover:text-foreground flex items-center gap-1">
+                                            Categories
+                                        </button>
+                                    </li>
+                                </ul>
+                            </nav>
+
+                            <div className="flex items-center space-x-1">
+                                 <button onClick={onSearchClick} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Search">
+                                    <SearchIcon className="h-5 w-5" />
+                                </button>
+                                <button 
+                                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                    className="p-2 text-muted-foreground hover:text-foreground"
+                                    aria-label="Toggle theme"
+                                >
+                                    <AnimatePresence mode="wait" initial={false}>
+                                        <motion.div
+                                            key={theme}
+                                            initial={{ y: -20, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: 20, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </button>
+                                {!currentUser && (
+                                    <button onClick={onLoginClick} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Login">
+                                        <UserIcon className="h-5 w-5" />
+                                    </button>
+                                )}
+                                <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden p-2 text-muted-foreground hover:text-foreground" aria-label="Open menu">
+                                    <MenuIcon className="h-6 w-6" />
+                                </button>
+                            </div>
+                        </div>
+                    </motion.header>
+                )}
+            </AnimatePresence>
+            
+            <CategoryPopupPanel 
+                isOpen={isCategoryModalOpen}
+                onClose={() => setIsCategoryModalOpen(false)}
+                categories={categories}
+                onCategoryClick={handleCategoryLinkClick}
+            />
+            
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div initial="closed" animate="open" exit="closed" variants={menuVariants} className="fixed inset-0 z-[100] bg-background md:hidden flex flex-col items-center justify-center">
+                         <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-6 right-6 text-foreground" aria-label="Close menu">
+                            <XIcon className="h-8 w-8" />
+                        </button>
+                        <motion.ul variants={listVariants} className="flex flex-col items-center justify-center h-full space-y-8">
+                            {navItems.map((item) => (
+                                <motion.li key={item.name} variants={itemVariants}>
+                                    <a onClick={() => handleNavItemClick(item)} className="text-2xl font-bold text-foreground cursor-pointer">
+                                        {item.name}
+                                    </a>
+                                </motion.li>
+                            ))}
+                            <motion.li variants={itemVariants}>
+                                <a onClick={() => { setIsCategoryModalOpen(true); setIsMobileMenuOpen(false); }} className="text-2xl font-bold text-foreground cursor-pointer">
+                                    Categories
+                                </a>
+                            </motion.li>
+                        </motion.ul>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
+    );
+};
+
+export default Header;
