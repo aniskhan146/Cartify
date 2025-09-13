@@ -253,27 +253,27 @@ export function ThreeDImageRing({
         <motion.div
           ref={ringRef}
           className={cn("w-full h-full absolute", ringClassName)}
-          // FIX: Moved `rotateY` out of the style object to be a direct motion prop, which is the correct API usage.
+          // FIX: Moved `rotateY` into the style object to resolve TypeScript errors.
           style={{
             transformStyle: "preserve-3d",
             cursor: draggable ? "grab" : "default",
+            rotateY: rotationY,
           }}
-          rotateY={rotationY}
         >
           {images.map((imageUrl, index) => (
             <motion.div
               key={index}
               className={cn("w-full h-full absolute", imageClassName)}
-              // FIX: Moved `rotateY` and `z` out of the style object to be direct motion props.
+              // FIX: Moved `rotateY` and `z` into the style object to resolve TypeScript errors.
               style={{
                 transformStyle: "preserve-3d",
                 backfaceVisibility: "hidden",
                 transformOrigin: `50% 50% ${
                   imageDistance * currentScale
                 }px`,
+                rotateY: index * -angle,
+                z: -imageDistance * currentScale,
               }}
-              rotateY={index * -angle}
-              z={-imageDistance * currentScale}
               initial="hidden"
               animate="visible"
               variants={imageVariants}

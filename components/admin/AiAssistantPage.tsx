@@ -43,19 +43,34 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        let loaded = false;
-        const unsubProducts = onProductsValueChange(products => setStoreData(prev => ({ ...prev, products })));
-        const unsubOrders = onAllOrdersValueChange(orders => setStoreData(prev => ({ ...prev, orders })));
-        const unsubUsers = onAllUsersAndRolesValueChange(users => {
-            setStoreData(prev => ({ ...prev, users }));
-            if (!loaded) {
+        const loadedStatus = { products: false, orders: false, users: false };
+        let initialMessageSent = false;
+    
+        const checkAllDataLoaded = () => {
+            if (loadedStatus.products && loadedStatus.orders && loadedStatus.users && !initialMessageSent) {
                 setIsDataLoaded(true);
                 setMessages([{
                     role: 'assistant',
                     text: "Hello! I'm your AYExpress AI Assistant. I've loaded the latest store data. How can I help you manage your store today?"
                 }]);
-                loaded = true;
+                initialMessageSent = true;
             }
+        };
+    
+        const unsubProducts = onProductsValueChange(products => {
+            setStoreData(prev => ({ ...prev, products }));
+            loadedStatus.products = true;
+            checkAllDataLoaded();
+        });
+        const unsubOrders = onAllOrdersValueChange(orders => {
+            setStoreData(prev => ({ ...prev, orders }));
+            loadedStatus.orders = true;
+            checkAllDataLoaded();
+        });
+        const unsubUsers = onAllUsersAndRolesValueChange(users => {
+            setStoreData(prev => ({ ...prev, users }));
+            loadedStatus.users = true;
+            checkAllDataLoaded();
         });
     
         return () => {

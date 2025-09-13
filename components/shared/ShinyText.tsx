@@ -119,44 +119,6 @@ export function ShinyText({
       : `radial-gradient(ellipse at center, ${finalShineColor} ${intensity * 100}%, transparent)`;
   };
 
-  // Define the animate state structure consistently
-  // FIX: Removed explicit `Variants` type to avoid import errors and relied on TypeScript inference.
-  const animationVariants = { 
-    initial: {
-      backgroundPosition: config.backgroundPosition[0],
-    },
-    animate: disabled
-      ? {
-          // When disabled, snap to initial position with no animation
-          backgroundPosition: config.backgroundPosition[0],
-          transition: {
-            duration: 0,
-            delay: 0,
-            repeat: 0, // Explicitly define repeat and ease for consistent type
-            ease: "linear", // Even if not used, keeps type consistent
-          },
-        }
-      : {
-          backgroundPosition: config.backgroundPosition[1],
-          transition: {
-            duration: speed,
-            delay,
-            repeat: typeof repeat === "number" ? repeat : Infinity,
-            ease: "linear",
-          },
-        },
-    hover: pauseOnHover ? {
-      // Note: `animationPlayState` is a CSS property, Framer Motion variants
-      // primarily animate numerical/string values. To truly pause a Framer Motion
-      // animation, you'd typically use `useAnimationControls` and call `stop()`.
-      // However, if this is a background CSS animation being controlled by Framer Motion's
-      // `animate` prop, this might have an indirect effect or be ignored.
-      // For a robust pause, consider a `useAnimationControls` hook.
-      // Keeping it as is to preserve original logic for now, but be aware.
-    } : {},
-  };
-
-
   if (disabled) {
     return (
       <span
@@ -188,10 +150,19 @@ export function ShinyText({
         backgroundClip: "text",
         opacity: intensity,
       }}
-      // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
-      initial={animationVariants.initial}
-      animate={animationVariants.animate}
-      whileHover={animationVariants.hover}
+      // FIX: Replaced variant object with separate animate/transition props to fix TypeScript error.
+      initial={{
+        backgroundPosition: config.backgroundPosition[0],
+      }}
+      animate={{
+        backgroundPosition: config.backgroundPosition[1],
+      }}
+      transition={{
+        duration: speed,
+        delay,
+        repeat: typeof repeat === "number" ? repeat : Infinity,
+        ease: "linear",
+      }}
     >
       {children}
     </motion.span>
