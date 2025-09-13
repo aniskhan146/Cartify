@@ -74,7 +74,7 @@ const UserManagement: React.FC = () => {
             case 'delete':
                 return {
                     title: 'Delete User',
-                    message: `Are you sure you want to delete the user "${userToModify.email}"? This will remove their data from the database but not from Firebase Auth. This action cannot be undone.`,
+                    message: `Are you sure you want to delete the user "${userToModify.email}"? This will remove their data from the database but not from Supabase Auth. This action cannot be undone.`,
                     text: 'Confirm Delete',
                     variant: 'destructive'
                 };
@@ -99,8 +99,9 @@ const UserManagement: React.FC = () => {
 
 
     const RoleSelector: React.FC<{ user: UserRoleInfo }> = ({ user }) => {
-        const isSelf = currentUser?.uid === user.uid;
-        const isSuperAdmin = user.uid === 'MiaPLwEX7MRy4Mm7O2DNyWVr07T2';
+        const isSelf = currentUser?.id === user.uid;
+        // In a real app, you might have a more robust way to identify the super admin
+        const isSuperAdmin = user.email === 'admin@ayexpress.com';
         
         const isDisabled = isSelf || isSuperAdmin;
         const disabledTooltip = isSelf 
@@ -154,8 +155,8 @@ const UserManagement: React.FC = () => {
                         </thead>
                         <tbody>
                             {users.map(user => {
-                                const isSelf = currentUser?.uid === user.uid;
-                                const isSuperAdmin = user.uid === 'MiaPLwEX7MRy4Mm7O2DNyWVr07T2';
+                                const isSelf = currentUser?.id === user.uid;
+                                const isSuperAdmin = user.email === 'admin@ayexpress.com';
                                 const canModify = !isSelf && !isSuperAdmin;
 
                                 return (

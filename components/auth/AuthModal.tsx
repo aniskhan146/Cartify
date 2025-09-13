@@ -43,41 +43,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
         }
 
         try {
+            let authResult;
             if (view === 'login') {
-                await login(email, password);
-            } else if (view === 'signup') {
-                await signup(email, password);
+                authResult = await login(email, password);
+            } else { // signup
+                authResult = await signup(email, password);
             }
-            onClose();
-        } catch (err: any) {
-            let message = 'Failed to authenticate. Please try again.';
-            if (err.message === "This account has been suspended.") {
-                message = err.message;
-            } else {
-                switch (err.code) {
-                    case 'auth/invalid-email':
-                        message = 'Please enter a valid email address.';
-                        break;
-                    case 'auth/user-not-found':
-                    case 'auth/wrong-password':
-                    case 'auth/invalid-credential':
-                        message = 'Invalid email or password. Please check your credentials and try again.';
-                        break;
-                    case 'auth/email-already-in-use':
-                        message = 'An account with this email already exists. Please try logging in.';
-                        break;
-                    case 'auth/weak-password':
-                        message = 'Password is too weak. It should be at least 6 characters long.';
-                        break;
-                    case 'auth/too-many-requests':
-                        message = 'Access to this account has been temporarily disabled due to too many failed attempts. Please try again later.';
-                        break;
-                    default:
-                        console.error("Authentication error:", err);
-                        break;
+
+            if (authResult.error) {
+                // Specific error messages for better UX
+                if (authResult.error.message.includes("Invalid login credentials")) {
+                    setError("Invalid email or password. Please check your credentials and try again.");
+                } else if (authResult.error.message.includes("User already registered")) {
+                    setError("An account with this email already exists. Please try logging in.");
+                } else if (authResult.error.message.includes("Password should be at least 6 characters")) {
+                     setError("Password is too weak. It should be at least 6 characters long.");
+                } else if (authResult.error.message.includes("suspended")) {
+                    setError(authResult.error.message);
                 }
+                else {
+                    setError(authResult.error.message || 'Failed to authenticate. Please try again.');
+                }
+            } else {
+                onClose(); // Close modal on success
             }
-            setError(message);
+        } catch (err: any) {
+            setError(err.message || 'An unexpected error occurred.');
         } finally {
             setLoading(false);
         }
@@ -89,8 +80,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
         setSuccess('');
         setLoading(true);
         try {
-            await resetPassword(email);
-            setSuccess("If an account with this email exists, a password reset link has been sent. Please check your inbox.");
+            const { error } = await resetPassword(email);
+            if(error) {
+                setError(error.message);
+            } else {
+                setSuccess("If an account with this email exists, a password reset link has been sent. Please check your inbox.");
+            }
         } catch (err: any) {
             setError("Failed to send reset link. Please check the email address and try again.");
         } finally {
@@ -101,47 +96,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
     const handleGoogleSignIn = async () => {
         setError('');
         setLoading(true);
-        try {
-            await signInWithGoogle();
-            onClose();
-        } catch (err: any) {
-            let message = 'Failed to sign in with Google. Please try again.';
-            if (err.message === "This account has been suspended.") {
-                message = err.message;
-            } else {
-                switch (err.code) {
-                    case 'auth/popup-closed-by-user':
-                    case 'auth/cancelled-popup-request':
-                        message = '';
-                        break;
-                    case 'auth/operation-not-supported-in-this-environment':
-                        message = 'Google Sign-In is not supported in this browser environment. Please try standard login with email and password.';
-                        break;
-                    case 'auth/popup-blocked-by-browser':
-                        message = 'The sign-in popup was blocked by your browser. Please allow popups for this site.';
-                        break;
-                    case 'auth/unauthorized-domain':
-                        message = 'This domain is not authorized for Google Sign-In. Please contact the site administrator.';
-                        break;
-                    case 'auth/operation-not-allowed':
-                        message = 'Google Sign-In is not enabled for this app. Please contact the site administrator.';
-                        break;
-                    case 'auth/account-exists-with-different-credential':
-                        message = 'An account with this email already exists using a different sign-in method (e.g., password).';
-                        break;
-                    default:
-                        console.error("Google Sign-In error:", err);
-                        break;
-                }
-            }
-
-
-            if (message) {
-                setError(message);
-            }
-        } finally {
+        const { error } = await signInWithGoogle();
+        if (error) {
+            setError(error.message);
             setLoading(false);
         }
+        // No need to call onClose() here, the onAuthStateChange listener will handle it
     };
 
     return (
@@ -155,7 +115,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
                 </h2>
                 <p className="text-center text-muted-foreground mb-6 text-sm">
                     {view === 'login' && 'Sign in to continue'}
-                    {view === 'signup' && 'Get started with Cartify'}
+                    {view === 'signup' && 'Get started with AYExpress'}
                     {view === 'reset' && 'Enter your email to receive a reset link'}
                 </p>
                 

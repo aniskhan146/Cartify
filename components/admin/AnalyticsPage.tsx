@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAllOrders, onProductsValueChange, onAllUsersAndRolesValueChange } from '../../services/databaseService';
+import { fetchAllOrders, fetchAllProducts, fetchAllUsers } from '../../services/databaseService';
 import type { Order, Product, UserRoleInfo } from '../../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { formatCurrency } from '../shared/utils';
@@ -32,23 +32,11 @@ const AnalyticsPage: React.FC = () => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Fetch all data concurrently
+                // Fetch all data concurrently using functions that fetch data once
                 const [allOrders, allProducts, allUsers] = await Promise.all([
                     fetchAllOrders(),
-                    new Promise<Product[]>((resolve) => {
-                        let unsub: () => void;
-                        unsub = onProductsValueChange(products => {
-                            resolve(products);
-                            unsub(); 
-                        });
-                    }),
-                    new Promise<UserRoleInfo[]>((resolve) => {
-                         let unsub: () => void;
-                         unsub = onAllUsersAndRolesValueChange(users => {
-                            resolve(users);
-                            unsub();
-                        });
-                    })
+                    fetchAllProducts(),
+                    fetchAllUsers()
                 ]);
 
                 if (!isMounted) return;

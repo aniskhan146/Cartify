@@ -28,7 +28,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ orderId, 
         const loadOrder = async () => {
             setIsLoading(true);
             try {
-                const fetchedOrder = await fetchOrderById(currentUser.uid, orderId);
+                const fetchedOrder = await fetchOrderById(currentUser.id, orderId);
                 if (fetchedOrder) {
                     setOrder(fetchedOrder);
                 } else {

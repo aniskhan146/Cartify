@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { motion, useMotionValue, easeOut } from "framer-motion";
+import { motion, useMotionValue } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { animate } from "framer-motion";
 
@@ -283,7 +283,8 @@ export function ThreeDImageRing({
               transition={{
                 delay: index * staggerDelay,
                 duration: animationDuration,
-                ease: easeOut,
+                // FIX: Replaced easeOut object with "easeOut" string for compatibility with newer framer-motion versions.
+                ease: "easeOut",
               }}
               whileHover={{ opacity: 1, transition: { duration: 0.15 } }}
               onHoverStart={() => {

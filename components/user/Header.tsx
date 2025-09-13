@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+// FIX: Added type import for Variants from framer-motion
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { LogoIcon, SearchIcon, UserIcon, MenuIcon, XIcon, SunIcon, MoonIcon } from '../shared/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -29,21 +30,33 @@ interface CategoryPopupPanelProps {
 }
 
 const CategoryPopupPanel: React.FC<CategoryPopupPanelProps> = ({ isOpen, onClose, categories, onCategoryClick }) => {
+    // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+    const backdropVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1 },
+    };
+    const modalVariants = {
+        hidden: { scale: 0.95, y: -20, opacity: 0 },
+        visible: { scale: 1, y: 0, opacity: 1 },
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    variants={backdropVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
                     transition={{ duration: 0.3 }}
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex justify-center items-center"
                     onClick={onClose}
                 >
                     <motion.div
-                        initial={{ scale: 0.95, y: -20, opacity: 0 }}
-                        animate={{ scale: 1, y: 0, opacity: 1 }}
-                        exit={{ scale: 0.95, y: -20, opacity: 0 }}
+                        variants={modalVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="bg-card rounded-xl shadow-2xl w-full max-w-3xl relative border border-border p-6"
                         onClick={e => e.stopPropagation()}
@@ -137,14 +150,33 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
         closed: { y: 50, opacity: 0, transition: { y: { stiffness: 1000 } } },
     };
 
+    // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+    const headerVariants = {
+        hidden: { y: -100, opacity: 0 },
+        visible: { y: 0, opacity: 1 },
+    };
+
+    const underlineVariants = {
+        rest: { scaleX: 0 },
+        hover: { scaleX: 1 },
+    };
+
+    const themeIconVariants = {
+        hidden: { y: -20, opacity: 0 },
+        visible: { y: 0, opacity: 1 },
+        exit: { y: 20, opacity: 0 },
+    };
+
+
     return (
         <>
             <AnimatePresence>
                 {showHeader && (
                     <motion.header
-                        initial={{ y: -100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: -100, opacity: 0, transition: { duration: 0.3, ease: "easeIn" } }}
+                        variants={headerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
                         transition={{ duration: 0.4, ease: "easeOut" }}
                         className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4"
                     >
@@ -152,18 +184,18 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                              <BorderBeam size={200} duration={8} delay={0} />
                             <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="flex items-center gap-2 cursor-pointer">
                                 <LogoIcon className="h-6 w-6 text-primary" />
-                                <span className="font-bold text-lg text-foreground hidden sm:inline">Cartify</span>
+                                <span className="font-bold text-lg text-foreground hidden sm:inline">AYExpress</span>
                             </a>
 
                             <nav className="hidden md:flex flex-1 justify-center">
                                 <ul className="flex space-x-6 items-center">
                                     {navItems.map((item) => (
-                                        <li key={item.name} className="relative group text-sm font-medium text-muted-foreground transition-colors">
+                                        <motion.li key={item.name} className="relative group text-sm font-medium text-muted-foreground transition-colors" whileHover="hover">
                                             <button onClick={() => handleNavItemClick(item)} className="cursor-pointer hover:text-foreground">
                                                 {item.name}
                                             </button>
-                                            <motion.span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full" initial={{ scaleX: 0 }} whileHover={{ scaleX: 1 }} transition={{ duration: 0.3 }} style={{ transformOrigin: 'center' }}/>
-                                        </li>
+                                            <motion.span variants={underlineVariants} initial="rest" className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full" transition={{ duration: 0.3 }} style={{ transformOrigin: 'center' }}/>
+                                        </motion.li>
                                     ))}
                                     <li className="relative group text-sm font-medium text-muted-foreground transition-colors">
                                         <button onClick={() => setIsCategoryModalOpen(true)} className="cursor-pointer hover:text-foreground flex items-center gap-1">
@@ -185,9 +217,10 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                                     <AnimatePresence mode="wait" initial={false}>
                                         <motion.div
                                             key={theme}
-                                            initial={{ y: -20, opacity: 0 }}
-                                            animate={{ y: 0, opacity: 1 }}
-                                            exit={{ y: 20, opacity: 0 }}
+                                            variants={themeIconVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="exit"
                                             transition={{ duration: 0.2 }}
                                         >
                                             {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}

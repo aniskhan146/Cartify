@@ -27,7 +27,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
             setShippingInfo(prev => ({ 
                 ...prev, 
                 email: currentUser.email || '',
-                name: currentUser.displayName || prev.name
+                name: currentUser.user_metadata.displayName || prev.name
             }));
         }
     }, [currentUser]);
@@ -82,7 +82,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
         };
 
         try {
-            const newOrderId = await placeOrder(currentUser.uid, orderData);
+            const newOrderId = await placeOrder(currentUser.id, orderData);
             setIsPlacingOrder(false);
             onOrderPlaced(newOrderId);
         } catch (err) {

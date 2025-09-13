@@ -45,12 +45,20 @@ const Notification: React.FC<NotificationProps> = ({ id, message, type, onDismis
     setTimeout(() => onDismiss(id), 400);
   };
 
+  // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+  const notificationVariants = {
+    hidden: { opacity: 0, y: 50, scale: 0.5 },
+    visible: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, y: 20, scale: 0.5, transition: { duration: 0.3 } },
+  };
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 50, scale: 0.5 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.5, transition: { duration: 0.3 } }}
+      variants={notificationVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
       className={`relative w-full max-w-sm p-4 rounded-lg shadow-lg border backdrop-blur-md ${containerClasses[type]}`}
     >
       <div className="flex items-start">

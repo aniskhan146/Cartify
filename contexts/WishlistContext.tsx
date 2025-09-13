@@ -37,7 +37,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
     useEffect(() => {
         if (currentUser) {
-            const unsubscribe = onWishlistChange(currentUser.uid, (productIds) => {
+            const unsubscribe = onWishlistChange(currentUser.id, (productIds) => {
                 setWishlistProductIds(new Set(productIds));
             });
             return () => unsubscribe();
@@ -60,7 +60,7 @@ export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) 
 
     const updateRemoteWishlist = (newIdSet: Set<string>) => {
         if (currentUser) {
-            updateWishlist(currentUser.uid, Array.from(newIdSet));
+            updateWishlist(currentUser.id, Array.from(newIdSet));
         }
     };
 

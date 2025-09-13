@@ -25,6 +25,7 @@ import {
     HeartIcon, HomeIcon, CameraIcon, ShoppingCartIcon, UserIcon, SearchIcon, ChevronUpIcon
 } from '../shared/icons';
 import { onProductsValueChange, onCategoriesValueChange, onHeroImagesChange } from '../../services/databaseService';
+import ShinyText from '../shared/ShinyText';
 
 interface UserPanelProps {
   onSwitchToAdminLogin: () => void;
@@ -204,12 +205,15 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         return (
           <>
             <div id="hero" className="pt-20">
-                <div className="w-full min-h-[350px] bg-background flex items-center justify-center p-4">
-                    <div className="relative group max-w-7xl w-full h-[350px] bg-black rounded-xl shadow-lg border border-gray-800 overflow-hidden flex justify-center items-center">
-                        <ThreeDImageRing images={finalHeroImages} width={600} imageDistance={450} />
-                        <BorderBeam size={300} duration={8} delay={9} />
-                    </div>
+              <div className="w-full min-h-[450px] bg-background flex flex-col items-center justify-center p-4 gap-8">
+                <div className="relative group max-w-7xl w-full h-[350px] bg-black rounded-xl shadow-lg border border-gray-800 overflow-hidden flex justify-center items-center">
+                  <ThreeDImageRing images={finalHeroImages} width={600} imageDistance={450} />
+                  <BorderBeam size={300} duration={8} delay={9} />
                 </div>
+                <ShinyText size="xl" weight="semibold" className="text-center px-4">
+                  Always Yours Express – Quick, easy, and just for you!
+                </ShinyText>
+              </div>
             </div>
              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
               {categories.map((category) => {
@@ -245,6 +249,13 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
 
   const showHeaderAndAdminButton = view.name === 'shop';
   
+  // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+  const scrollButtonVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 20 },
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {showHeaderAndAdminButton && <Header 
@@ -286,9 +297,10 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
                     onClick={scrollToTop}
                     className="fixed bottom-24 right-5 z-50 bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
                     aria-label="Scroll to top"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
+                    variants={scrollButtonVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                 >
                     <ChevronUpIcon className="h-6 w-6" />
                 </motion.button>

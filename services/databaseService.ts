@@ -1,4 +1,4 @@
-import { db } from './firebase';
+import { supabase } from './supabaseClient';
 import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption } from '../types';
 
 // The category data stored in DB has a different shape than the UI one
@@ -9,359 +9,339 @@ export interface DbCategory {
     productCount: number;
 }
 
+// Helper for handling Supabase errors
+const handleSupabaseError = (error: any, context: string) => {
+    if (error) {
+        console.error(`Supabase error in ${context}:`, error.message);
+        throw new Error(`Database operation failed: ${context}.`);
+    }
+};
+
 // Products
 export const onProductsValueChange = (callback: (products: Product[]) => void) => {
-  const productsRef = db.ref('products');
-  const listener = productsRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    const productsArray = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
-    callback(productsArray);
-  }, (error) => {
-    console.error("Firebase onProductsValueChange failed: ", error);
-  });
+  const fetchAndCallback = async () => {
+      const { data, error } = await supabase.from('products').select('*');
+      handleSupabaseError(error, 'onProductsValueChange initial fetch');
+      callback(data || []);
+  };
+  fetchAndCallback(); // Initial fetch
+
+  const channel = supabase.channel('public:products')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+        fetchAndCallback();
+    }).subscribe();
   
-  return () => productsRef.off('value', listener);
+  return () => { supabase.removeChannel(channel) };
+};
+
+export const fetchAllProducts = async (): Promise<Product[]> => {
+    const { data, error } = await supabase.from('products').select('*');
+    handleSupabaseError(error, 'fetchAllProducts');
+    return data || [];
 };
 
 export const saveProduct = async (product: Omit<Product, 'id'>, productId?: string) => {
-  if (productId) {
-    const productRef = db.ref(`products/${productId}`);
-    return productRef.update(product);
-  } else {
-    const productsRef = db.ref('products');
-    const newProductRef = productsRef.push();
-    return newProductRef.set(product);
-  }
+  const payload = productId ? { ...product, id: productId } : product;
+  const { error } = await supabase.from('products').upsert(payload);
+  handleSupabaseError(error, 'saveProduct');
 };
 
-export const deleteProduct = (productId: string) => {
-  const productRef = db.ref(`products/${productId}`);
-  return productRef.remove();
+export const deleteProduct = async (productId: string) => {
+  const { error } = await supabase.from('products').delete().eq('id', productId);
+  handleSupabaseError(error, 'deleteProduct');
 };
 
 
 // Categories
 export const onCategoriesValueChange = (callback: (categories: DbCategory[]) => void) => {
-    const categoriesRef = db.ref('categories');
-    const listener = categoriesRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        const categoriesArray: DbCategory[] = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
-        callback(categoriesArray);
-    }, (error) => {
-        console.error("Firebase onCategoriesValueChange failed: ", error);
-    });
-    return () => categoriesRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('categories').select('*');
+        handleSupabaseError(error, 'onCategoriesValueChange initial fetch');
+        callback(data || []);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:categories')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
-export const getCategoryByName = async (name: string): Promise<(DbCategory & { id: string }) | null> => {
-    const snapshot = await db.ref('categories').once('value');
-    if (snapshot.exists()) {
-        const categoriesData = snapshot.val();
-        const foundId = Object.keys(categoriesData).find(id => categoriesData[id].name.toLowerCase() === name.toLowerCase());
-        if (foundId) {
-            return {
-                id: foundId,
-                ...categoriesData[foundId]
-            };
-        }
-    }
-    return null;
+export const getCategoryByName = async (name: string): Promise<DbCategory | null> => {
+    const { data, error } = await supabase.from('categories').select('*').ilike('name', name).limit(1);
+    handleSupabaseError(error, 'getCategoryByName');
+    return data?.[0] || null;
 };
 
 
-export const saveCategory = (category: { name: string; iconUrl: string; productCount: number }, categoryId?: string) => {
-    if (categoryId) {
-        return db.ref(`categories/${categoryId}`).update(category);
-    } else {
-        return db.ref('categories').push(category);
-    }
+export const saveCategory = async (category: Omit<DbCategory, 'id'>, categoryId?: string) => {
+    const payload = categoryId ? { ...category, id: categoryId } : category;
+    const { error } = await supabase.from('categories').upsert(payload);
+    handleSupabaseError(error, 'saveCategory');
 };
 
-export const deleteCategory = (categoryId: string) => {
-    return db.ref(`categories/${categoryId}`).remove();
+export const deleteCategory = async (categoryId: string) => {
+    const { error } = await supabase.from('categories').delete().eq('id', categoryId);
+    handleSupabaseError(error, 'deleteCategory');
 };
 
 // Variant Options
 export const onVariantOptionsChange = (callback: (options: VariantOption[]) => void) => {
-  const optionsRef = db.ref('variantOptions');
-  const listener = optionsRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    const optionsArray = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
-    callback(optionsArray);
-  }, (error) => {
-    console.error("Firebase onVariantOptionsChange failed: ", error);
-  });
-  return () => optionsRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('variant_options').select('*');
+        handleSupabaseError(error, 'onVariantOptionsChange initial fetch');
+        callback(data || []);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:variant_options')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'variant_options' }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
 export const getVariantOptionByName = async (name: string): Promise<VariantOption | null> => {
-    const snapshot = await db.ref('variantOptions').once('value');
-    if (snapshot.exists()) {
-        const optionsData = snapshot.val();
-        const foundId = Object.keys(optionsData).find(id => optionsData[id].name.toLowerCase() === name.toLowerCase());
-        if (foundId) {
-            return {
-                id: foundId,
-                ...optionsData[foundId]
-            };
-        }
-    }
-    return null;
+    const { data, error } = await supabase.from('variant_options').select('*').ilike('name', name).limit(1);
+    handleSupabaseError(error, 'getVariantOptionByName');
+    return data?.[0] || null;
 };
 
-export const saveVariantOption = (option: Omit<VariantOption, 'id'>, optionId?: string) => {
-  if (optionId) {
-    return db.ref(`variantOptions/${optionId}`).update(option);
-  } else {
-    return db.ref('variantOptions').push(option);
-  }
+export const saveVariantOption = async (option: Omit<VariantOption, 'id'>, optionId?: string) => {
+    const payload = optionId ? { ...option, id: optionId } : option;
+    const { error } = await supabase.from('variant_options').upsert(payload);
+    handleSupabaseError(error, 'saveVariantOption');
 };
 
-export const deleteVariantOption = (optionId: string) => {
-  return db.ref(`variantOptions/${optionId}`).remove();
+export const deleteVariantOption = async (optionId: string) => {
+    const { error } = await supabase.from('variant_options').delete().eq('id', optionId);
+    handleSupabaseError(error, 'deleteVariantOption');
 };
 
 // Store Settings
-export const getHeroImages = async (): Promise<string[]> => {
-    const snapshot = await db.ref('publicStorefront/heroImages').once('value');
-    return snapshot.val() || [];
-};
+const SETTINGS_ID = 1; // Assuming a single row for all settings
 
 export const onHeroImagesChange = (callback: (images: string[]) => void) => {
-    const heroImagesRef = db.ref('publicStorefront/heroImages');
-    const listener = heroImagesRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        const imagesArray: string[] = data || [];
-        callback(imagesArray);
-    }, (error) => {
-        console.error("Firebase onHeroImagesChange failed: ", error);
-    });
-    return () => heroImagesRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('storefront_settings').select('hero_images').eq('id', SETTINGS_ID).single();
+        handleSupabaseError(error, 'onHeroImagesChange initial fetch');
+        callback(data?.hero_images || []);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:storefront_settings')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'storefront_settings', filter: `id=eq.${SETTINGS_ID}` }, payload => {
+            callback((payload.new as any).hero_images || []);
+        })
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
-export const saveHeroImages = (images: string[]) => {
-    return db.ref('publicStorefront/heroImages').set(images);
+export const getHeroImages = async (): Promise<string[]> => {
+    const { data, error } = await supabase.from('storefront_settings').select('hero_images').eq('id', SETTINGS_ID).single();
+    handleSupabaseError(error, 'getHeroImages');
+    return data?.hero_images || [];
 };
+
+export const saveHeroImages = async (images: string[]) => {
+    const { error } = await supabase.from('storefront_settings').upsert({ id: SETTINGS_ID, hero_images: images });
+    handleSupabaseError(error, 'saveHeroImages');
+};
+
 
 // Checkout Config
 export const onCheckoutConfigChange = (callback: (config: CheckoutConfig) => void) => {
-    const configRef = db.ref('publicStorefront/checkoutConfig');
-    const listener = configRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        const config: CheckoutConfig = data || { shippingChargeInsideDhaka: 60, shippingChargeOutsideDhaka: 120, taxAmount: 4 };
-        callback(config);
-    }, (error) => {
-        console.error("Firebase onCheckoutConfigChange failed: ", error);
-    });
-    return () => configRef.off('value', listener);
+    const defaultConfig = { shippingChargeInsideDhaka: 60, shippingChargeOutsideDhaka: 120, taxAmount: 4 };
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('storefront_settings').select('checkout_config').eq('id', SETTINGS_ID).single();
+        // Do not throw error if not found, just use default
+        if (error && error.code !== 'PGRST116') console.error('Error fetching checkout config:', error);
+        callback(data?.checkout_config || defaultConfig);
+    };
+    fetchAndCallback();
+    
+    const channel = supabase.channel('public:storefront_settings_checkout')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'storefront_settings', filter: `id=eq.${SETTINGS_ID}` }, payload => {
+             callback((payload.new as any).checkout_config || defaultConfig);
+        })
+        .subscribe();
+
+    return () => { supabase.removeChannel(channel) };
 };
 
-export const saveCheckoutConfig = (config: CheckoutConfig) => {
-    return db.ref('publicStorefront/checkoutConfig').set(config);
+export const saveCheckoutConfig = async (config: CheckoutConfig) => {
+    const { error } = await supabase.from('storefront_settings').upsert({ id: SETTINGS_ID, checkout_config: config });
+    handleSupabaseError(error, 'saveCheckoutConfig');
 };
 
 
 // Orders
 export const placeOrder = async (userId: string, orderData: Omit<Order, 'id'>): Promise<string> => {
-  const newOrderRef = db.ref(`orders/${userId}`).push();
-  await newOrderRef.set(orderData);
-  if (!newOrderRef.key) {
-    throw new Error("Failed to create a new order: No key returned from Firebase.");
-  }
-  return newOrderRef.key;
+    const { data, error } = await supabase.from('orders').insert({ user_id: userId, ...orderData }).select('id').single();
+    handleSupabaseError(error, 'placeOrder');
+    if (!data?.id) throw new Error("Failed to create order: No ID returned.");
+    return data.id;
 };
 
-
 export const findOrderById = async (orderIdToFind: string): Promise<Order | null> => {
-    try {
-        const snapshot = await db.ref('orders').once('value');
-        if (snapshot.exists()) {
-            const allUsersOrders = snapshot.val();
-            for (const userId in allUsersOrders) {
-                const userOrders = allUsersOrders[userId];
-                if (userOrders[orderIdToFind]) {
-                    return { ...userOrders[orderIdToFind], id: orderIdToFind };
-                }
-            }
-        }
-        return null;
-    } catch (error) {
-        console.error("Error finding order by ID:", error);
-        throw new Error("Failed to search for the order.");
+    const { data, error } = await supabase.from('orders').select('*').eq('id', orderIdToFind).single();
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found, which is not an error here
+       handleSupabaseError(error, 'findOrderById');
     }
+    return data || null;
 };
 
 export const fetchOrderById = async (userId: string, orderId: string): Promise<Order | null> => {
-  try {
-    const snapshot = await db.ref(`orders/${userId}/${orderId}`).once('value');
-    if (snapshot.exists()) {
-      return { ...snapshot.val(), id: orderId };
+    const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId).eq('id', orderId).single();
+    if (error && error.code !== 'PGRST116') {
+       handleSupabaseError(error, 'fetchOrderById');
     }
-    return null;
-  } catch (error) {
-    console.error("Error fetching order by ID:", error);
-    throw new Error("Failed to fetch the order details.");
-  }
+    return data || null;
 }
 
-
 export const onUserOrdersValueChange = (userId: string, callback: (orders: Order[]) => void) => {
-  const userOrdersRef = db.ref(`orders/${userId}`);
-  const listener = userOrdersRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    const ordersArray = data ? Object.keys(data).map(key => ({ ...data[key], id: key })) : [];
-    callback(ordersArray);
-  }, (error) => {
-    console.error("Firebase onUserOrdersValueChange failed: ", error);
-  });
-  return () => userOrdersRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId);
+        handleSupabaseError(error, 'onUserOrdersValueChange initial fetch');
+        callback(data || []);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel(`public:orders:user_id=eq.${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `user_id=eq.${userId}` }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
 export const fetchAllOrders = async (): Promise<(Order & { userId: string })[]> => {
-  const usersSnapshot = await db.ref('users').once('value');
-  const usersData = usersSnapshot.val();
-  if (!usersData) return [];
-
-  const allOrdersSnapshot = await db.ref('orders').once('value');
-  const allOrdersData = allOrdersSnapshot.val() || {};
-  
-  const allOrders: (Order & { userId: string })[] = [];
-  Object.keys(allOrdersData).forEach(userId => {
-    const userOrdersData = allOrdersData[userId];
-    if (userOrdersData) {
-      Object.keys(userOrdersData).forEach(orderId => {
-        allOrders.push({ ...userOrdersData[orderId], id: orderId, userId });
-      });
-    }
-  });
-  
-  allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return allOrders;
+    const { data, error } = await supabase.from('orders').select('*, user_id').order('date', { ascending: false });
+    handleSupabaseError(error, 'fetchAllOrders');
+    // Map user_id to userId for consistency with old structure
+    return (data || []).map(o => ({...o, userId: o.user_id}));
 };
 
 export const onAllOrdersValueChange = (callback: (orders: (Order & { userId: string })[]) => void) => {
-  const ordersRef = db.ref('orders');
-  const listener = ordersRef.on('value', (snapshot) => {
-    const allOrdersData = snapshot.val();
-    const allOrders: (Order & { userId: string })[] = [];
-    if (allOrdersData) {
-      Object.keys(allOrdersData).forEach(userId => {
-        const userOrdersData = allOrdersData[userId];
-        if (userOrdersData) {
-          Object.keys(userOrdersData).forEach(orderId => {
-            allOrders.push({ ...userOrdersData[orderId], id: orderId, userId });
-          });
-        }
-      });
-    }
-    allOrders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    callback(allOrders);
-  }, (error) => {
-    console.error("Firebase onAllOrdersValueChange failed: ", error);
-  });
-  return () => ordersRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const allOrders = await fetchAllOrders();
+        callback(allOrders);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:orders:all')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
-
-export const updateOrderStatus = (userId: string, orderId: string, newStatus: Order['status']) => {
-    if (!userId || !orderId) throw new Error("User ID and Order ID are required to update status.");
-    return db.ref(`orders/${userId}/${orderId}/status`).set(newStatus);
+export const updateOrderStatus = async (userId: string, orderId: string, newStatus: Order['status']) => {
+    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+    handleSupabaseError(error, 'updateOrderStatus');
 };
 
-export const deleteOrder = (userId: string, orderId: string) => {
-    if (!userId || !orderId) throw new Error("User ID and Order ID are required to delete an order.");
-    return db.ref(`orders/${userId}/${orderId}`).remove();
+export const deleteOrder = async (userId: string, orderId: string) => {
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+    handleSupabaseError(error, 'deleteOrder');
 };
-
 
 // Roles & User Management
-export const createUserRoleAndProfile = (userId: string, email: string) => {
-  const SUPER_ADMIN_UID = 'MiaPLwEX7MRy4Mm7O2DNyWVr07T2';
-  const role: UserRole = userId === SUPER_ADMIN_UID ? 'admin' : 'user';
-  return db.ref(`users/${userId}`).set({ email, role, isBanned: false });
+export const createUserRoleAndProfile = async (userId: string, email: string) => {
+    const { count, error: countError } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+    handleSupabaseError(countError, 'counting users');
+
+    let role: UserRole = 'user';
+    if (email.toLowerCase() === 'admin@ayexpress.com' || count === 0) {
+        role = 'admin';
+    }
+    
+    const { error } = await supabase.from('profiles').insert({ uid: userId, email, role, is_banned: false });
+    handleSupabaseError(error, 'createUserRoleAndProfile');
 };
 
 export const getUserProfile = async (userId: string): Promise<UserRoleInfo | null> => {
-  try {
-    const snapshot = await db.ref(`users/${userId}`).once('value');
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      return { uid: userId, email: data.email, role: data.role || 'user', isBanned: data.isBanned || false };
+    const { data, error } = await supabase.from('profiles').select('*').eq('uid', userId).single();
+    if (error && error.code !== 'PGRST116') {
+        handleSupabaseError(error, 'getUserProfile');
     }
-    return null;
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
-    return null;
-  }
+    if (!data) return null;
+    return { ...data, isBanned: data.is_banned };
 };
 
 export const findUserByEmail = async (email: string): Promise<UserRoleInfo | null> => {
-    const snapshot = await db.ref('users').once('value');
-    if (snapshot.exists()) {
-        const usersData = snapshot.val();
-        const foundUid = Object.keys(usersData).find(uid => usersData[uid].email.toLowerCase() === email.toLowerCase());
-        if (foundUid) {
-            return { uid: foundUid, ...usersData[foundUid] };
-        }
+    const { data, error } = await supabase.from('profiles').select('*').eq('email', email.toLowerCase()).single();
+    if (error && error.code !== 'PGRST116') {
+        handleSupabaseError(error, 'findUserByEmail');
     }
-    return null;
+    if (!data) return null;
+    return { ...data, isBanned: data.is_banned };
 };
 
 export const onAllUsersAndRolesValueChange = (callback: (users: UserRoleInfo[]) => void) => {
-  const usersRef = db.ref('users');
-  const listener = usersRef.on('value', (snapshot) => {
-    const usersData = snapshot.val() || {};
-    const combinedData: UserRoleInfo[] = Object.keys(usersData).map(uid => ({
-      uid: uid,
-      email: usersData[uid]?.email || 'N/A',
-      role: (usersData[uid]?.role as UserRole) || 'user',
-      isBanned: usersData[uid]?.isBanned || false,
-    }));
-    callback(combinedData);
-  }, (error) => {
-    console.error("Firebase onAllUsersAndRolesValueChange failed: ", error);
-  });
-  return () => usersRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('profiles').select('*');
+        handleSupabaseError(error, 'onAllUsersAndRolesValueChange fetch');
+        const profiles = (data || []).map(p => ({ ...p, isBanned: p.is_banned }));
+        callback(profiles);
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:profiles')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
-export const updateUserRole = (userId: string, newRole: UserRole) => {
-  return db.ref(`users/${userId}/role`).set(newRole);
+export const fetchAllUsers = async (): Promise<UserRoleInfo[]> => {
+    const { data, error } = await supabase.from('profiles').select('*');
+    handleSupabaseError(error, 'fetchAllUsers');
+    return (data || []).map(p => ({ ...p, isBanned: p.is_banned }));
 };
 
-export const setUserBanStatus = (userId: string, isBanned: boolean) => {
-  return db.ref(`users/${userId}/isBanned`).set(isBanned);
+export const updateUserRole = async (userId: string, newRole: UserRole) => {
+    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('uid', userId);
+    handleSupabaseError(error, 'updateUserRole');
 };
 
-export const deleteUserRecord = (userId: string) => {
-  return db.ref(`users/${userId}`).remove();
+export const setUserBanStatus = async (userId: string, isBanned: boolean) => {
+    const { error } = await supabase.from('profiles').update({ is_banned: isBanned }).eq('uid', userId);
+    handleSupabaseError(error, 'setUserBanStatus');
+};
+
+export const deleteUserRecord = async (userId: string) => {
+    // Note: This only deletes from the public 'profiles' table.
+    // Deleting the auth user requires admin privileges and is done server-side.
+    const { error } = await supabase.from('profiles').delete().eq('uid', userId);
+    handleSupabaseError(error, 'deleteUserRecord');
 };
 
 // Wishlist
 export const onWishlistChange = (userId: string, callback: (productIds: string[]) => void) => {
-  const wishlistRef = db.ref(`wishlists/${userId}`);
-  const listener = wishlistRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      callback(data ? Object.keys(data) : []);
-  }, (error) => {
-      console.error("Firebase onWishlistChange failed:", error);
-  });
-  return () => wishlistRef.off('value', listener);
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('wishlists').select('product_id').eq('user_id', userId);
+        handleSupabaseError(error, 'onWishlistChange fetch');
+        callback((data || []).map(item => item.product_id));
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel(`public:wishlists:user_id=eq.${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'wishlists', filter: `user_id=eq.${userId}` }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
 };
 
-export const updateWishlist = (userId: string, productIds: string[]) => {
-  const updates: { [key: string]: boolean | null } = {};
-  productIds.forEach(id => {
-      updates[id] = true;
-  });
-  return db.ref(`wishlists/${userId}`).set(updates);
+export const updateWishlist = async (userId: string, productIds: string[]) => {
+    // This is a more complex operation in SQL. We delete all, then insert all.
+    // In a high-traffic app, a more nuanced approach would be better.
+    const { error: deleteError } = await supabase.from('wishlists').delete().eq('user_id', userId);
+    handleSupabaseError(deleteError, 'updateWishlist (delete)');
+
+    if (productIds.length > 0) {
+        const rowsToInsert = productIds.map(productId => ({ user_id: userId, product_id: productId }));
+        const { error: insertError } = await supabase.from('wishlists').insert(rowsToInsert);
+        handleSupabaseError(insertError, 'updateWishlist (insert)');
+    }
 };
 
 // Newsletter
 export const subscribeToNewsletter = async (email: string) => {
-    const subscriptionsRef = db.ref('newsletterSubscriptions');
-    const newSubscriptionRef = subscriptionsRef.push();
-    return newSubscriptionRef.set({
-        email: email,
-        subscribedAt: new Date().toISOString()
-    });
+    const { error } = await supabase.from('newsletter_subscriptions').insert({ email });
+    handleSupabaseError(error, 'subscribeToNewsletter');
 };

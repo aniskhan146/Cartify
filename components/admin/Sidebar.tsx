@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage, onSwitchTo
   return (
     <aside className="w-60 flex-shrink-0 bg-muted/40 border-r border-border hidden md:flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-foreground">Cartify</h1>
+        <h1 className="text-2xl font-bold text-foreground">AYExpress</h1>
       </div>
       <nav className="flex-1 px-4 py-6 space-y-1">
         {navItems.map((item) => <NavLink key={item.id} item={item} />)}

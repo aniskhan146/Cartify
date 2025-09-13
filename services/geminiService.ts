@@ -100,7 +100,7 @@ export const getAiAssistantResponse = async (
   try {
     const isFilteredView = viewContext && storeData && viewContext.products.length < storeData.products.length;
 
-    const systemInstruction = `You are "Cartify AI Pro", a powerful e-commerce assistant for the admin of an online store called Cartify.
+    const systemInstruction = `You are "AYExpress AI Pro", a powerful e-commerce assistant for the admin of an online store called AYExpress.
     Your role is to perform ANY admin task by using the tools provided. You can manage products, categories, variants, users, and storefront settings.
     - BE PROACTIVE: If a user's request is ambiguous (e.g., "delete the category"), ask for clarification ("Which category would you like to delete?").
     - USE CONTEXT: Pay attention to the conversation history and the currently viewed products data to understand the user's intent.

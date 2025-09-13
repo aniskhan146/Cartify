@@ -96,6 +96,16 @@ export const BorderBeam = ({
   const glowEffect = glowIntensity > 0 
     ? `0 0 ${glowIntensity * 5}px ${glowIntensity * 2}px var(--color-from)` 
     : undefined;
+  
+  // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+  const beamVariants = {
+    initial: { offsetDistance: `${initialOffset}%` },
+    animate: {
+      offsetDistance: reverse
+        ? [`${100 - initialOffset}%`, `${-initialOffset}%`]
+        : [`${initialOffset}%`, `${100 + initialOffset}%`],
+    },
+  };
 
   return (
  <div className="pointer-events-none absolute inset-0 rounded-[inherit] 
@@ -123,12 +133,9 @@ export const BorderBeam = ({
           borderRadius: beamBorderRadius ? `${beamBorderRadius}px` : undefined,
           ...style,
         } as any}
-        initial={{ offsetDistance: `${initialOffset}%` }}
-        animate={{
-          offsetDistance: reverse
-            ? [`${100 - initialOffset}%`, `${-initialOffset}%`]
-            : [`${initialOffset}%`, `${100 + initialOffset}%`],
-        }}
+        variants={beamVariants}
+        initial="initial"
+        animate="animate"
         transition={{
           repeat: Infinity,
           ease: "linear",

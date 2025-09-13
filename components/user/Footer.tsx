@@ -47,7 +47,7 @@ const Footer: React.FC<FooterProps> = ({ onTrackOrderClick, onViewAllProductsCli
           <div className="lg:col-span-2">
              <a href="#" className="flex items-center gap-2 mb-4">
                 <LogoIcon className="h-8 w-8 text-primary" />
-                <span className="font-bold text-2xl text-foreground">Cartify</span>
+                <span className="font-bold text-2xl text-foreground">AYExpress</span>
             </a>
             <p className="mt-4 text-muted-foreground max-w-sm">
               Your one-stop shop for everything you need. Quality products, amazing prices, delivered to your door.
@@ -114,7 +114,7 @@ const Footer: React.FC<FooterProps> = ({ onTrackOrderClick, onViewAllProductsCli
         </div>
         
         <div className="mt-12 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground space-y-4 md:space-y-0">
-          <p>&copy; {new Date().getFullYear()} Cartify. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} AYExpress. All rights reserved.</p>
           <div className="flex space-x-6">
              <a href="#" onClick={handleComingSoonClick} className="hover:text-primary transition-colors">Terms of Service</a>
              <a href="#" onClick={handleComingSoonClick} className="hover:text-primary transition-colors">Privacy Policy</a>

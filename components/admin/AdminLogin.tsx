@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getUserProfile } from '../../services/databaseService';
+import { supabase } from '../../services/supabaseClient';
 import AdminForgotPasswordModal from './AdminForgotPasswordModal';
 
 interface AdminLoginProps {
@@ -13,7 +14,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onSwitchToUser 
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login, signup, logout } = useAuth();
+    const { login, logout } = useAuth();
     const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -22,32 +23,43 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onSwitchToUser 
         setLoading(true);
 
         try {
-            const userCredential = await login(email, password);
-            if (userCredential.user) {
-                const profile = await getUserProfile(userCredential.user.uid);
-                if (profile?.isBanned) {
-                    await logout();
-                    setError("This account has been suspended.");
-                } else if (profile?.role === 'admin') {
-                    onLoginSuccess();
+            const { error: loginError } = await login(email, password);
+
+            if (loginError) {
+                if (loginError.message.includes("Invalid login credentials")) {
+                    throw new Error("Invalid email or password. Please check your credentials.");
+                }
+                if (loginError.message.includes("suspended")) {
+                     throw new Error(loginError.message);
+                }
+                throw loginError;
+            }
+            
+            // onAuthStateChange in AuthContext handles setting the user. We just need to check the profile.
+            // A small delay to allow onAuthStateChange to fire and update the context.
+            setTimeout(async () => {
+                // FIX: supabase was not defined, imported it.
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    const profile = await getUserProfile(user.id);
+                    if (profile?.isBanned) {
+                        await logout();
+                        setError("This account has been suspended.");
+                    } else if (profile?.role === 'admin') {
+                        onLoginSuccess();
+                    } else {
+                        await logout();
+                        setError("Access Denied. You do not have administrative privileges.");
+                    }
                 } else {
-                    await logout(); // Log out non-admin user immediately
-                    setError("Access Denied. You do not have administrative privileges.");
+                    // This case should ideally not be hit if login was successful
+                    setError("Failed to verify user session. Please try again.");
                 }
-            }
+                setLoading(false);
+            }, 500);
+
         } catch (err: any) {
-             if (err.message === "This account has been suspended.") {
-                setError(err.message);
-            } else {
-                let message = 'Failed to authenticate. Please try again.';
-                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
-                    message = 'Invalid email or password. Please check your credentials.';
-                } else if (err.code === 'auth/too-many-requests') {
-                    message = 'Access temporarily disabled due to too many failed login attempts. Please try again later.';
-                }
-                setError(message);
-            }
-        } finally {
+            setError(err.message || 'An unexpected error occurred during login.');
             setLoading(false);
         }
     };
@@ -57,7 +69,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onSwitchToUser 
             <div className="flex flex-col items-center justify-center min-h-screen bg-muted/40 p-4">
                  <div className="w-full max-w-sm">
                     <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold text-foreground">Cartify</h1>
+                        <h1 className="text-4xl font-bold text-foreground">AYExpress</h1>
                         <p className="text-muted-foreground mt-2">Admin Panel</p>
                     </div>
                     <div className="bg-card rounded-lg shadow-lg p-8 border border-border">

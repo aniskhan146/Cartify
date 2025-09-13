@@ -4,9 +4,8 @@ import {
   useSpring,
   useTransform,
   AnimatePresence,
+  type MotionValue,
 } from "framer-motion";
-// FIX: The `MotionValue` type was not correctly imported, causing a type error. This has been corrected by using a type-only import.
-import type { MotionValue } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
 function useDockItemSize(
@@ -68,6 +67,13 @@ function DockItem({
     ref,
     spring
   );
+  
+  // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
+  const tooltipVariants = {
+    hidden: { opacity: 0, y: 0 },
+    visible: { opacity: 1, y: -10 },
+    exit: { opacity: 0, y: 0 },
+  };
 
   return (
     <motion.div
@@ -93,9 +99,10 @@ function DockItem({
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: 1, y: -10 }}
-            exit={{ opacity: 0, y: 0 }}
+            variants={tooltipVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             transition={{ duration: 0.2 }}
             className="absolute -top-8 left-1/2 w-fit whitespace-pre rounded-md 
             border border-border bg-card px-2 py-1 text-xs text-foreground shadow-lg"

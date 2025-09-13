@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BotIcon, UserIcon } from '../shared/icons';
-import { getAiAssistantResponse, generateProductImage, generateProductDescription } from '../../services/geminiService';
+import { getAiAssistantResponse, generateProductImage } from '../../services/geminiService';
 import {
     onProductsValueChange, onAllOrdersValueChange, onAllUsersAndRolesValueChange,
     saveProduct, deleteProduct,
-    getCategoryByName, saveCategory, deleteCategory,
-    getVariantOptionByName, saveVariantOption, deleteVariantOption,
-    findUserByEmail, setUserBanStatus, updateUserRole,
+    getCategoryByName, deleteCategory,
+    findUserByEmail, setUserBanStatus,
     getHeroImages, saveHeroImages, saveCheckoutConfig
 } from '../../services/databaseService';
-import type { Product, Order, UserRoleInfo, Variant, UserRole, CheckoutConfig } from '../../types';
-import { ref, get } from 'firebase/database';
-import { db } from '../../services/firebase';
+import type { Product, Order, UserRoleInfo, Variant, CheckoutConfig } from '../../types';
+import { supabase } from '../../services/supabaseClient';
 
 
 interface Message {
@@ -54,7 +52,7 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                 setIsDataLoaded(true);
                 setMessages([{
                     role: 'assistant',
-                    text: "Hello! I'm your Cartify AI Assistant. I've loaded the latest store data. How can I help you manage your store today?"
+                    text: "Hello! I'm your AYExpress AI Assistant. I've loaded the latest store data. How can I help you manage your store today?"
                 }]);
                 loaded = true;
             }
@@ -137,9 +135,8 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                     resultMessage = `I've removed the hero image.`;
                     break;
                 case 'updateCheckoutSettings':
-                    const configRef = ref(db, 'publicStorefront/checkoutConfig');
-                    const snapshot = await get(configRef);
-                    const currentConfig: CheckoutConfig = snapshot.val() || { shippingChargeInsideDhaka: 60, shippingChargeOutsideDhaka: 120, taxAmount: 4 };
+                    const { data: currentSettings } = await supabase.from('storefront_settings').select('checkout_config').eq('id', 1).single();
+                    const currentConfig: CheckoutConfig = (currentSettings as any)?.checkout_config || { shippingChargeInsideDhaka: 60, shippingChargeOutsideDhaka: 120, taxAmount: 4 };
 
                     const newConfig: CheckoutConfig = {
                         shippingChargeInsideDhaka: args.shippingChargeInsideDhaka ?? currentConfig.shippingChargeInsideDhaka,

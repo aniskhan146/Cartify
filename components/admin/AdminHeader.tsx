@@ -112,7 +112,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onSwitchToUser, onLogout, not
                   className="h-9 w-9 rounded-full object-cover"
               />
               <div>
-                  <p className="font-semibold text-sm text-foreground text-left">{currentUser?.displayName || 'Administrator'}</p>
+                  <p className="font-semibold text-sm text-foreground text-left">{currentUser?.user_metadata.displayName || 'Administrator'}</p>
                   <p className="text-xs text-muted-foreground">{currentUser?.email || 'admin@cartify.com'}</p>
               </div>
               <ChevronDownIcon className={`h-5 w-5 text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />

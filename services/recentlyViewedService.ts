@@ -1,4 +1,4 @@
-const RECENTLY_VIEWED_KEY = 'cartify_recently_viewed';
+const RECENTLY_VIEWED_KEY = 'ayexpress_recently_viewed';
 const MAX_RECENTLY_VIEWED = 5;
 
 export const getRecentlyViewedProductIds = (): string[] => {

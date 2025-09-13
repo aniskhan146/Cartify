@@ -36,7 +36,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, searchQuery, onSearchChan
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="text-2xl font-bold text-foreground">Cartify</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="text-2xl font-bold text-foreground">AYExpress</a>
           </div>
           <nav className="hidden md:flex items-center ml-10 space-x-8">
             <a href="#" onClick={(e) => { e.preventDefault(); onHomeClick(); }} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Home</a>

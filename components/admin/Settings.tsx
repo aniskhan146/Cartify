@@ -3,8 +3,8 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Settings: React.FC = () => {
     const { changePassword } = useAuth();
+    // FIX: Removed currentPassword from state as it's not used by the changePassword function.
     const [formData, setFormData] = useState({
-        currentPassword: '',
         newPassword: '',
         confirmPassword: '',
     });
@@ -33,14 +33,14 @@ const Settings: React.FC = () => {
 
         setIsLoading(true);
         try {
-            await changePassword(formData.currentPassword, formData.newPassword);
+            // FIX: Corrected the call to `changePassword` to pass only one argument as defined in AuthContext.
+            await changePassword(formData.newPassword);
             setSuccess("Password updated successfully!");
-            setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Clear form
+            // FIX: Updated state clearing to match the new form state.
+            setFormData({ newPassword: '', confirmPassword: '' }); // Clear form
         } catch (err: any) {
-            let message = "Failed to update password.";
-            if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-                message = "The current password you entered is incorrect.";
-            }
+            // FIX: Updated error handling to be more generic as the previous check was incorrect for the implemented function.
+            let message = err.message || "Failed to update password.";
             setError(message);
         } finally {
             setIsLoading(false);
@@ -58,18 +58,7 @@ const Settings: React.FC = () => {
                 {success && <p className="bg-green-100 text-green-800 text-sm p-3 rounded-md mb-4">{success}</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label htmlFor="currentPassword" className="block text-sm font-medium text-muted-foreground mb-1">Current Password</label>
-                        <input
-                            type="password"
-                            id="currentPassword"
-                            name="currentPassword"
-                            value={formData.currentPassword}
-                            onChange={handleInputChange}
-                            required
-                            className="w-full p-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                    </div>
+                    {/* FIX: Removed the "Current Password" input field as it was not being used in the password change logic, preventing user confusion. */}
                      <div>
                         <label htmlFor="newPassword" className="block text-sm font-medium text-muted-foreground mb-1">New Password</label>
                         <input
