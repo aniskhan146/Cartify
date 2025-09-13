@@ -4,9 +4,10 @@ import * as config from '../config';
 
 const apiKey = process.env.API_KEY || config.GEMINI_API_KEY;
 
-if (!apiKey || apiKey.includes('AIzaSyBg-Rdw1V_dlWzSO-IA-8SDl3wrKoit1WA')) {
-  throw new Error("Gemini API Key is missing. Please set it in your environment variables (for production) or in the config.ts file (for local development). Refer to the README.md for instructions.");
-}
+// NOTE: The startup check for a valid Gemini API key has been removed per user request.
+// This allows the application to load in environments where the API key is only provided
+// at runtime (e.g., Netlify environment variables) and might be a placeholder locally.
+// API calls will fail at runtime if a valid key is not available when they are made.
 
 // Initialize the Google AI client.
 const ai = new GoogleGenAI({ apiKey });
@@ -16,7 +17,10 @@ const ai = new GoogleGenAI({ apiKey });
 const handleError = (error: any, functionName: string): Error => {
   console.error(`Error in Gemini service function '${functionName}':`, error);
   // Create a more user-friendly error message.
-  const message = error.message || 'An error occurred while communicating with the AI service.';
+  let message = error.message || 'An error occurred while communicating with the AI service.';
+  if (message.includes('API key not valid')) {
+    message = 'The Gemini API key is invalid or missing. Please check your environment variables or configuration.';
+  }
   throw new Error(message);
 };
 
