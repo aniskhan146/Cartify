@@ -1,10 +1,16 @@
 import { GoogleGenAI, Type, Content } from "@google/genai";
 import type { Product, Order, UserRoleInfo, Variant, CheckoutConfig } from '../types';
+import * as config from '../config';
+
+const apiKey = process.env.API_KEY || config.GEMINI_API_KEY;
+
+if (!apiKey || apiKey.includes('AIzaSyBg-Rdw1V_dlWzSO-IA-8SDl3wrKoit1WA')) {
+  throw new Error("Gemini API Key is missing. Please set it in your environment variables (for production) or in the config.ts file (for local development). Refer to the README.md for instructions.");
+}
 
 // Initialize the Google AI client.
-// The API key is sourced from the environment variable `API_KEY`,
-// which should be set in your deployment environment (e.g., Netlify UI).
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey });
+
 
 // Helper function for consistent error handling.
 const handleError = (error: any, functionName: string): Error => {
