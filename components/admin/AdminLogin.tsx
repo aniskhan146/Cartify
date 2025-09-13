@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getUserProfile } from '../../services/databaseService';
-import { supabase } from '../../services/supabaseClient';
 import AdminForgotPasswordModal from './AdminForgotPasswordModal';
 
 interface AdminLoginProps {
@@ -23,43 +21,25 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onSwitchToUser 
         setLoading(true);
 
         try {
-            const { error: loginError } = await login(email, password);
+            const { profile, error: loginError } = await login(email, password);
 
             if (loginError) {
                 if (loginError.message.includes("Invalid login credentials")) {
                     throw new Error("Invalid email or password. Please check your credentials.");
                 }
-                if (loginError.message.includes("suspended")) {
-                     throw new Error(loginError.message);
-                }
                 throw loginError;
             }
-            
-            // onAuthStateChange in AuthContext handles setting the user. We just need to check the profile.
-            // A small delay to allow onAuthStateChange to fire and update the context.
-            setTimeout(async () => {
-                // FIX: supabase was not defined, imported it.
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
-                    const profile = await getUserProfile(user.id);
-                    if (profile?.isBanned) {
-                        await logout();
-                        setError("This account has been suspended.");
-                    } else if (profile?.role === 'admin') {
-                        onLoginSuccess();
-                    } else {
-                        await logout();
-                        setError("Access Denied. You do not have administrative privileges.");
-                    }
-                } else {
-                    // This case should ideally not be hit if login was successful
-                    setError("Failed to verify user session. Please try again.");
-                }
-                setLoading(false);
-            }, 500);
 
+            if (profile && profile.role === 'admin') {
+                // isBanned is already checked in the login function.
+                onLoginSuccess();
+            } else {
+                await logout(); // Log out the non-admin user
+                setError("Access Denied. You do not have administrative privileges.");
+            }
         } catch (err: any) {
             setError(err.message || 'An unexpected error occurred during login.');
+        } finally {
             setLoading(false);
         }
     };

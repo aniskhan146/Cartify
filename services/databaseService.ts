@@ -199,7 +199,7 @@ const SETTINGS_ID = 1; // Assuming a single row for all settings
 
 export const onHeroImagesChange = (callback: (images: string[]) => void) => {
     const fetchAndCallback = async () => {
-        const { data, error } = await supabase.from('storefront_settings').select('hero_images').eq('id', SETTINGS_ID).single();
+        const { data, error } = await supabase.from('storefront_settings').select('hero_images').eq('id', SETTINGS_ID).maybeSingle();
         handleSupabaseError(error, 'onHeroImagesChange initial fetch');
         callback(data?.hero_images || []);
     };

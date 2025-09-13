@@ -9,7 +9,7 @@ interface AuthContextType {
     userProfile: UserRoleInfo | null;
     loading: boolean;
     signup: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-    login: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+    login: (email: string, password: string) => Promise<{ profile: UserRoleInfo | null; error: AuthError | null }>;
     signInWithGoogle: () => Promise<{ error: AuthError | null }>;
     logout: () => Promise<{ error: AuthError | null }>;
     changePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     useEffect(() => {
         const getInitialSession = async () => {
+            // V2: getSession() is async and returns { data: { session }, error }
             const { data: { session } } = await supabase.auth.getSession();
             setCurrentUser(session?.user ?? null);
             if (session?.user) {
@@ -49,6 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         getInitialSession();
 
+        // V2: onAuthStateChange returns { data: { subscription } }
         const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             const user = session?.user ?? null;
             setCurrentUser(user);
@@ -72,43 +74,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
 
         return () => {
-            authListener.subscription.unsubscribe();
+            // V2: Unsubscribe method is on the subscription object
+            authListener.subscription?.unsubscribe();
         };
     }, [loading]);
 
     const signup = async (email: string, password: string) => {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        // V2: signUp is correct
+        const { error } = await supabase.auth.signUp({ email, password });
         return { error };
     };
 
     const login = async (email: string, password: string) => {
+        // V2: signInWithPassword for email/password auth
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            return { profile: null, error };
+        }
         if (data.user) {
             const profile = await getUserProfile(data.user.id);
             if (profile?.isBanned) {
                 await supabase.auth.signOut();
-                return { error: { message: "This account has been suspended.", name: 'BannedUserError' } as AuthError };
+                return { profile: null, error: { message: "This account has been suspended.", name: 'BannedUserError' } as AuthError };
             }
+            return { profile, error: null };
         }
-        return { error };
+        return { profile: null, error: { message: "Login failed: No user data returned.", name: 'AuthError' } as AuthError };
     };
 
     const signInWithGoogle = async () => {
-        const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+        // V2: signInWithOAuth for providers
+        const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
         return { error };
     };
 
     const logout = async () => {
+        // V2: signOut is correct
         const { error } = await supabase.auth.signOut();
         return { error };
     };
 
     const changePassword = async (newPassword: string) => {
+        // V2: updateUser for changing user attributes
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         return { error };
     };
     
     const resetPassword = async (email: string) => {
+        // V2: resetPasswordForEmail doesn't have .api
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin,
         });
@@ -119,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!currentUser) return { error: { message: "No user logged in", name: "AuthError" } as AuthError };
 
         // 1. Update Supabase Auth user_metadata
+        // V2: updateUser with data payload
         const { error: authError } = await supabase.auth.updateUser({ data: { displayName: data.displayName } });
         if (authError) return { error: authError };
 
