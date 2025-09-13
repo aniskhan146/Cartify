@@ -70,14 +70,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } else {
                 setUserProfile(null);
             }
-            if(loading) setLoading(false);
+            // Set loading to false once the initial auth state is determined.
+            if (loading) setLoading(false);
         });
 
         return () => {
             // V2: Unsubscribe method is on the subscription object
             authListener.subscription?.unsubscribe();
         };
-    }, [loading]);
+    }, []); // FIX: Changed dependency array from [loading] to []
 
     const signup = async (email: string, password: string) => {
         // V2: signUp is correct
@@ -111,6 +112,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const logout = async () => {
         // V2: signOut is correct
         const { error } = await supabase.auth.signOut();
+        // After signing out, explicitly clear the local state as a safeguard,
+        // although onAuthStateChange should handle this.
+        if (!error) {
+            setCurrentUser(null);
+            setUserProfile(null);
+        }
         return { error };
     };
 
