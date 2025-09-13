@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../services/supabaseClient';
-import { createUserRoleAndProfile, getUserProfile } from '../services/databaseService';
+import { createUserRoleAndProfile, getUserProfile, updateUserProfileData } from '../services/databaseService';
 import type { UserRoleInfo } from '../types';
 
 interface AuthContextType {
@@ -14,6 +14,7 @@ interface AuthContextType {
     logout: () => Promise<{ error: AuthError | null }>;
     changePassword: (newPassword: string) => Promise<{ error: AuthError | null }>;
     resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+    updateProfile: (data: { displayName: string }) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,16 +54,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setCurrentUser(user);
             if (user) {
                 let profile = await getUserProfile(user.id);
-                // The profile is created here, after a session is confirmed.
-                // This is the correct place for it.
                 if (!profile) {
                     console.log(`User ${user.id} from Auth not found in DB. Creating profile now.`);
                     try {
-                        await createUserRoleAndProfile(user.id, user.email!);
+                        const displayName = user.user_metadata.full_name || user.email?.split('@')[0];
+                        await createUserRoleAndProfile(user.id, user.email!, displayName);
                         profile = await getUserProfile(user.id);
                     } catch (error) {
                         console.error("Failed to create user profile:", error);
-                        // Handle failure, maybe log user out or show an error
                     }
                 }
                 setUserProfile(profile);
@@ -78,10 +77,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [loading]);
 
     const signup = async (email: string, password: string) => {
-        // FIX: Removed the call to createUserRoleAndProfile.
-        // It caused an RLS error because it was called before the user session was active
-        // (especially when email confirmation is enabled).
-        // The onAuthStateChange listener now reliably handles profile creation.
         const { data, error } = await supabase.auth.signUp({ email, password });
         return { error };
     };
@@ -100,7 +95,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const signInWithGoogle = async () => {
         const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-        // The onAuthStateChange listener will handle profile creation/checking
         return { error };
     };
 
@@ -116,9 +110,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     const resetPassword = async (email: string) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin, // URL to redirect to after password reset
+            redirectTo: window.location.origin,
         });
         return { error };
+    };
+
+    const updateProfile = async (data: { displayName: string }) => {
+        if (!currentUser) return { error: { message: "No user logged in", name: "AuthError" } as AuthError };
+
+        // 1. Update Supabase Auth user_metadata
+        const { error: authError } = await supabase.auth.updateUser({ data: { displayName: data.displayName } });
+        if (authError) return { error: authError };
+
+        // 2. Update public profiles table
+        try {
+            await updateUserProfileData(currentUser.id, data);
+        } catch (dbError: any) {
+            return { error: { message: dbError.message, name: "DatabaseError" } as AuthError };
+        }
+        
+        // 3. Refresh local profile state
+        const updatedProfile = await getUserProfile(currentUser.id);
+        setUserProfile(updatedProfile);
+
+        return { error: null };
     };
 
     const value: AuthContextType = {
@@ -131,6 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout,
         changePassword,
         resetPassword,
+        updateProfile,
     };
 
     return (

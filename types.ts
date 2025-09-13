@@ -74,6 +74,7 @@ export interface UserRoleInfo {
   email: string;
   role: UserRole;
   isBanned?: boolean;
+  displayName?: string;
 }
 
 export type NotificationType = 'success' | 'error' | 'info' | 'new-order' | 'new-user' | 'low-stock';

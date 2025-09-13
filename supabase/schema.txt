@@ -73,6 +73,7 @@ COMMENT ON TABLE public.storefront_settings IS 'Singleton table for global store
 CREATE TABLE IF NOT EXISTS public.profiles (
     uid uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     email text NOT NULL UNIQUE,
+    display_name text,
     role text NOT NULL DEFAULT 'user',
     is_banned boolean NOT NULL DEFAULT false,
     created_at timestamp with time zone NOT NULL DEFAULT now(),

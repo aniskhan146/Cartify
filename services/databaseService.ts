@@ -311,7 +311,7 @@ export const deleteOrder = async (userId: string, orderId: string) => {
 };
 
 // Roles & User Management
-export const createUserRoleAndProfile = async (userId: string, email: string) => {
+export const createUserRoleAndProfile = async (userId: string, email: string, displayName?: string) => {
     const { count, error: countError } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
     handleSupabaseError(countError, 'counting users');
 
@@ -320,7 +320,7 @@ export const createUserRoleAndProfile = async (userId: string, email: string) =>
         role = 'admin';
     }
     
-    const { error } = await supabase.from('profiles').insert({ uid: userId, email, role, is_banned: false });
+    const { error } = await supabase.from('profiles').insert({ uid: userId, email, role, is_banned: false, display_name: displayName });
     handleSupabaseError(error, 'createUserRoleAndProfile');
 };
 
@@ -330,7 +330,12 @@ export const getUserProfile = async (userId: string): Promise<UserRoleInfo | nul
         handleSupabaseError(error, 'getUserProfile');
     }
     if (!data) return null;
-    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned };
+    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned, displayName: data.display_name };
+};
+
+export const updateUserProfileData = async (userId: string, data: { displayName: string }) => {
+    const { error } = await supabase.from('profiles').update({ display_name: data.displayName }).eq('uid', userId);
+    handleSupabaseError(error, 'updateUserProfileData');
 };
 
 export const findUserByEmail = async (email: string): Promise<UserRoleInfo | null> => {
@@ -339,14 +344,14 @@ export const findUserByEmail = async (email: string): Promise<UserRoleInfo | nul
         handleSupabaseError(error, 'findUserByEmail');
     }
     if (!data) return null;
-    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned };
+    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned, displayName: data.display_name };
 };
 
 export const onAllUsersAndRolesValueChange = (callback: (users: UserRoleInfo[]) => void) => {
     const fetchAndCallback = async () => {
         const { data, error } = await supabase.from('profiles').select('*');
         handleSupabaseError(error, 'onAllUsersAndRolesValueChange fetch');
-        const profiles = (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned }));
+        const profiles = (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned, displayName: p.display_name }));
         callback(profiles);
     };
     fetchAndCallback();
@@ -360,7 +365,7 @@ export const onAllUsersAndRolesValueChange = (callback: (users: UserRoleInfo[]) 
 export const fetchAllUsers = async (): Promise<UserRoleInfo[]> => {
     const { data, error } = await supabase.from('profiles').select('*');
     handleSupabaseError(error, 'fetchAllUsers');
-    return (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned }));
+    return (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned, displayName: p.display_name }));
 };
 
 export const updateUserRole = async (userId: string, newRole: UserRole) => {

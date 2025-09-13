@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Order, Product } from '../../types';
+import { Order } from '../../types';
 import { ChevronDownIcon, LogOutIcon } from '../shared/icons';
 import { onUserOrdersValueChange } from '../../services/databaseService';
 import { formatCurrency } from '../shared/utils';
@@ -23,17 +23,25 @@ const getStatusColor = (status: Order['status']) => {
 };
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, userProfile, logout, changePassword, updateProfile } = useAuth();
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const { addNotification } = useNotification();
+
+  // State for profile info form
+  const [displayName, setDisplayName] = useState('');
   const [notifications, setNotifications] = useState({
     orderUpdates: true,
     promotionalOffers: false,
   });
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const { addNotification } = useNotification();
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // State for password change form
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (currentUser) {
@@ -49,20 +57,52 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (currentUser) {
+        setDisplayName(userProfile?.displayName || currentUser.user_metadata.displayName || '');
+    }
+  }, [currentUser, userProfile]);
+
   const handleToggle = (key: keyof typeof notifications) => {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
   };
   
-  const handleSaveChanges = (e: React.FormEvent) => {
+  const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    setSaveMessage('');
-    // Simulate API call
-    setTimeout(() => {
-        setIsSaving(false);
-        setSaveMessage('Preferences saved successfully!');
-        setTimeout(() => setSaveMessage(''), 3000);
-    }, 1000);
+    setIsSavingProfile(true);
+    // Here you would also save notification preferences if they were stored in the backend
+    const { error } = await updateProfile({ displayName });
+    if (error) {
+        addNotification(error.message, 'error');
+    } else {
+        addNotification('Profile updated successfully!', 'success');
+    }
+    setIsSavingProfile(false);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+
+    if (newPassword !== confirmPassword) {
+        setPasswordError("New passwords do not match.");
+        return;
+    }
+    if (newPassword.length < 6) {
+        setPasswordError("Password must be at least 6 characters long.");
+        return;
+    }
+
+    setIsChangingPassword(true);
+    const { error } = await changePassword(newPassword);
+    if (error) {
+        setPasswordError(error.message);
+    } else {
+        addNotification("Password changed successfully!", 'success');
+        setNewPassword('');
+        setConfirmPassword('');
+    }
+    setIsChangingPassword(false);
   };
   
   const toggleOrderExpansion = (orderId: string) => {
@@ -112,7 +152,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
         <div className="space-y-8">
             <div className="relative bg-card p-6 rounded-lg shadow-sm border border-border overflow-hidden">
                 <h2 className="text-xl font-semibold mb-4 border-b border-border pb-3">Order History</h2>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-96 overflow-y-auto">
                     {isLoadingOrders ? (
                          <div className="flex justify-center items-center py-8"><div className="w-8 h-8 border-4 border-t-transparent border-primary rounded-full animate-spin"></div></div>
                     ) : userOrders.length > 0 ? (
@@ -164,58 +204,69 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
                 <BorderBeam size={250} duration={8} delay={0} />
             </div>
 
-            <form onSubmit={handleSaveChanges}>
-                <div className="relative bg-card p-6 rounded-lg shadow-sm border border-border mb-8 overflow-hidden">
-                    <h2 className="text-xl font-semibold mb-4 border-b border-border pb-3">Account Information</h2>
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Email:</span>
-                            <span className="font-medium text-foreground">{currentUser?.email || 'N/A'}</span>
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Password:</span>
-                            <button type="button" className="text-sm text-primary hover:underline">Change Password</button>
-                        </div>
-                        <div className="pt-2">
-                             <button type="button" onClick={handleLogout} className="w-full text-destructive-foreground bg-destructive/90 hover:bg-destructive py-2 rounded-md font-semibold transition-colors flex items-center justify-center space-x-2">
-                                <LogOutIcon className="h-4 w-4" />
-                                <span>Logout</span>
-                            </button>
-                        </div>
+            <form onSubmit={handleProfileSave} className="relative bg-card p-6 rounded-lg shadow-sm border border-border overflow-hidden">
+                <h2 className="text-xl font-semibold mb-4 border-b border-border pb-3">Account Settings</h2>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="displayName" className="block text-sm font-medium text-muted-foreground mb-1">Display Name</label>
+                        <input type="text" id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="w-full p-2 border border-input rounded-md bg-background"/>
                     </div>
-                    <BorderBeam size={250} duration={8} delay={1} />
+                    <div>
+                        <label className="block text-sm font-medium text-muted-foreground mb-1">Email Address</label>
+                        <input type="email" value={currentUser?.email || ''} disabled className="w-full p-2 border border-input rounded-md bg-muted text-muted-foreground cursor-not-allowed"/>
+                    </div>
                 </div>
 
-                <div className="relative bg-card p-6 rounded-lg shadow-sm border border-border overflow-hidden">
-                    <h2 className="text-xl font-semibold mb-2 border-b border-border pb-3">Notification Preferences</h2>
-                    <div className="divide-y divide-border">
-                        <ToggleSwitch
-                            label="Order Updates"
-                            description="Receive email notifications about your order status."
-                            enabled={notifications.orderUpdates}
-                            onToggle={() => handleToggle('orderUpdates')}
-                        />
-                        <ToggleSwitch
-                            label="Promotional Offers"
-                            description="Receive emails about new products, sales, and special offers."
-                            enabled={notifications.promotionalOffers}
-                            onToggle={() => handleToggle('promotionalOffers')}
-                        />
-                    </div>
-                    <BorderBeam size={250} duration={8} delay={2} />
+                <h3 className="text-lg font-semibold mt-6 mb-2 border-b border-border pb-3">Notification Preferences</h3>
+                <div className="divide-y divide-border">
+                    <ToggleSwitch
+                        label="Order Updates"
+                        description="Receive email notifications about your order status."
+                        enabled={notifications.orderUpdates}
+                        onToggle={() => handleToggle('orderUpdates')}
+                    />
+                    <ToggleSwitch
+                        label="Promotional Offers"
+                        description="Receive emails about new products, sales, and special offers."
+                        enabled={notifications.promotionalOffers}
+                        onToggle={() => handleToggle('promotionalOffers')}
+                    />
                 </div>
-                
-                <div className="flex items-center justify-end space-x-4 mt-8">
-                     {saveMessage && <p className="text-sm text-green-600">{saveMessage}</p>}
-                    <button
-                        type="submit"
-                        disabled={isSaving}
-                        className="bg-primary text-primary-foreground py-2 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70"
-                    >
-                        {isSaving ? 'Saving...' : 'Save Changes'}
+                <div className="flex items-center justify-end mt-6">
+                    <button type="submit" disabled={isSavingProfile} className="bg-primary text-primary-foreground py-2 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70">
+                        {isSavingProfile ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
+                <BorderBeam size={250} duration={8} delay={1} />
             </form>
+
+            <form onSubmit={handlePasswordChange} className="relative bg-card p-6 rounded-lg shadow-sm border border-border overflow-hidden">
+                <h2 className="text-xl font-semibold mb-4 border-b border-border pb-3">Change Password</h2>
+                {passwordError && <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-md mb-4">{passwordError}</p>}
+                <div className="space-y-4">
+                     <div>
+                        <label htmlFor="newPassword" className="block text-sm font-medium text-muted-foreground mb-1">New Password</label>
+                        <input type="password" id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required className="w-full p-2 border border-input rounded-md bg-background"/>
+                    </div>
+                    <div>
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-muted-foreground mb-1">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required className="w-full p-2 border border-input rounded-md bg-background"/>
+                    </div>
+                </div>
+                 <div className="flex items-center justify-end mt-6">
+                    <button type="submit" disabled={isChangingPassword} className="bg-primary text-primary-foreground py-2 px-6 rounded-lg font-semibold hover:bg-primary/90 transition-colors disabled:opacity-70">
+                        {isChangingPassword ? 'Updating...' : 'Update Password'}
+                    </button>
+                </div>
+                <BorderBeam size={250} duration={8} delay={2} />
+            </form>
+
+             <div className="mt-8">
+                 <button type="button" onClick={handleLogout} className="w-full text-destructive-foreground bg-destructive/90 hover:bg-destructive py-2.5 rounded-md font-semibold transition-colors flex items-center justify-center space-x-2">
+                    <LogOutIcon className="h-5 w-5" />
+                    <span>Logout</span>
+                </button>
+            </div>
         </div>
       </div>
     </div>
