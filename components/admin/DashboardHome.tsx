@@ -49,80 +49,90 @@ const DashboardHome: React.FC = () => {
     useEffect(() => {
         setIsLoading(true);
         let isMounted = true;
-
-        const fetchData = async () => {
-            try {
-                const allOrdersPromise = fetchAllOrders();
-                
-                const unsubProducts = onProductsValueChange(async (allProducts) => {
-                    const allOrders = await allOrdersPromise;
-                    if (!isMounted) return;
-
-                    const sortedTopProducts = [...allProducts].sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
-                    setTopProducts(sortedTopProducts.slice(0, 5));
-
-                    const totalInventoryValue = allProducts.reduce((sum, p) => sum + (p.variants || []).reduce((variantSum, v) => variantSum + v.price * v.stock, 0), 0);
-
-                    const unsubUsers = onAllUsersAndRolesValueChange((allUsers) => {
-                        if (!isMounted) return;
-                        
-                        const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0);
-                        
-                        const monthlySales: { [key: string]: number } = {};
-                        const monthOrder: string[] = [];
-                        const now = new Date();
-
-                        for (let i = 11; i >= 0; i--) {
-                           const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                           const monthKey = d.toLocaleString('default', { month: 'short', year: '2-digit' });
-                           monthlySales[monthKey] = 0;
-                           monthOrder.push(monthKey);
-                        }
-
-                        allOrders.forEach(order => {
-                            const orderDate = new Date(order.date);
-                            const monthKey = orderDate.toLocaleString('default', { month: 'short', year: '2-digit' });
-                            if (monthlySales.hasOwnProperty(monthKey)) {
-                                monthlySales[monthKey] += order.total;
-                            }
-                        });
-
-                        const trendData = monthOrder.map(month => ({
-                            name: month,
-                            revenue: monthlySales[month]
-                        }));
-                        setSalesTrendData(trendData);
-
-                        setStats({
-                            totalRevenue,
-                            totalSales: allOrders.length,
-                            newCustomers: allUsers.length,
-                            inventoryValue: totalInventoryValue,
-                        });
-
-                        setRecentOrders(allOrders.slice(0, 5));
-                        if (isLoading) setIsLoading(false);
-                    });
-
-                    return unsubUsers;
-                });
-
-                return async () => {
-                    const unsubUsers = await unsubProducts;
-                    if (unsubUsers) unsubUsers();
-                };
-
-            } catch (error) {
-                console.error("Error fetching dashboard data: ", error);
-                if (isMounted) setIsLoading(false);
-            }
+    
+        const dataStore = {
+            orders: [] as (Order & { userId: string })[],
+            products: [] as Product[],
+            users: [] as UserRoleInfo[],
         };
-
-        const cleanupPromise = fetchData();
-
+    
+        const loadedStatus = { orders: false, products: false, users: false };
+    
+        const processAllData = () => {
+            if (!isMounted || !loadedStatus.orders || !loadedStatus.products || !loadedStatus.users) {
+                return;
+            }
+    
+            const { orders, products, users } = dataStore;
+    
+            // Process all stats and chart data once all data sources are available
+            const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    
+            const monthlySales: { [key: string]: number } = {};
+            const monthOrder: string[] = [];
+            const now = new Date();
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+                monthlySales[monthKey] = 0;
+                monthOrder.push(monthKey);
+            }
+            orders.forEach(order => {
+                const orderDate = new Date(order.date);
+                const monthKey = orderDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+                if (monthlySales.hasOwnProperty(monthKey)) {
+                    monthlySales[monthKey] += order.total;
+                }
+            });
+            const trendData = monthOrder.map(month => ({ name: month, revenue: monthlySales[month] }));
+            setSalesTrendData(trendData);
+    
+            const totalInventoryValue = products.reduce((sum, p) => sum + (p.variants || []).reduce((variantSum, v) => variantSum + v.price * v.stock, 0), 0);
+    
+            setStats({
+                totalRevenue,
+                totalSales: orders.length,
+                newCustomers: users.length,
+                inventoryValue: totalInventoryValue,
+            });
+    
+            setRecentOrders(orders.slice(0, 5));
+            setTopProducts([...products].sort((a, b) => (b.reviews || 0) - (a.reviews || 0)).slice(0, 5));
+            
+            setIsLoading(false);
+        };
+    
+        fetchAllOrders().then(orders => {
+            if (isMounted) {
+                dataStore.orders = orders;
+                loadedStatus.orders = true;
+                processAllData();
+            }
+        }).catch(error => {
+            console.error("Error fetching orders:", error);
+            if(isMounted) setIsLoading(false);
+        });
+    
+        const unsubProducts = onProductsValueChange(products => {
+            if (isMounted) {
+                dataStore.products = products;
+                loadedStatus.products = true;
+                processAllData();
+            }
+        });
+    
+        const unsubUsers = onAllUsersAndRolesValueChange(users => {
+            if (isMounted) {
+                dataStore.users = users;
+                loadedStatus.users = true;
+                processAllData();
+            }
+        });
+    
         return () => {
             isMounted = false;
-            cleanupPromise.then(cleanup => cleanup && cleanup());
+            unsubProducts();
+            unsubUsers();
         };
     }, []);
 

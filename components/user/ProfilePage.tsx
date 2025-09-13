@@ -5,6 +5,7 @@ import { ChevronDownIcon, LogOutIcon } from '../shared/icons';
 import { onUserOrdersValueChange } from '../../services/databaseService';
 import { formatCurrency } from '../shared/utils';
 import BorderBeam from './BorderBeam';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface ProfilePageProps {
   onBackToShop: () => void;
@@ -32,6 +33,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const { addNotification } = useNotification();
 
   useEffect(() => {
     if (currentUser) {
@@ -73,7 +75,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
         onBackToShop(); // Redirect to home after logout
     } catch(error) {
         console.error("Failed to log out", error);
-        alert("Failed to log out. Please try again.");
+        addNotification("Failed to log out. Please try again.", "error");
     }
   }
 

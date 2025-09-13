@@ -5,6 +5,7 @@ import ConfirmationModal from './ConfirmationModal';
 import type { VariantOption, VariantOptionValue } from '../../types';
 import { cn } from '../../lib/utils';
 import { getHexCodeForColorName } from '../../services/geminiService';
+import { useNotification } from '../../contexts/NotificationContext';
 
 const isColorOption = (name: string) => name.toLowerCase().includes('color');
 
@@ -26,6 +27,7 @@ const VariantOptionManagement: React.FC = () => {
     const [newValueColor, setNewValueColor] = useState('#000000');
     const [isSuggestingColor, setIsSuggestingColor] = useState(false);
     const debounceTimeoutRef = useRef<number | null>(null);
+    const { addNotification } = useNotification();
 
 
     useEffect(() => {
@@ -152,7 +154,7 @@ const VariantOptionManagement: React.FC = () => {
         try {
             await deleteVariantOption(optionToDelete.id);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to delete option');
+            addNotification(err instanceof Error ? err.message : 'Failed to delete option', 'error');
         } finally {
             setIsLoading(false);
             closeModal();

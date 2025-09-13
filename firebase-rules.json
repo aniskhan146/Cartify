@@ -26,6 +26,15 @@
       }
     },
 
+    // Wishlist data is restricted.
+    "wishlists": {
+      "$uid": {
+        // A user can read and write their own wishlist.
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
     // User data is restricted.
     "users": {
       // Admins can read the entire list of users.

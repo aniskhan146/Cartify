@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MoreVerticalIcon } from '../shared/icons';
 import { onCategoriesValueChange, saveCategory, deleteCategory } from '../../services/databaseService';
 import ConfirmationModal from './ConfirmationModal';
+import { useNotification } from '../../contexts/NotificationContext';
 
 type DisplayCategory = {
     id: string;
@@ -27,6 +28,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ onViewCategoryP
     const [error, setError] = useState('');
     const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { addNotification } = useNotification();
 
 
     useEffect(() => {
@@ -111,7 +113,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ onViewCategoryP
         try {
             await deleteCategory(categoryToDelete.id);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to delete category');
+            addNotification(err instanceof Error ? err.message : 'Failed to delete category', 'error');
         } finally {
             setIsLoading(false);
             closeModal();

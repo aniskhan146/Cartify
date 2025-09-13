@@ -4,6 +4,7 @@ import { MoreVerticalIcon } from '../shared/icons';
 import { fetchAllOrders, updateOrderStatus, deleteOrder } from '../../services/databaseService';
 import { formatCurrency } from '../shared/utils';
 import ConfirmationModal from './ConfirmationModal';
+import { useNotification } from '../../contexts/NotificationContext';
 
 type OrderWithUser = Order & { userId: string };
 
@@ -15,6 +16,7 @@ const OrderManagement: React.FC = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [orderToDelete, setOrderToDelete] = useState<OrderWithUser | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const { addNotification } = useNotification();
 
     useEffect(() => {
         setIsLoadingData(true);
@@ -46,7 +48,7 @@ const OrderManagement: React.FC = () => {
             ));
         } catch(err) {
             console.error("Failed to update status:", err);
-            alert("Failed to update order status.");
+            addNotification("Failed to update order status.", 'error');
         } finally {
             setIsProcessing(false);
             setOpenActionMenu(null);
@@ -69,7 +71,7 @@ const OrderManagement: React.FC = () => {
             setOrderToDelete(null);
         } catch (err) {
             console.error("Failed to delete order:", err);
-            alert("Failed to delete order.");
+            addNotification("Failed to delete order.", 'error');
         } finally {
             setIsProcessing(false);
         }

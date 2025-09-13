@@ -36,13 +36,15 @@ const AnalyticsPage: React.FC = () => {
                 const [allOrders, allProducts, allUsers] = await Promise.all([
                     fetchAllOrders(),
                     new Promise<Product[]>((resolve) => {
-                        const unsub = onProductsValueChange(products => {
+                        let unsub: () => void;
+                        unsub = onProductsValueChange(products => {
                             resolve(products);
                             unsub(); 
                         });
                     }),
                     new Promise<UserRoleInfo[]>((resolve) => {
-                         const unsub = onAllUsersAndRolesValueChange(users => {
+                         let unsub: () => void;
+                         unsub = onAllUsersAndRolesValueChange(users => {
                             resolve(users);
                             unsub();
                         });
