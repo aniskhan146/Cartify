@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import type { Product, Variant, VariantOption, VariantOptionValue } from '../../types';
+import type { Product, Variant, VariantOption, VariantOptionValue, Category as DbCategory, Brand } from '../../types';
 import { MoreVerticalIcon, ClipboardIcon, DownloadIcon, Trash2Icon, SearchIcon, UploadIcon, XIcon } from '../shared/icons';
 import { generateProductDescription } from '../../services/geminiService';
-import { saveProduct, deleteProduct, onCategoriesValueChange, saveCategory, DbCategory, onVariantOptionsChange } from '../../services/databaseService';
+import { saveProduct, deleteProduct, onCategoriesValueChange, saveCategory, onVariantOptionsChange } from '../../services/databaseService';
 import { formatCurrency } from '../shared/utils';
 import ConfirmationModal from './ConfirmationModal';
 import { cn } from '../../lib/utils';
@@ -12,6 +12,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 const initialFormState: Omit<Product, 'id' | 'rating' | 'reviews' | 'variants'> & { variants: Variant[] } = {
     name: '',
     category: '',
+    brandId: '',
     description: '',
     imageUrls: [],
     variants: [],
@@ -38,13 +39,14 @@ const cartesian = <T,>(...args: T[][]): T[][] => {
 
 
 // Form Modal as a separate component to manage its own state
-const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, categories, onAddNewCategory }: {
+const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, categories, allBrands, onAddNewCategory }: {
     mode: 'add' | 'edit';
     product: Product | null;
     onClose: () => void;
     onSubmit: (data: Omit<Product, 'id'>, id?: string) => Promise<boolean>;
     formErrorExt: string;
     categories: DbCategory[];
+    allBrands: Brand[];
     onAddNewCategory: () => void;
 }) => {
     const [formData, setFormData] = useState(initialFormState);
@@ -81,6 +83,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
             setFormData({
                 name: product.name || '',
                 category: product.category || '',
+                brandId: product.brandId || '',
                 description: product.description || '',
                 imageUrls: product.imageUrls || [],
                 variants: product.variants || [],
@@ -322,6 +325,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
         const productData: Omit<Product, 'id'> = {
             name: formData.name,
             category: formData.category,
+            brandId: formData.brandId || undefined,
             description: formData.description,
             imageUrls: formData.imageUrls.length ? formData.imageUrls : ['https://picsum.photos/seed/placeholder/400/300'],
             variants: formData.variants.map(v => ({
@@ -421,7 +425,11 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                         </select>
                         <button type="button" onClick={onAddNewCategory} className="flex-shrink-0 bg-muted text-foreground p-2 rounded-lg font-semibold hover:bg-accent h-full text-lg transition-colors">+</button>
                     </div>
-                    <input name="deliveryTimescale" placeholder="Delivery Timescale (e.g., 2-4 business days)" value={formData.deliveryTimescale} onChange={handleFormChange} className="w-full p-2 border border-input rounded-md bg-background md:col-span-2"/>
+                    <select name="brandId" value={formData.brandId || ''} onChange={handleFormChange} className="w-full p-2 border border-input rounded-md bg-background">
+                        <option value="">Select a brand (optional)</option>
+                        {allBrands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                    </select>
+                    <input name="deliveryTimescale" placeholder="Delivery Timescale (e.g., 2-4 business days)" value={formData.deliveryTimescale} onChange={handleFormChange} className="w-full p-2 border border-input rounded-md bg-background"/>
                 </div>
                  <div className="mt-4">
                   <div className="flex justify-between items-center mb-1">
@@ -566,6 +574,8 @@ interface ProductManagementProps {
     onStatusFilterChange: (filter: 'all' | 'inStock' | 'outOfStock') => void;
     categoryFilter: string | null;
     onClearCategoryFilter: () => void;
+    allCategories: DbCategory[];
+    allBrands: Brand[];
     isFormModalOpen: boolean;
     modalMode: 'add' | 'edit';
     currentProduct: Product | null;
@@ -577,11 +587,10 @@ interface ProductManagementProps {
 
 const ProductManagement: React.FC<ProductManagementProps> = ({
     products, searchQuery, onSearchChange, statusFilter, onStatusFilterChange,
-    categoryFilter, onClearCategoryFilter,
+    categoryFilter, onClearCategoryFilter, allCategories, allBrands,
     isFormModalOpen, modalMode, currentProduct, formError, openFormModal, closeFormModal, onFormSubmit
 }) => {
     const { addNotification } = useNotification();
-    const [categories, setCategories] = useState<DbCategory[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -596,8 +605,6 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
 
     useEffect(() => {
         if (products) setIsLoadingData(false);
-        const unsubscribeCategories = onCategoriesValueChange(setCategories);
-        return () => unsubscribeCategories();
     }, [products]);
 
     const handleDeleteClick = (product: Product) => {
@@ -730,7 +737,8 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
                     onClose={closeFormModal}
                     onSubmit={onFormSubmit}
                     formErrorExt={formError}
-                    categories={categories}
+                    categories={allCategories}
+                    allBrands={allBrands}
                     onAddNewCategory={() => setIsCategoryModalOpen(true)}
                 />
             )}

@@ -5,6 +5,7 @@ import Dock from './Dock';
 import BorderBeam from './BorderBeam';
 import ThreeDImageRing from './ThreeDImageRing';
 import CategoryProductSection from './CategoryProductSection';
+import ShopeeMall from './ShopeeMall';
 import Footer from './Footer';
 import SearchModal from './SearchModal';
 import QuickViewModal from './QuickViewModal';
@@ -12,11 +13,11 @@ import RecentlyViewedSection from './RecentlyViewedSection';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { useWishlist } from '../../contexts/WishlistContext';
-import type { Product, Category } from '../../types';
+import type { Product, Category, Brand } from '../../types';
 import { 
     HeartIcon, HomeIcon, CameraIcon, ShoppingCartIcon, UserIcon, SearchIcon, ChevronUpIcon
 } from '../shared/icons';
-import { onProductsValueChange, onCategoriesValueChange, onHeroImagesChange } from '../../services/databaseService';
+import { onProductsValueChange, onCategoriesValueChange, onHeroImagesChange, onBrandsChange } from '../../services/databaseService';
 import ShinyText from '../shared/ShinyText';
 
 // Lazy load page components for better performance
@@ -28,6 +29,8 @@ const ProfilePage = React.lazy(() => import('./ProfilePage'));
 const AllProductsPage = React.lazy(() => import('./AllProductsPage'));
 const TrackOrderPage = React.lazy(() => import('./TrackOrderPage'));
 const OrderConfirmationPage = React.lazy(() => import('./OrderConfirmationPage'));
+const ShopeeMallPage = React.lazy(() => import('./ShopeeMallPage'));
+const BrandProductsPage = React.lazy(() => import('./BrandProductsPage'));
 
 
 interface UserPanelProps {
@@ -44,7 +47,9 @@ type ViewState =
   | { name: 'profile' }
   | { name: 'trackOrder' }
   | { name: 'orderConfirmation'; payload: { orderId: string } }
-  | { name: 'allProducts'; payload?: { initialCategory?: string } };
+  | { name: 'allProducts'; payload?: { initialCategory?: string } }
+  | { name: 'shopeeMall' }
+  | { name: 'brandProducts'; payload: { brand: Brand } };
 
 const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClick }) => {
   const { currentUser } = useAuth();
@@ -53,6 +58,7 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
   
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allBrands, setAllBrands] = useState<Brand[]>([]);
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -62,9 +68,8 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
   const [isScrollButtonVisible, setIsScrollButtonVisible] = useState(false);
 
   useEffect(() => {
-    const unsubscribeProducts = onProductsValueChange((products) => {
-      setAllProducts(products);
-    });
+    const unsubscribeProducts = onProductsValueChange(setAllProducts);
+    const unsubscribeBrands = onBrandsChange(setAllBrands);
     
     const unsubscribeCategories = onCategoriesValueChange((dbCategories) => {
         const mappedCategories: Category[] = dbCategories.map(cat => ({
@@ -85,6 +90,7 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         unsubscribeProducts();
         unsubscribeCategories();
         unsubscribeHeroImages();
+        unsubscribeBrands();
         clearTimeout(timer);
     };
   }, []);
@@ -154,6 +160,13 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
     setView({ name: 'trackOrder' });
   };
 
+  const handleGoToShopeeMall = () => {
+    setView({ name: 'shopeeMall' });
+  };
+
+  const handleBrandClick = (brand: Brand) => {
+      setView({ name: 'brandProducts', payload: { brand } });
+  };
 
   const dockItems = [
     { icon: <HomeIcon className="h-6 w-6 text-foreground" />, label: 'Home', onClick: handleGoHome },
@@ -208,6 +221,19 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
                 initialCategory={view.payload?.initialCategory}
             />
         );
+      case 'shopeeMall':
+        return <ShopeeMallPage 
+            brands={allBrands} 
+            onBrandClick={handleBrandClick}
+            onBack={() => setView({ name: 'shop' })}
+        />;
+      case 'brandProducts':
+        return <BrandProductsPage 
+            brand={view.payload.brand}
+            allProducts={allProducts}
+            onProductClick={handleProductClick}
+            onBack={() => setView({ name: 'shopeeMall' })}
+        />;
       case 'shop':
       default:
         return (
@@ -223,6 +249,10 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
                 </ShinyText>
               </div>
             </div>
+            <ShopeeMall 
+                onViewAllClick={handleGoToShopeeMall}
+                onBrandClick={handleBrandClick}
+            />
              <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
               {categories.map((category) => {
                 const categoryProducts = allProducts.filter(
@@ -270,9 +300,10 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         onSearchClick={() => setIsSearchModalOpen(true)} 
         onLoginClick={onLoginClick} 
         categories={categories} 
-        onCategoryClick={(id) => handleCategoryClick(categories.find(c=>c.id === id)?.name ?? '')} 
+        onCategoryClick={(id) => handleCategoryClick(id)} 
         onViewAllProductsClick={() => handleViewAllClick()}
         onProfileClick={handleProfileClick}
+        onShopeeMallClick={handleGoToShopeeMall}
       />}
       
       <main className="flex-grow">
@@ -321,6 +352,7 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
         allProducts={allProducts}
+        categories={categories}
         onProductClick={handleProductClickFromSearch}
       />
 
@@ -332,6 +364,7 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
                 setQuickViewProduct(null); // Close modal
                 setView({ name: 'checkout' }); // Navigate
             }}
+            categories={categories}
         />
       )}
 

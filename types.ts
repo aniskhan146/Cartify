@@ -1,9 +1,18 @@
 import type * as React from 'react';
 
+export interface Brand {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  isFeatured?: boolean;
+}
+
 export interface Category {
   id: string;
   name: string;
   iconUrl: string;
+  parentId?: string | null;
+  subCategories?: Category[];
 }
 
 export interface VariantOptionValue {
@@ -30,7 +39,9 @@ export interface Variant {
 export interface Product {
   id: string;
   name: string;
+  // FIX: Changed categoryId to category to match its usage as a string name throughout the application.
   category: string;
+  brandId?: string;
   description: string;
   imageUrls: string[]; // General product images
   rating: number;

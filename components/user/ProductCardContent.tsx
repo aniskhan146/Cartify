@@ -1,11 +1,26 @@
-import React from 'react';
-import type { Product } from '../../types';
+import React, { useState, useEffect } from 'react';
+import type { Product, Brand } from '../../types';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWishlist } from '../../contexts/WishlistContext';
 import { formatCurrency } from '../shared/utils';
 import { HeartIcon, ShoppingCartIcon, StarIcon } from '../shared/icons';
 import { cn } from '../../lib/utils';
+import { onBrandsChange } from '../../services/databaseService';
+
+const useBrands = () => {
+    const [brands, setBrands] = useState<Brand[]>([]);
+    useEffect(() => {
+        const unsubscribe = onBrandsChange(setBrands);
+        return () => unsubscribe();
+    }, []);
+
+    const brandMap = new Map(brands.map(b => [b.id, b]));
+    
+    return {
+        getBrandName: (id?: string) => id ? brandMap.get(id)?.name : undefined
+    };
+};
 
 interface ProductCardContentProps {
   product: Product;
@@ -15,6 +30,8 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
     const { addToCart } = useCart();
     const { currentUser } = useAuth();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+    const { getBrandName } = useBrands();
+    const brandName = getBrandName(product.brandId);
 
     const handleAddToCartClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -77,7 +94,10 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
             </div>
 
             <div className="p-3 flex flex-col flex-grow">
-                <p className="mb-1 text-xs font-medium text-muted-foreground">{product.category}</p>
+                <div className="flex justify-between items-center mb-1">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">{product.category}</p>
+                  {brandName && <p className="text-xs font-bold text-primary">{brandName}</p>}
+                </div>
                 <h3 className="mb-2 block text-sm font-semibold text-foreground transition-colors group-hover:text-primary h-10 overflow-hidden">
                     {product.name}
                 </h3>

@@ -50,8 +50,10 @@ const AllProductsPage: React.FC<AllProductsPageProps> = ({ allProducts, categori
             const lowercasedQuery = searchQuery.toLowerCase();
             const matchesSearch = lowercasedQuery === '' ||
                 product.name.toLowerCase().includes(lowercasedQuery) ||
+                // FIX: Use product.category which is now the correct property for the category name
                 product.category.toLowerCase().includes(lowercasedQuery);
 
+            // FIX: Use product.category which is now the correct property for the category name
             const matchesCategory = filters.categories.length === 0 || filters.categories.includes(product.category);
 
             const matchesPrice = product.variants.some(v => v.price >= filters.priceRange[0] && v.price <= filters.priceRange[1]);

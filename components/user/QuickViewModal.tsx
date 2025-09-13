@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import type { Product } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { Product, Category } from '../../types';
 import { StarIcon, XIcon, HeartIcon, TruckIcon } from '../shared/icons';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,9 +15,10 @@ interface QuickViewModalProps {
   product: Product;
   onClose: () => void;
   onNavigateToCheckout: () => void;
+  categories: Category[];
 }
 
-const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNavigateToCheckout }) => {
+const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNavigateToCheckout, categories }) => {
     const { addToCart } = useCart();
     const { currentUser } = useAuth();
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
@@ -41,6 +42,10 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
     } = useProductVariant(product);
     
     const [mainImage, setMainImage] = useState(derivedMainImage);
+
+    const categoryName = useMemo(() => {
+        return product.category;
+    }, [product.category, categories]);
 
     useEffect(() => {
         addProductToRecentlyViewed(product.id);
@@ -116,7 +121,8 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
         {/* Details Section */}
         <div className="w-full md:w-1/2 p-6 flex flex-col justify-center overflow-y-auto">
             <h2 className="text-xl lg:text-2xl font-bold text-foreground mb-1">{product.name}</h2>
-            <p className="text-md text-muted-foreground mb-3">{product.category}</p>
+            {/* FIX: Use the resolved categoryName instead of the non-existent product.category property */}
+            <p className="text-md text-muted-foreground mb-3">{categoryName}</p>
             <div className="flex items-center mb-3">
                 <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (

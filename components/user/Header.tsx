@@ -13,6 +13,7 @@ import { formatDistanceToNow } from 'date-fns';
 const navItems = [
   { name: "Home", action: "reload" },
   { name: "All Products", href: "#", action: "viewAll" },
+  { name: "Shopee Mall", action: "shopeeMall" },
   { name: "Deals", href: "#promo-section" },
 ];
 
@@ -24,6 +25,7 @@ interface HeaderProps {
     onViewAllProductsClick: () => void;
     onHomeClick: () => void;
     onProfileClick: () => void;
+    onShopeeMallClick: () => void;
 }
 
 interface CategoryPopupPanelProps {
@@ -91,7 +93,7 @@ const CategoryPopupPanel: React.FC<CategoryPopupPanelProps> = ({ isOpen, onClose
 };
 
 
-const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories, onCategoryClick, onViewAllProductsClick, onHomeClick, onProfileClick }) => {
+const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories, onCategoryClick, onViewAllProductsClick, onHomeClick, onProfileClick, onShopeeMallClick }) => {
     const [showHeader, setShowHeader] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -144,6 +146,9 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
         }
         if (item.action === 'viewAll') {
             onViewAllProductsClick();
+            setIsMobileMenuOpen(false);
+        } else if (item.action === 'shopeeMall') {
+            onShopeeMallClick();
             setIsMobileMenuOpen(false);
         } else if (item.href) {
             handleScrollTo(item.href);

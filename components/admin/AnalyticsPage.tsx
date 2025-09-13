@@ -48,6 +48,7 @@ const AnalyticsPage: React.FC = () => {
                     order.items.forEach(item => {
                         const productDetails = productMap.get(item.productId);
                         if (productDetails) {
+                            // FIX: Changed to use product.category, which is now the correct property for the category name.
                             const category = productDetails.category;
                             const itemTotal = item.variantPrice * item.quantity;
                             categorySales[category] = (categorySales[category] || 0) + itemTotal;
@@ -61,6 +62,7 @@ const AnalyticsPage: React.FC = () => {
                 const categoryInventory: { [key: string]: number } = {};
                 allProducts.forEach(product => {
                     const value = product.variants.reduce((sum, v) => sum + v.price * v.stock, 0);
+                    // FIX: Changed to use product.category, which is now the correct property for the category name.
                     categoryInventory[product.category] = (categoryInventory[product.category] || 0) + value;
                 });
                 const inventoryData = Object.entries(categoryInventory).map(([name, value]) => ({ name, value }));

@@ -11,43 +11,62 @@ import AnalyticsPage from './AnalyticsPage';
 import AiAssistantPage from './AiAssistantPage';
 import StorefrontSettings from './StorefrontSettings';
 import VariantOptionManagement from './VariantOptionManagement';
+import BrandManagement from './BrandManagement';
 import { useAuth } from '../../contexts/AuthContext';
-import { onProductsValueChange, saveProduct, onAllOrdersValueChange, onAllUsersAndRolesValueChange } from '../../services/databaseService';
-import type { Product, Order, UserRoleInfo, Notification } from '../../types';
+import { onProductsValueChange, saveProduct, onAllOrdersValueChange, onAllUsersAndRolesValueChange, onCategoriesValueChange, onBrandsChange } from '../../services/databaseService';
+import type { Product, Order, UserRoleInfo, Notification, Category, Brand } from '../../types';
 import { formatCurrency } from '../shared/utils';
 
-type AdminPage = 'dashboard' | 'products' | 'categories' | 'variant-options' | 'storefront-settings' | 'orders' | 'users' | 'analytics' | 'ai-assistant' | 'settings';
+type AdminPage = 'dashboard' | 'products' | 'categories' | 'variant-options' | 'brands' | 'storefront-settings' | 'orders' | 'users' | 'analytics' | 'ai-assistant' | 'settings';
 
 interface AdminDashboardProps {
   onSwitchToUser: () => void;
 }
 
+// Helper to get all sub-category IDs for filtering
+const getAllSubCategoryIds = (categoryId: string, categories: Category[]): string[] => {
+    let ids: string[] = [categoryId];
+    const directSubcategories = categories.filter(c => c.parentId === categoryId);
+    directSubcategories.forEach(sub => {
+        ids = [...ids, ...getAllSubCategoryIds(sub.id, categories)];
+    });
+    return ids;
+};
+
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
   const [activePage, setActivePage] = useState<AdminPage>('dashboard');
   const { logout } = useAuth();
   
-  // State for products and filtering lifted to the parent dashboard
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [allBrands, setAllBrands] = useState<Brand[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'inStock' | 'outOfStock'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
 
-  // State for Product Form Modal (lifted from ProductManagement)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [formError, setFormError] = useState('');
 
-  // State for notifications
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const prevData = useRef<{ users: UserRoleInfo[], orders: (Order & {userId: string})[], products: Product[] }>({ users: [], orders: [], products: [] });
   const isInitialized = useRef({ users: false, orders: false, products: false });
   const notifiedLowStockProducts = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+      const unsubCategories = onCategoriesValueChange(setAllCategories);
+      const unsubBrands = onBrandsChange(setAllBrands);
+      return () => {
+        unsubCategories();
+        unsubBrands();
+      }
+  }, []);
 
-  // Combined product listener for both product list and low-stock notifications
   useEffect(() => {
     const unsubscribe = onProductsValueChange((products) => {
-        setAllProducts(products); // Update product list for the management page
+        setAllProducts(products);
 
         if (!isInitialized.current.products) {
             products.forEach(p => {
@@ -68,7 +87,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
                     timestamp: Date.now(),
                     read: false,
                 };
-                setNotifications(prev => [newNotif, ...prev].slice(0, 20)); // Keep last 20
+                setNotifications(prev => [newNotif, ...prev].slice(0, 20));
                 notifiedLowStockProducts.current.add(product.id);
             } else if (totalStock > 10 && notifiedLowStockProducts.current.has(product.id)) {
                 notifiedLowStockProducts.current.delete(product.id);
@@ -78,7 +97,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
     return () => unsubscribe();
   }, []);
 
-  // New Users Listener
   useEffect(() => {
       const unsubscribe = onAllUsersAndRolesValueChange((users) => {
           if (!isInitialized.current.users) {
@@ -105,7 +123,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
       return () => unsubscribe();
   }, []);
 
-  // New Orders Listener
   useEffect(() => {
       const unsubscribe = onAllOrdersValueChange((orders) => {
           if (!isInitialized.current.orders) {
@@ -133,7 +150,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
   }, []);
 
   useEffect(() => {
-    // When switching away from the products page, reset all filters
     if (activePage !== 'products') {
       setSearchQuery('');
       setStatusFilter('all');
@@ -142,7 +158,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
   }, [activePage]);
   
   const filteredProducts = useMemo(() => {
+    const categoryMap = new Map(allCategories.map(c => [c.id, c.name]));
+
     return allProducts.filter(product => {
+        // Since categoryFilter is a name string, we proceed with name-based filtering.
         const matchesCategory = !categoryFilter || product.category === categoryFilter;
         
         const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
@@ -151,21 +170,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
             (statusFilter === 'inStock' && totalStock > 0) ||
             (statusFilter === 'outOfStock' && totalStock === 0);
         
+        const productCategoryName = product.category.toLowerCase() || '';
         const matchesSearch = 
             !searchQuery ||
             product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.category.toLowerCase().includes(searchQuery.toLowerCase());
+            productCategoryName.includes(searchQuery.toLowerCase());
             
         return matchesCategory && matchesStatus && matchesSearch;
     });
-  }, [allProducts, searchQuery, statusFilter, categoryFilter]);
+  }, [allProducts, searchQuery, statusFilter, categoryFilter, allCategories]);
 
   const handleViewCategoryProducts = (categoryName: string) => {
-    setCategoryFilter(categoryName);
-    setActivePage('products');
+    const category = allCategories.find(c => c.name === categoryName);
+    if(category){
+        setCategoryFilter(category.name);
+        setActivePage('products');
+    }
   };
 
-  // Handlers for Product Form Modal
   const openFormModal = (
       mode: 'add' | 'edit',
       product: Product | null = null,
@@ -173,10 +195,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
   ) => {
       setModalMode(mode);
       const initialData = mode === 'edit' && product ? product : null;
-      // The `id` is crucial. If prefillData doesn't have an id, and initialData is null, it should be an empty string for a new product.
       const combinedId = initialData?.id || prefillData.id || '';
       const combinedData = { ...initialData, ...prefillData, id: combinedId };
-      setCurrentProduct(combinedData as Product); // Cast as Product, acknowledging it might be partial initially
+      setCurrentProduct(combinedData as Product);
       setIsFormModalOpen(true);
   };
 
@@ -198,11 +219,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
       }
   };
 
-
   const handleLogout = async () => {
     try {
       await logout();
-      onSwitchToUser(); // Switch to user view after logout
+      onSwitchToUser();
     } catch (error) {
       console.error("Failed to log out", error);
     }
@@ -215,7 +235,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
   const renderContent = () => {
     switch (activePage) {
       case 'dashboard':
-        return <DashboardHome />;
+        return <DashboardHome allCategories={allCategories} />;
       case 'products':
         return <ProductManagement 
             products={filteredProducts}
@@ -225,7 +245,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
             onStatusFilterChange={setStatusFilter}
             categoryFilter={categoryFilter}
             onClearCategoryFilter={() => setCategoryFilter(null)}
-            // Modal Props
+            allCategories={allCategories}
+            allBrands={allBrands}
             isFormModalOpen={isFormModalOpen}
             modalMode={modalMode}
             currentProduct={currentProduct}
@@ -238,6 +259,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
         return <CategoryManagement onViewCategoryProducts={handleViewCategoryProducts} />;
       case 'variant-options':
         return <VariantOptionManagement />;
+      case 'brands':
+        return <BrandManagement />;
       case 'storefront-settings':
         return <StorefrontSettings />;
       case 'orders':

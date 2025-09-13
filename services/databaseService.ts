@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption, UserNotification } from '../types';
+import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption, UserNotification, Brand } from '../types';
 
 // The category data stored in DB has a different shape than the UI one
 export interface DbCategory {
@@ -23,6 +23,7 @@ const mapProductFromDb = (dbProduct: any): Product => ({
     id: dbProduct.id,
     name: dbProduct.name,
     category: dbProduct.category,
+    brandId: dbProduct.brand_id,
     description: dbProduct.description,
     imageUrls: dbProduct.image_urls || [],
     rating: dbProduct.rating,
@@ -32,11 +33,12 @@ const mapProductFromDb = (dbProduct: any): Product => ({
 });
 
 const mapProductForDb = (product: Partial<Omit<Product, 'id'>>) => {
-    const { imageUrls, deliveryTimescale, ...rest } = product;
+    const { imageUrls, deliveryTimescale, brandId, ...rest } = product;
     return {
         ...rest,
         image_urls: imageUrls,
         delivery_timescale: deliveryTimescale,
+        brand_id: brandId,
     };
 };
 
@@ -55,6 +57,20 @@ const mapCategoryForDb = (category: Partial<Omit<DbCategory, 'id'>>) => {
         product_count: productCount,
     };
 };
+
+// FIX: Added mappers for Brand data.
+const mapBrandFromDb = (dbBrand: any): Brand => ({
+    id: dbBrand.id,
+    name: dbBrand.name,
+    logoUrl: dbBrand.logo_url,
+    isFeatured: dbBrand.is_featured,
+});
+
+const mapBrandForDb = (brand: Partial<Omit<Brand, 'id'>>) => ({
+    name: brand.name,
+    logo_url: brand.logoUrl,
+    is_featured: brand.isFeatured,
+});
 
 const mapOrderFromDb = (dbOrder: any): Order => ({
     id: dbOrder.id,
@@ -193,6 +209,34 @@ export const deleteVariantOption = async (optionId: string) => {
     const { error } = await supabase.from('variant_options').delete().eq('id', optionId);
     handleSupabaseError(error, 'deleteVariantOption');
 };
+
+// FIX: Added exported functions for Brand management.
+export const onBrandsChange = (callback: (brands: Brand[]) => void) => {
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase.from('brands').select('*');
+        handleSupabaseError(error, 'onBrandsChange initial fetch');
+        callback((data || []).map(mapBrandFromDb));
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel('public:brands')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'brands' }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
+};
+
+export const saveBrand = async (brand: Omit<Brand, 'id'>, brandId?: string) => {
+    const brandData = mapBrandForDb(brand);
+    const payload = brandId ? { ...brandData, id: brandId } : brandData;
+    const { error } = await supabase.from('brands').upsert(payload);
+    handleSupabaseError(error, 'saveBrand');
+};
+
+export const deleteBrand = async (brandId: string) => {
+    const { error } = await supabase.from('brands').delete().eq('id', brandId);
+    handleSupabaseError(error, 'deleteBrand');
+};
+
 
 // Store Settings
 const SETTINGS_ID = 1; // Assuming a single row for all settings

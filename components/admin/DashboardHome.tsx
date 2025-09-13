@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Order, Product, UserRoleInfo } from '../../types';
+import type { Order, Product, UserRoleInfo, Category } from '../../types';
 import { fetchAllOrders, onProductsValueChange, onAllUsersAndRolesValueChange } from '../../services/databaseService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { formatCurrency } from '../shared/utils';
+
+interface DashboardHomeProps {
+    allCategories: Category[];
+}
 
 const StatCard: React.FC<{ title: string; value: string; change?: string; isPositive?: boolean }> = ({ title, value, change, isPositive }) => (
     <div className="bg-card p-5 rounded-lg shadow-sm border border-border transition-all duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1">
@@ -34,7 +38,7 @@ const acquisitionTrendData = [
   { name: 'Jun', 'Organic': 180, 'Social': 140, 'Referral': 100 },
 ];
 
-const DashboardHome: React.FC = () => {
+const DashboardHome: React.FC<DashboardHomeProps> = ({ allCategories }) => {
     const [recentOrders, setRecentOrders] = useState<Order[]>([]);
     const [topProducts, setTopProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -251,6 +255,7 @@ const DashboardHome: React.FC = () => {
                                 <img src={p.imageUrls?.[0] || ''} alt={p.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
+                                    {/* FIX: Use product.category which is now the correct property for the category name */}
                                     <p className="text-xs text-muted-foreground">{p.category}</p>
                                 </div>
                                 <p className="font-semibold text-sm">{formatCurrency(p.variants?.[0]?.price ?? 0)}</p>

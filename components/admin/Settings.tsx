@@ -34,7 +34,10 @@ const Settings: React.FC = () => {
         setIsLoading(true);
         try {
             // FIX: Corrected the call to `changePassword` to pass only one argument as defined in AuthContext.
-            await changePassword(formData.newPassword);
+            const { error: changePasswordError } = await changePassword(formData.newPassword);
+            if (changePasswordError) {
+                throw changePasswordError;
+            }
             setSuccess("Password updated successfully!");
             // FIX: Updated state clearing to match the new form state.
             setFormData({ newPassword: '', confirmPassword: '' }); // Clear form

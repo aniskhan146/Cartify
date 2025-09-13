@@ -90,6 +90,7 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                     ]);
                     return; // Return early as this has its own UI flow
                 case 'addProduct':
+                    // FIX: Changed `categoryId` to `category` to align with the updated Product type definition.
                     const newProductData: Omit<Product, 'id'> = {
                         name: args.name, category: args.category,
                         variants: [{ id: `v_${Date.now()}`, name: 'Standard', options: {}, price: args.price, stock: args.stock } as Variant],

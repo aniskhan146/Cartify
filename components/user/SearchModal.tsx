@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SearchIcon, XIcon } from '../shared/icons';
-import type { Product } from '../../types';
+import type { Product, Category } from '../../types';
 import { formatCurrency } from '../shared/utils';
 
 interface SearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   allProducts: Product[];
+  categories: Category[];
   onProductClick: (product: Product) => void;
 }
 
@@ -16,6 +17,7 @@ const ProductListItem: React.FC<{ product: Product, onSelect: (product: Product)
             <img src={product.imageUrls?.[0] || ''} alt={product.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-md object-cover bg-muted" />
             <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground truncate">{product.name}</p>
+                {/* FIX: Use product.category which is now the correct property for the category name */}
                 <p className="text-sm text-muted-foreground">{product.category}</p>
             </div>
             <p className="font-bold text-foreground">{formatCurrency(product.variants?.[0]?.price ?? 0)}</p>
@@ -24,7 +26,7 @@ const ProductListItem: React.FC<{ product: Product, onSelect: (product: Product)
 );
 
 
-const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, allProducts, onProductClick }) => {
+const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, allProducts, categories, onProductClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -41,6 +43,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, allProducts,
     const lowercasedQuery = searchQuery.toLowerCase();
     return allProducts.filter(product =>
       product.name.toLowerCase().includes(lowercasedQuery) ||
+      // FIX: Use product.category which is now the correct property for the category name
       product.category.toLowerCase().includes(lowercasedQuery) ||
       product.description.toLowerCase().includes(lowercasedQuery)
     ).slice(0, 8); // Limit results for performance
