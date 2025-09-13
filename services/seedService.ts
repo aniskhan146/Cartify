@@ -21,72 +21,6 @@ const sampleCategories: Omit<DbCategory, 'id' | 'productCount'>[] = [
     { name: 'Gifts', iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwb2x5bGluZSBwb2ludHM9IjIwIDEyIDIwIDIyIDQgMjIgNCAxMiI+PC9wb2x5bGluZT48cmVjdCB4PSIyIiB5PSI3IiB3aWR0aD0iMjAiIGhlaWdodD0iNSI+PC9yZWN0PjxsaW5lIHgxPSIxMiIgeTE9IjIyIiB4Mj0iMTIiIHkyPSI3Ij48L2xpbmU+PHBhdGggZD0iTTEyIDdINy41YTIuNSAyLjUgMCAwIDEgMC01QzExIDIgMTIgNyAxMiA3ek0xMiA3aDQuNWEyLjUgMi41IDAgMCAwIDAtNUMxMyAyIDEyIDcgMTIgN3oiPjwvcGF0aD48L3N2Zz4=' },
 ];
 
-const sampleProducts: Omit<Product, 'id'>[] = [
-    {
-        name: "Pro Wireless Headphones",
-        category: "Electronics",
-        description: "Experience immersive sound with these state-of-the-art wireless headphones. Featuring active noise cancellation, a 24-hour battery life, and crystal-clear microphone quality. Perfect for music, calls, and gaming.",
-        imageUrls: ['https://picsum.photos/seed/headphones/400/300', 'https://picsum.photos/seed/headphones2/400/300'],
-        rating: 4.8,
-        reviews: 1250,
-        deliveryTimescale: "Ships in 2-4 business days",
-        variants: [
-            { id: uuidv4(), name: 'Color: Midnight Black', options: { 'Color': 'Midnight Black' }, price: 8500, originalPrice: 10000, stock: 75 },
-            { id: uuidv4(), name: 'Color: Arctic White', options: { 'Color': 'Arctic White' }, price: 8500, originalPrice: 10000, stock: 60 },
-            { id: uuidv4(), name: 'Color: Navy Blue', options: { 'Color': 'Navy Blue' }, price: 8700, stock: 40 },
-        ]
-    },
-    {
-        name: "4K Action Camera",
-        category: "Electronics",
-        description: "Capture your adventures in stunning 4K. This rugged, waterproof action camera is built for the extreme, with image stabilization and a wide-angle lens.",
-        imageUrls: ['https://picsum.photos/seed/camera/400/300', 'https://picsum.photos/seed/camera2/400/300'],
-        rating: 4.6,
-        reviews: 890,
-        deliveryTimescale: "Ships in 1-3 business days",
-        variants: [
-            { id: uuidv4(), name: 'Standard', options: {}, price: 15000, stock: 50 }
-        ]
-    },
-    {
-        name: "Smart Fitness Watch",
-        category: "Electronics",
-        description: "Track your fitness goals with this sleek smartwatch. Monitors heart rate, sleep patterns, and daily activity, with a vibrant AMOLED display and long-lasting battery.",
-        imageUrls: ['https://picsum.photos/seed/watch/400/300', 'https://picsum.photos/seed/watch2/400/300'],
-        rating: 4.7,
-        reviews: 1500,
-        variants: [
-            { id: uuidv4(), name: 'Size: 42mm / Color: Space Gray', options: { 'Size': '42mm', 'Color': 'Space Gray' }, price: 12000, originalPrice: 13500, stock: 120 },
-            { id: uuidv4(), name: 'Size: 42mm / Color: Silver', options: { 'Size': '42mm', 'Color': 'Silver' }, price: 12000, originalPrice: 13500, stock: 100 },
-            { id: uuidv4(), name: 'Size: 46mm / Color: Space Gray', options: { 'Size': '46mm', 'Color': 'Space Gray' }, price: 14000, originalPrice: 15500, stock: 80 },
-        ]
-    },
-    {
-        name: "Ergonomic Gaming Mouse",
-        category: "Electronics",
-        description: "Gain a competitive edge with this high-precision ergonomic gaming mouse. Features customizable RGB lighting, programmable buttons, and an ultra-responsive sensor.",
-        imageUrls: ['https://picsum.photos/seed/mouse/400/300', 'https://picsum.photos/seed/mouse2/400/300'],
-        rating: 4.9,
-        reviews: 2100,
-        variants: [
-            { id: uuidv4(), name: 'Standard', options: {}, price: 4500, stock: 90 },
-        ]
-    },
-    {
-        name: "Smart Home Speaker",
-        category: "Electronics",
-        description: "Control your smart home with your voice. This smart speaker delivers rich, room-filling sound and connects seamlessly with your favorite smart devices and music services.",
-        imageUrls: ['https://picsum.photos/seed/speaker/400/300', 'https://picsum.photos/seed/speaker2/400/300'],
-        rating: 4.5,
-        reviews: 750,
-        deliveryTimescale: "Ships in 3-5 business days",
-        variants: [
-            { id: uuidv4(), name: 'Color: Charcoal', options: { 'Color': 'Charcoal' }, price: 7000, stock: 60 },
-            { id: uuidv4(), name: 'Color: Chalk', options: { 'Color': 'Chalk' }, price: 7000, stock: 0 },
-        ]
-    },
-];
-
 const sampleVariantOptions: Omit<VariantOption, 'id'>[] = [
     {
         name: "Color",
@@ -128,25 +62,15 @@ export const seedDatabaseIfNeeded = async () => {
     }
 
     try {
-        // Check for products
-        const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-        if (productCount === 0) {
-            console.log("No products found, adding example products...");
-            const productsToInsert = sampleProducts.map(p => ({ ...p, id: uuidv4() }));
-            const { error } = await supabase.from('products').upsert(productsToInsert);
-            if (error) throw error;
-            console.log("Added example products.");
-        }
-
-        // Check for categories
+        // Seed categories
         const { count: categoryCount } = await supabase.from('categories').select('*', { count: 'exact', head: true });
         if (categoryCount === 0) {
              console.log("No categories found, seeding database...");
-             const categoriesToInsert = sampleCategories.map((cat, i) => ({
+             const categoriesToInsert = sampleCategories.map((cat) => ({
                 id: uuidv4(),
                 name: cat.name,
-                iconUrl: cat.iconUrl,
-                productCount: cat.name === 'Electronics' ? 5 : 0
+                icon_url: cat.iconUrl,
+                product_count: 0, // Set initial product count to 0 as products are no longer seeded
              }));
             const { error } = await supabase.from('categories').upsert(categoriesToInsert);
             if (error) throw error;
@@ -179,6 +103,7 @@ export const seedDatabaseIfNeeded = async () => {
         console.log("Database already contains data or has been seeded.");
         sessionStorage.setItem('db_seeded_supabase', 'true');
     } catch (error) {
-        console.error("Database seeding failed:", error);
+        // FIX: Log the full error message for better debugging.
+        console.error("Database seeding failed:", (error as Error).message);
     }
 };

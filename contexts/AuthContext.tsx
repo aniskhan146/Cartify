@@ -53,10 +53,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setCurrentUser(user);
             if (user) {
                 let profile = await getUserProfile(user.id);
+                // The profile is created here, after a session is confirmed.
+                // This is the correct place for it.
                 if (!profile) {
                     console.log(`User ${user.id} from Auth not found in DB. Creating profile now.`);
-                    await createUserRoleAndProfile(user.id, user.email!);
-                    profile = await getUserProfile(user.id);
+                    try {
+                        await createUserRoleAndProfile(user.id, user.email!);
+                        profile = await getUserProfile(user.id);
+                    } catch (error) {
+                        console.error("Failed to create user profile:", error);
+                        // Handle failure, maybe log user out or show an error
+                    }
                 }
                 setUserProfile(profile);
             } else {
@@ -71,10 +78,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, [loading]);
 
     const signup = async (email: string, password: string) => {
+        // FIX: Removed the call to createUserRoleAndProfile.
+        // It caused an RLS error because it was called before the user session was active
+        // (especially when email confirmation is enabled).
+        // The onAuthStateChange listener now reliably handles profile creation.
         const { data, error } = await supabase.auth.signUp({ email, password });
-        if (data.user) {
-            await createUserRoleAndProfile(data.user.id, email);
-        }
         return { error };
     };
 
