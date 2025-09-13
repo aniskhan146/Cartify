@@ -17,12 +17,74 @@ const handleSupabaseError = (error: any, context: string) => {
     }
 };
 
+// --- Mappers for camelCase <-> snake_case conversion ---
+
+const mapProductFromDb = (dbProduct: any): Product => ({
+    id: dbProduct.id,
+    name: dbProduct.name,
+    category: dbProduct.category,
+    description: dbProduct.description,
+    imageUrls: dbProduct.image_urls || [],
+    rating: dbProduct.rating,
+    reviews: dbProduct.reviews,
+    variants: dbProduct.variants || [],
+    deliveryTimescale: dbProduct.delivery_timescale,
+});
+
+const mapProductForDb = (product: Partial<Omit<Product, 'id'>>) => {
+    const { imageUrls, deliveryTimescale, ...rest } = product;
+    return {
+        ...rest,
+        image_urls: imageUrls,
+        delivery_timescale: deliveryTimescale,
+    };
+};
+
+const mapCategoryFromDb = (dbCategory: any): DbCategory => ({
+    id: dbCategory.id,
+    name: dbCategory.name,
+    iconUrl: dbCategory.icon_url,
+    productCount: dbCategory.product_count,
+});
+
+const mapCategoryForDb = (category: Partial<Omit<DbCategory, 'id'>>) => {
+    const { iconUrl, productCount, ...rest } = category;
+    return {
+        ...rest,
+        icon_url: iconUrl,
+        product_count: productCount,
+    };
+};
+
+const mapOrderFromDb = (dbOrder: any): Order => ({
+    id: dbOrder.id,
+    customerName: dbOrder.customer_name,
+    date: dbOrder.date,
+    total: dbOrder.total,
+    status: dbOrder.status,
+    items: dbOrder.items || [],
+});
+
+const mapOrderWithUserFromDb = (dbOrder: any): Order & { userId: string } => ({
+    ...mapOrderFromDb(dbOrder),
+    userId: dbOrder.user_id,
+});
+
+const mapOrderForDb = (order: Partial<Omit<Order, 'id'>>) => {
+    const { customerName, ...rest } = order;
+    return {
+        ...rest,
+        customer_name: customerName,
+    };
+};
+
+
 // Products
 export const onProductsValueChange = (callback: (products: Product[]) => void) => {
   const fetchAndCallback = async () => {
       const { data, error } = await supabase.from('products').select('*');
       handleSupabaseError(error, 'onProductsValueChange initial fetch');
-      callback(data || []);
+      callback((data || []).map(mapProductFromDb));
   };
   fetchAndCallback(); // Initial fetch
 
@@ -37,11 +99,12 @@ export const onProductsValueChange = (callback: (products: Product[]) => void) =
 export const fetchAllProducts = async (): Promise<Product[]> => {
     const { data, error } = await supabase.from('products').select('*');
     handleSupabaseError(error, 'fetchAllProducts');
-    return data || [];
+    return (data || []).map(mapProductFromDb);
 };
 
 export const saveProduct = async (product: Omit<Product, 'id'>, productId?: string) => {
-  const payload = productId ? { ...product, id: productId } : product;
+  const productData = mapProductForDb(product);
+  const payload = productId ? { ...productData, id: productId } : productData;
   const { error } = await supabase.from('products').upsert(payload);
   handleSupabaseError(error, 'saveProduct');
 };
@@ -57,7 +120,7 @@ export const onCategoriesValueChange = (callback: (categories: DbCategory[]) => 
     const fetchAndCallback = async () => {
         const { data, error } = await supabase.from('categories').select('*');
         handleSupabaseError(error, 'onCategoriesValueChange initial fetch');
-        callback(data || []);
+        callback((data || []).map(mapCategoryFromDb));
     };
     fetchAndCallback();
 
@@ -70,17 +133,22 @@ export const onCategoriesValueChange = (callback: (categories: DbCategory[]) => 
 export const getCategoryByName = async (name: string): Promise<DbCategory | null> => {
     const { data, error } = await supabase.from('categories').select('*').ilike('name', name).limit(1);
     handleSupabaseError(error, 'getCategoryByName');
-    return data?.[0] || null;
+    return data && data.length > 0 ? mapCategoryFromDb(data[0]) : null;
 };
 
 
 export const saveCategory = async (category: Omit<DbCategory, 'id'>, categoryId?: string) => {
-    const payload = categoryId ? { ...category, id: categoryId } : category;
+    const categoryData = mapCategoryForDb(category);
+    const payload = categoryId ? { ...categoryData, id: categoryId } : categoryData;
     const { error } = await supabase.from('categories').upsert(payload);
     handleSupabaseError(error, 'saveCategory');
 };
 
 export const deleteCategory = async (categoryId: string) => {
+    const { data: products } = await supabase.from('products').select('id').eq('category', (await supabase.from('categories').select('name').eq('id', categoryId).single()).data?.name);
+    if ((products?.length ?? 0) > 0) {
+        throw new Error('Cannot delete category with associated products.');
+    }
     const { error } = await supabase.from('categories').delete().eq('id', categoryId);
     handleSupabaseError(error, 'deleteCategory');
 };
@@ -154,7 +222,7 @@ export const onCheckoutConfigChange = (callback: (config: CheckoutConfig) => voi
     const fetchAndCallback = async () => {
         const { data, error } = await supabase.from('storefront_settings').select('checkout_config').eq('id', SETTINGS_ID).single();
         // Do not throw error if not found, just use default
-        if (error && error.code !== 'PGRST116') console.error('Error fetching checkout config:', error);
+        if (error && error.code !== 'PGRST116') handleSupabaseError(error, 'onCheckoutConfigChange fetch');
         callback(data?.checkout_config || defaultConfig);
     };
     fetchAndCallback();
@@ -176,7 +244,8 @@ export const saveCheckoutConfig = async (config: CheckoutConfig) => {
 
 // Orders
 export const placeOrder = async (userId: string, orderData: Omit<Order, 'id'>): Promise<string> => {
-    const { data, error } = await supabase.from('orders').insert({ user_id: userId, ...orderData }).select('id').single();
+    const dbOrderData = mapOrderForDb(orderData);
+    const { data, error } = await supabase.from('orders').insert({ user_id: userId, ...dbOrderData }).select('id').single();
     handleSupabaseError(error, 'placeOrder');
     if (!data?.id) throw new Error("Failed to create order: No ID returned.");
     return data.id;
@@ -187,7 +256,7 @@ export const findOrderById = async (orderIdToFind: string): Promise<Order | null
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found, which is not an error here
        handleSupabaseError(error, 'findOrderById');
     }
-    return data || null;
+    return data ? mapOrderFromDb(data) : null;
 };
 
 export const fetchOrderById = async (userId: string, orderId: string): Promise<Order | null> => {
@@ -195,14 +264,14 @@ export const fetchOrderById = async (userId: string, orderId: string): Promise<O
     if (error && error.code !== 'PGRST116') {
        handleSupabaseError(error, 'fetchOrderById');
     }
-    return data || null;
+    return data ? mapOrderFromDb(data) : null;
 }
 
 export const onUserOrdersValueChange = (userId: string, callback: (orders: Order[]) => void) => {
     const fetchAndCallback = async () => {
         const { data, error } = await supabase.from('orders').select('*').eq('user_id', userId);
         handleSupabaseError(error, 'onUserOrdersValueChange initial fetch');
-        callback(data || []);
+        callback((data || []).map(mapOrderFromDb));
     };
     fetchAndCallback();
 
@@ -215,8 +284,7 @@ export const onUserOrdersValueChange = (userId: string, callback: (orders: Order
 export const fetchAllOrders = async (): Promise<(Order & { userId: string })[]> => {
     const { data, error } = await supabase.from('orders').select('*, user_id').order('date', { ascending: false });
     handleSupabaseError(error, 'fetchAllOrders');
-    // Map user_id to userId for consistency with old structure
-    return (data || []).map(o => ({...o, userId: o.user_id}));
+    return (data || []).map(mapOrderWithUserFromDb);
 };
 
 export const onAllOrdersValueChange = (callback: (orders: (Order & { userId: string })[]) => void) => {
@@ -262,7 +330,7 @@ export const getUserProfile = async (userId: string): Promise<UserRoleInfo | nul
         handleSupabaseError(error, 'getUserProfile');
     }
     if (!data) return null;
-    return { ...data, isBanned: data.is_banned };
+    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned };
 };
 
 export const findUserByEmail = async (email: string): Promise<UserRoleInfo | null> => {
@@ -271,14 +339,14 @@ export const findUserByEmail = async (email: string): Promise<UserRoleInfo | nul
         handleSupabaseError(error, 'findUserByEmail');
     }
     if (!data) return null;
-    return { ...data, isBanned: data.is_banned };
+    return { uid: data.uid, email: data.email, role: data.role, isBanned: data.is_banned };
 };
 
 export const onAllUsersAndRolesValueChange = (callback: (users: UserRoleInfo[]) => void) => {
     const fetchAndCallback = async () => {
         const { data, error } = await supabase.from('profiles').select('*');
         handleSupabaseError(error, 'onAllUsersAndRolesValueChange fetch');
-        const profiles = (data || []).map(p => ({ ...p, isBanned: p.is_banned }));
+        const profiles = (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned }));
         callback(profiles);
     };
     fetchAndCallback();
@@ -292,7 +360,7 @@ export const onAllUsersAndRolesValueChange = (callback: (users: UserRoleInfo[]) 
 export const fetchAllUsers = async (): Promise<UserRoleInfo[]> => {
     const { data, error } = await supabase.from('profiles').select('*');
     handleSupabaseError(error, 'fetchAllUsers');
-    return (data || []).map(p => ({ ...p, isBanned: p.is_banned }));
+    return (data || []).map(p => ({ uid: p.uid, email: p.email, role: p.role, isBanned: p.is_banned }));
 };
 
 export const updateUserRole = async (userId: string, newRole: UserRole) => {

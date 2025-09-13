@@ -38,7 +38,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onBackToShop }) => {
   useEffect(() => {
     if (currentUser) {
         setIsLoadingOrders(true);
-        const unsubscribe = onUserOrdersValueChange(currentUser.uid, (orders) => {
+        const unsubscribe = onUserOrdersValueChange(currentUser.id, (orders) => {
             const sortedOrders = orders.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             setUserOrders(sortedOrders);
             setIsLoadingOrders(false);

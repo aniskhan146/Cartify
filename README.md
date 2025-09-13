@@ -4,7 +4,7 @@ This is a comprehensive e-commerce platform featuring a user-facing storefront a
 
 ## Deployment to Netlify
 
-Follow these steps carefully to ensure your project deploys and runs correctly on Netlify. The most common issue (a blank or black screen) is caused by missing environment variables, which these steps will help you resolve.
+Follow these steps carefully to ensure your project deploys and runs correctly on Netlify. The most common issue (a blank or black screen) is caused by missing environment variables or an incorrect database setup.
 
 ### Step 1: Connect Your GitHub Repository
 
@@ -32,20 +32,19 @@ This is the most critical step to make your live site work.
 
     > **Warning:** Without these keys, the application will fail to initialize its services and will likely show a blank screen.
 
-### Step 3: Deploy Your Site
+### Step 3: Set Up the Supabase Database Schema (How to Fix "Table Not Found" Errors)
 
-1.  After configuring the environment variables, trigger a new deploy from the "Deploys" tab if needed.
-2.  Netlify will deploy your project. Once it's finished, you can visit your new live URL.
+This application requires a specific database schema to function. The "table not found" errors mean this step has not been completed.
 
-## Supabase Database Setup
+1.  Navigate to the **SQL Editor** section in your Supabase project dashboard.
+2.  Click **"New query"**.
+3.  Open the `supabase/schema.sql` file from this repository and copy its entire content.
+4.  Paste the SQL content into the Supabase SQL Editor.
+5.  Click **"RUN"**.
 
-This application expects a certain database structure. When you run the application for the first time, it will automatically try to create and seed the necessary tables with sample data (`products`, `categories`, `variantOptions`, etc.).
+This script will create all the necessary tables (`products`, `categories`, `profiles`, etc.) and set up the required security policies. After the schema is created, the application will automatically seed the tables with sample data on its first run if they are empty.
 
-### Security: Row Level Security (RLS)
+### Step 4: Deploy Your Site
 
-For a production application, you **MUST** enable **Row Level Security (RLS)** on your Supabase tables to protect your data.
-
-1.  Go to your Supabase Dashboard > Authentication > Policies.
-2.  For each table, enable RLS and create policies. For example, you should make most tables publicly readable but restrict write access to only authenticated users or admins.
-
-Your site should now be live and fully functional!
+1.  After configuring the environment variables and setting up the database, trigger a new deploy from the "Deploys" tab on Netlify.
+2.  Once it's finished, you can visit your new live URL. The app should now be fully functional.
