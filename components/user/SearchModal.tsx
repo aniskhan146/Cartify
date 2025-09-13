@@ -13,7 +13,7 @@ interface SearchModalProps {
 const ProductListItem: React.FC<{ product: Product, onSelect: (product: Product) => void }> = ({ product, onSelect }) => (
     <li>
         <button onClick={() => onSelect(product)} className="w-full text-left flex items-center space-x-4 p-4 hover:bg-accent transition-colors">
-            <img src={product.imageUrls?.[0] || ''} alt={product.name} className="w-16 h-16 rounded-md object-cover bg-muted" />
+            <img src={product.imageUrls?.[0] || ''} alt={product.name} loading="lazy" decoding="async" className="w-16 h-16 rounded-md object-cover bg-muted" />
             <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground truncate">{product.name}</p>
                 <p className="text-sm text-muted-foreground">{product.category}</p>

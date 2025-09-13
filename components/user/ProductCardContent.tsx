@@ -47,7 +47,9 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
             <div className="relative block aspect-square w-full overflow-hidden">
                 <img
                     src={product.imageUrls?.[0] || ''}
-                    alt={product.name} 
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 />
                  {discountPercent > 0 && (

@@ -133,7 +133,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
                             <div className="grid grid-cols-3 items-start gap-4">
                                 <div className="col-span-2 flex items-start gap-4">
                                     <div className="w-24 h-24 shrink-0 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 p-2 rounded-md">
-                                        <img src={item.productImage} alt={item.productName} className="w-full h-full object-contain" />
+                                        <img src={item.productImage} alt={item.productName} loading="lazy" decoding="async" className="w-full h-full object-contain" />
                                     </div>
                                     <div className="flex flex-col">
                                         <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">{item.productName}</h3>

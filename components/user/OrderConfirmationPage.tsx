@@ -106,7 +106,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ orderId, 
                         <ul className="space-y-3">
                             {order.items.map((item, index) => (
                                 <li key={item.productId + index} className="flex items-center space-x-4 bg-muted p-3 rounded-md">
-                                    <img src={item.productImage} alt={item.productName} className="w-16 h-16 rounded-md object-cover bg-background"/>
+                                    <img src={item.productImage} alt={item.productName} loading="lazy" decoding="async" className="w-16 h-16 rounded-md object-cover bg-background"/>
                                     <div className="flex-1">
                                         <p className="font-medium text-foreground text-sm">{item.productName}</p>
                                         <p className="text-xs text-muted-foreground">Variant: {item.variantName}</p>

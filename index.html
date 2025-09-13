@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightswind@1.0.1/src/lightswind.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" integrity="sha512-wnea99uKIC3TJF7v4eKk4Y+lMz2Mklv18+r4na2Gn1abDRPPOeef95xTzdwGD9e6zXJBteMIhZ1+68QC5byJZw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script>
       // Prevents Flash of Incorrect Theme (FOUC)
       (function() {
@@ -17,59 +18,6 @@
           document.documentElement.classList.add('dark');
         }
       })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class', // Enable class-based dark mode
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              border: 'hsl(var(--border))',
-              input: 'hsl(var(--input))',
-              ring: 'hsl(var(--ring))',
-              background: 'hsl(var(--background))',
-              foreground: 'hsl(var(--foreground))',
-              primary: {
-                DEFAULT: 'hsl(var(--primary))',
-                foreground: 'hsl(var(--primary-foreground))',
-              },
-              secondary: {
-                DEFAULT: 'hsl(var(--secondary))',
-                foreground: 'hsl(var(--secondary-foreground))',
-              },
-              destructive: {
-                DEFAULT: 'hsl(var(--destructive))',
-                foreground: 'hsl(var(--destructive-foreground))',
-              },
-              muted: {
-                DEFAULT: 'hsl(var(--muted))',
-                foreground: 'hsl(var(--muted-foreground))',
-              },
-              accent: {
-                DEFAULT: 'hsl(var(--accent))',
-                foreground: 'hsl(var(--accent-foreground))',
-              },
-              popover: {
-                DEFAULT: 'hsl(var(--popover))',
-                foreground: 'hsl(var(--popover-foreground))',
-              },
-              card: {
-                DEFAULT: 'hsl(var(--card))',
-                foreground: 'hsl(var(--card-foreground))',
-              },
-            },
-            borderRadius: {
-              lg: `var(--radius)`,
-              md: `calc(var(--radius) - 2px)`,
-              sm: `calc(var(--radius) - 4px)`,
-            },
-          },
-        },
-      }
     </script>
     <style>
       :root {
@@ -192,6 +140,49 @@
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
       }
+      /* Custom theme classes to complement static Tailwind CSS */
+      .bg-background { background-color: hsl(var(--background)); }
+      .text-foreground { color: hsl(var(--foreground)); }
+      .border-border { border-color: hsl(var(--border)); }
+      .border-input { border-color: hsl(var(--input)); }
+      .focus\:ring-ring:focus { --tw-ring-color: hsl(var(--ring)); }
+      .focus\:ring-primary:focus { --tw-ring-color: hsl(var(--primary)); }
+      .ring-primary { --tw-ring-color: hsl(var(--primary)); }
+      .bg-card { background-color: hsl(var(--card)); }
+      .text-card-foreground { color: hsl(var(--card-foreground)); }
+      .bg-popover { background-color: hsl(var(--popover)); }
+      .text-popover-foreground { color: hsl(var(--popover-foreground)); }
+      .bg-primary { background-color: hsl(var(--primary)); }
+      .text-primary { color: hsl(var(--primary)); }
+      .text-primary-foreground { color: hsl(var(--primary-foreground)); }
+      .hover\:bg-primary\/90:hover { background-color: hsla(var(--primary), 0.9); }
+      .accent-primary { accent-color: hsl(var(--primary)); }
+      .bg-secondary { background-color: hsl(var(--secondary)); }
+      .text-secondary-foreground { color: hsl(var(--secondary-foreground)); }
+      .bg-muted { background-color: hsl(var(--muted)); }
+      .text-muted-foreground { color: hsl(var(--muted-foreground)); }
+      .bg-accent { background-color: hsl(var(--accent)); }
+      .hover\:bg-accent:hover { background-color: hsl(var(--accent)); }
+      .text-accent-foreground { color: hsl(var(--accent-foreground)); }
+      .bg-destructive { background-color: hsl(var(--destructive)); }
+      .text-destructive { color: hsl(var(--destructive)); }
+      .text-destructive-foreground { color: hsl(var(--destructive-foreground)); }
+      .hover\:bg-destructive:hover { background-color: hsl(var(--destructive)); }
+      .hover\:bg-destructive\/90:hover { background-color: hsla(var(--destructive), 0.9); }
+      .bg-primary\/10 { background-color: hsla(var(--primary), 0.1); }
+      .bg-destructive\/10 { background-color: hsla(var(--destructive), 0.1); }
+      .bg-green-500\/10 { background-color: rgba(34, 197, 94, 0.1); }
+      .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.1); }
+      .bg-yellow-500\/20 { background-color: rgba(234, 179, 8, 0.2); }
+      .bg-green-500\/20 { background-color: rgba(34, 197, 94, 0.2); }
+      .bg-blue-500\/20 { background-color: rgba(59, 130, 246, 0.2); }
+      .bg-gray-500\/20 { background-color: rgba(107, 114, 128, 0.2); }
+      .bg-red-500\/20 { background-color: rgba(239, 68, 68, 0.2); }
+      .text-green-400 { color: #4ade80; }
+      .text-blue-400 { color: #60a5fa; }
+      .text-yellow-400 { color: #facc15; }
+      .text-gray-400 { color: #9ca3af; }
+      .text-red-400 { color: #f87171; }
     </style>
   <script type="importmap">
 {

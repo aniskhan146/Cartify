@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // FIX: Added type import for Variants from framer-motion
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { LogoIcon, SearchIcon, UserIcon, MenuIcon, XIcon, SunIcon, MoonIcon } from '../shared/icons';
+import { LogoIcon, SearchIcon, UserIcon, MenuIcon, XIcon, SunIcon, MoonIcon, BellIcon } from '../shared/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useUserNotification } from '../../contexts/UserNotificationContext';
 import BorderBeam from './BorderBeam';
 import type { Category } from '../../types';
+import { formatDistanceToNow } from 'date-fns';
+
 
 const navItems = [
   { name: "Home", action: "reload" },
@@ -20,6 +23,7 @@ interface HeaderProps {
     onCategoryClick: (categoryId: string) => void;
     onViewAllProductsClick: () => void;
     onHomeClick: () => void;
+    onProfileClick: () => void;
 }
 
 interface CategoryPopupPanelProps {
@@ -87,13 +91,17 @@ const CategoryPopupPanel: React.FC<CategoryPopupPanelProps> = ({ isOpen, onClose
 };
 
 
-const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories, onCategoryClick, onViewAllProductsClick, onHomeClick }) => {
+const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories, onCategoryClick, onViewAllProductsClick, onHomeClick, onProfileClick }) => {
     const [showHeader, setShowHeader] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const { currentUser } = useAuth();
     const { theme, setTheme } = useTheme();
+    const { notifications, unreadCount, markAllAsRead } = useUserNotification();
+    const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+    const notificationRef = useRef<HTMLDivElement>(null);
+
 
     useEffect(() => {
         const handleScroll = () => {
@@ -109,6 +117,17 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, [lastScrollY]);
+    
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+                setIsNotificationPanelOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
 
     const handleScrollTo = (id: string) => {
         const element = document.querySelector(id);
@@ -136,6 +155,19 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
         onCategoryClick(category.id);
         setIsCategoryModalOpen(false);
     };
+    
+    const handleBellClick = () => {
+        setIsNotificationPanelOpen(prev => !prev);
+        if (unreadCount > 0) {
+            markAllAsRead();
+        }
+    };
+    
+    const handleNotificationClick = () => {
+        onProfileClick();
+        setIsNotificationPanelOpen(false);
+    };
+
 
     const menuVariants: Variants = {
         open: { clipPath: "circle(1200px at 95% 5%)", transition: { type: "spring", stiffness: 20, restDelta: 2 } },
@@ -227,6 +259,57 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                                         </motion.div>
                                     </AnimatePresence>
                                 </button>
+                                {currentUser && (
+                                    <div ref={notificationRef} className="relative">
+                                        <button onClick={handleBellClick} className="relative p-2 text-muted-foreground hover:text-foreground" aria-label="Notifications">
+                                            <BellIcon className="h-5 w-5" />
+                                            <AnimatePresence>
+                                                {unreadCount > 0 && (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        exit={{ scale: 0 }}
+                                                        className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
+                                                    >
+                                                        {unreadCount}
+                                                    </motion.span>
+                                                )}
+                                            </AnimatePresence>
+                                        </button>
+                                        <AnimatePresence>
+                                            {isNotificationPanelOpen && (
+                                                 <motion.div
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -10 }}
+                                                    className="absolute right-0 mt-3 w-80 bg-card rounded-lg shadow-lg z-50 ring-1 ring-border text-sm"
+                                                 >
+                                                    <div className="p-3 font-semibold border-b border-border text-foreground">Notifications</div>
+                                                    <div className="max-h-80 overflow-y-auto">
+                                                        {notifications.length > 0 ? (
+                                                            notifications.map(notif => (
+                                                                <button key={notif.id} onClick={handleNotificationClick} className="flex items-start gap-3 p-3 border-b border-border last:border-b-0 hover:bg-accent w-full text-left">
+                                                                    <div className="flex-shrink-0 mt-1">
+                                                                      <BellIcon className="h-5 w-5 text-blue-400" />
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <p className="text-foreground">{notif.message}</p>
+                                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                                            {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                                                                        </p>
+                                                                    </div>
+                                                                     {!notif.isRead && <div className="w-2 h-2 rounded-full bg-primary mt-1 flex-shrink-0 self-center" />}
+                                                                </button>
+                                                            ))
+                                                        ) : (
+                                                            <p className="p-4 text-center text-muted-foreground">You have no notifications yet.</p>
+                                                        )}
+                                                    </div>
+                                                 </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
                                 {!currentUser && (
                                     <button onClick={onLoginClick} className="p-2 text-muted-foreground hover:text-foreground" aria-label="Login">
                                         <UserIcon className="h-5 w-5" />

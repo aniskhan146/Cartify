@@ -50,9 +50,40 @@ If you are setting up a new Supabase project, you must create the database schem
 3.  Open the `supabase/schema.txt` file from this repository and copy its **entire content**.
 4.  Paste the SQL content into the Supabase SQL Editor and click **RUN**.
 
-This script creates all necessary tables and security policies. The app will automatically seed the tables with sample data on its first run if they are empty.
+This script creates all necessary tables and security policies.
 
-### Step 4: Deploy Your Site
+### Step 4: (Optional) Seed Initial Data
+
+The application no longer seeds the database automatically. This change makes the application lighter and deployments faster. If you are starting with a new, empty database, you can manually add sample categories and variant options by running the SQL script below in your Supabase SQL Editor. This will populate your store with some initial data to get you started.
+
+```sql
+-- This script adds sample data to your AYExpress database.
+-- Run this in your Supabase SQL Editor AFTER running the schema.txt script.
+
+-- Seed Categories
+INSERT INTO public.categories (name, icon_url, product_count) VALUES
+('Electronics', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjIiIHk9IjciIHdpZHRoPSIyMCIgaGVpZHRoPSIxMyIgcng9IjIiIHJ5PSIyIj48L3JlY3Q+PHBhdGggZD0iTTEyIDE4VjdsLTMgM2g2bC0zLTMiPjwvcGF0aD48cGF0aCBkPSJNMjEgMTNoMjAiPjwvcGF0aD48L3N2Zz4=', 0),
+('Fashion', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMC4yOCAxNS4zNGwtNC4yOCA0LjI4YTIgMiAwIDAgMS0yLjgzIDBsLTQuMjgtNC4yOGEyIDIgMCAwIDEgMC0yLjgzbDQuMjgtNC4yOGEyIDIgMCAwIDEgMi44MyAwbDQuMjggNC4yOGEyIDIgMCAwIDEgMCAyLjgzek04LjUgMTcuNWwtNC00TTIxLjUgMTAuNWwtNCA0TTEyIDIxLjVWMTlNMTIgN1YyLjUiPjwvcGF0aD48L3N2Zz4=', 0),
+('Home & Garden', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yIDIyaDIwTTIgMTRoMjBNMyAxNHYtNWEyIDIgMCAwIDEgMi0yaDE0YTIgMiAwIDAgMSAyIDJ2NU0xMiAxNFY3TTcgMTRWN00xNyAxNFY3TTEyIDRhMiAyIDAgMCAwLTIgMnYxaDRWNgeyI+PC9wYXRoPjwvc3ZnPg==', 0),
+('Sports', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjEwIj48L2NpcmNsZT48cGF0aCBkPSJNMTIgMmExMCAxMCAwIDAgMC0xMCAxMGMwIDQuNDIgMi44NyA4LjE3IDYuODQgOS41Yy41LjA4Ljg2LS4zOC44Ni0uODV2LTIuMWMwLS40NC0uMzYtLjgtLjgtLjhINy41Yy0uMyAwLS41NC0uMjItLjU0LS41cy4yNC0uNS41NC0uNUg5LjVjLjQ0IDAgLjgtLjM2LjgtLjh2LTIuMWMwLS40NC0uMzYtLjgtLjgtLjhINy41Yy0uMyAwLS41NC0uMjItLjU0LS41cy4yNC0uNS41NC0uNUg5LjVjLjQ0IDAgLjgtLjM2LjgtLjhWN S41YzAtLjQ3LjM4LS44NS44Ni0uODVjMy45NyAxLjMzIDYuODQgNS4wOCA2Ljg0IDkuNWExMCAxMCAwIDAgMC0xMC0xMHoiPjwvcGF0aD48L3N2Zz4=', 0),
+('Books', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik00IDE5LjVB franchisinguNSAyLjUgMCAwIDEgNi41IDE3SDIwdiJINGuNUEyLjUgMi41IDAgMCAxIDQgMTkuNXpNNCA3LjVB franchisinguNSAyLjUgMCAwIDEgNi41IDVIMjB2Mkg2LjVB franchisinguNSAyLjUgMCAwIDEgNCA3LjV6TTQgMTMuNUEyLjUgMi41IDAgMCAxIDYuNSAxMUgyMHYySDYuNUEyLjUgMi41IDAgMCAxIDQgMTMuNXoiPjwvcGF0aD48L3N2Zz4=', 0),
+('Toys', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMiAyTDggNmg4bC00LTR6TTEyIDIybDQtNEg4bDQgNHpNNiA4bC00IDRoMjBsLTQtNHpNMTggMTZsNC00SDJsNCA0Ij48L3BhdGg+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMiI+PC9jaXJjbGU+PC9zdmc+', 0),
+('Health', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMC44NCA0LjYxYTUuNSA1LjUgMCAwIDAtNy43OCAwTDEyIDUuNjdsLTEuMDYtMS4wNmE1LjUgNS41IDAgMCAwLTcuNzggNy43OGwxLjA2IDEuMDZMMSAyMS4yM2w3Ljc4LTcuNzggMS4wNi0xLjA2YTUuNSA1LjUgMCAwIDAgMC03Ljc4eiI+PC9wYXRoPjwvc3ZnPg==', 0),
+('Gifts', 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwb2x5bGluZSBwb2ludHM9IjIwIDEyIDIwIDIyIDQgMjIgNCAxMiI+PC9wb2x5bGluZT48cmVjdCB4PSIyIiB5PSI3IiB3aWR0aD0iMjAiIGhlaWdodD0iNSI+PC9yZWN0PjxsaW5lIHgxPSIxMiIgeTE9IjIyIiB4Mj0iMTIiIHkyPSI3Ij48L2xpbmU+PHBhdGggZD0iTTEyIDdINy41YTIuNSAyLjUgMCAwIDEgMC01QzExIDIgMTIgNyAxMiA3ek0xMiA3aDQuNWEyLjUgMi41IDAgMCAwIDAtNUMxMyAyIDEyIDcgMTIgN3oiPjwvcGF0aD48L3N2Zz4=', 0);
+
+-- Seed Variant Options
+INSERT INTO public.variant_options (name, values) VALUES
+('Color', '[{"name": "Midnight Black", "colorCode": "#1C1C1E"}, {"name": "Starlight", "colorCode": "#F0EBE0"}, {"name": "Sierra Blue", "colorCode": "#A7C7E7"}, {"name": "Product Red", "colorCode": "#BF0A30"}, {"name": "Alpine Green", "colorCode": "#587464"}, {"name": "Rose Gold", "colorCode": "#B76E79"}]'),
+('Size', '[{"name": "Small"}, {"name": "Medium"}, {"name": "Large"}, {"name": "XL"}, {"name": "XXL"}]'),
+('Storage', '[{"name": "64GB"}, {"name": "128GB"}, {"name": "256GB"}, {"name": "512GB"}]');
+
+-- Seed Storefront Settings (with defaults)
+INSERT INTO public.storefront_settings (id, hero_images, checkout_config) VALUES
+(1, '{}', '{"taxAmount": 4, "shippingChargeInsideDhaka": 60, "shippingChargeOutsideDhaka": 120}')
+ON CONFLICT (id) DO NOTHING;
+```
+
+### Step 5: Deploy Your Site
 
 1.  Trigger a new deploy from the "Deploys" tab on Netlify.
 2.  Once finished, visit your live URL. The app should now be fully functional.
@@ -97,7 +128,11 @@ This script creates all necessary tables and security policies. The app will aut
 
 এই স্ক্রিপ্টটি আপনার সব প্রয়োজনীয় টেবিল এবং নিরাপত্তা পলিসি তৈরি করবে।
 
-### ধাপ ৪: আপনার সাইট ডেপ্লয় করুন
+### ধাপ ৪: (ঐচ্ছিক) প্রাথমিক ডেটা যোগ করুন
+
+অ্যাপ্লিকেশনটি এখন আর স্বয়ংক্রিয়ভাবে ডেটাবেস সীড করে না। এই পরিবর্তনের ফলে অ্যাপ্লিকেশনটি হালকা হয়েছে এবং ডেপ্লয়মেন্ট দ্রুত হয়। আপনি যদি একটি নতুন, খালি ডেটাবেস দিয়ে শুরু করেন, তাহলে আপনি উপরের ইংরেজি নির্দেশাবলীর **Step 4** থেকে SQL কোডটি কপি করে আপনার Supabase SQL Editor-এ রান করতে পারেন। এটি আপনার স্টোরটিকে কিছু প্রাথমিক ক্যাটাগরি এবং অপশন দিয়ে শুরু করতে সাহায্য করবে।
+
+### ধাপ ৫: আপনার সাইট ডেপ্লয় করুন
 
 1.  Netlify-এর "Deploys" ট্যাব থেকে একটি নতুন ডেপ্লয় শুরু করুন।
 2.  ডেপ্লয়মেন্ট শেষ হয়ে গেলে, আপনি আপনার নতুন লাইভ URL-এ যেতে পারবেন। অ্যাপটি এখন সম্পূর্ণরূপে কার্যকর হওয়া উচিত।

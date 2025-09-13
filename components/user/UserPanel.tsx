@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './Header'; // Import the new Header
 import Dock from './Dock';
@@ -6,16 +6,8 @@ import BorderBeam from './BorderBeam';
 import ThreeDImageRing from './ThreeDImageRing';
 import CategoryProductSection from './CategoryProductSection';
 import Footer from './Footer';
-import ProductDetailPage from './ProductDetailPage';
-import CheckoutPage from './CheckoutPage';
-import VisionPage from './VisionPage';
-import WishlistPage from './WishlistPage';
-import ProfilePage from './ProfilePage';
 import SearchModal from './SearchModal';
-import AllProductsPage from './AllProductsPage';
 import QuickViewModal from './QuickViewModal';
-import TrackOrderPage from './TrackOrderPage';
-import OrderConfirmationPage from './OrderConfirmationPage';
 import RecentlyViewedSection from './RecentlyViewedSection';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
@@ -26,6 +18,17 @@ import {
 } from '../shared/icons';
 import { onProductsValueChange, onCategoriesValueChange, onHeroImagesChange } from '../../services/databaseService';
 import ShinyText from '../shared/ShinyText';
+
+// Lazy load page components for better performance
+const ProductDetailPage = React.lazy(() => import('./ProductDetailPage'));
+const CheckoutPage = React.lazy(() => import('./CheckoutPage'));
+const VisionPage = React.lazy(() => import('./VisionPage'));
+const WishlistPage = React.lazy(() => import('./WishlistPage'));
+const ProfilePage = React.lazy(() => import('./ProfilePage'));
+const AllProductsPage = React.lazy(() => import('./AllProductsPage'));
+const TrackOrderPage = React.lazy(() => import('./TrackOrderPage'));
+const OrderConfirmationPage = React.lazy(() => import('./OrderConfirmationPage'));
+
 
 interface UserPanelProps {
   onSwitchToAdminLogin: () => void;
@@ -119,6 +122,11 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
     setView({ name: 'shop' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  
+  const handleProfileClick = () => {
+    setView({ name: 'profile' });
+  };
+
 
   const handleOrderPlaced = (orderId: string) => {
     clearCart();
@@ -249,7 +257,6 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
 
   const showHeaderAndAdminButton = view.name === 'shop';
   
-  // FIX: Refactored animation props to use variants for compatibility with newer framer-motion versions.
   const scrollButtonVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -264,11 +271,14 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         onLoginClick={onLoginClick} 
         categories={categories} 
         onCategoryClick={(id) => handleCategoryClick(categories.find(c=>c.id === id)?.name ?? '')} 
-        onViewAllProductsClick={() => handleViewAllClick()} 
+        onViewAllProductsClick={() => handleViewAllClick()}
+        onProfileClick={handleProfileClick}
       />}
       
       <main className="flex-grow">
-        {renderContent()}
+        <Suspense fallback={<div className="flex justify-center items-center h-screen bg-background"><div className="w-16 h-16 border-4 border-t-transparent border-primary rounded-full animate-spin"></div></div>}>
+            {renderContent()}
+        </Suspense>
       </main>
       
       {view.name === 'shop' && <RecentlyViewedSection allProducts={allProducts} onProductClick={handleProductClick} />}

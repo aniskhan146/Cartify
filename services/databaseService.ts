@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption } from '../types';
+import type { Product, Category, Order, UserRole, UserRoleInfo, CheckoutConfig, VariantOption, UserNotification } from '../types';
 
 // The category data stored in DB has a different shape than the UI one
 export interface DbCategory {
@@ -77,6 +77,15 @@ const mapOrderForDb = (order: Partial<Omit<Order, 'id'>>) => {
         customer_name: customerName,
     };
 };
+
+const mapUserNotificationFromDb = (dbNotification: any): UserNotification => ({
+    id: dbNotification.id,
+    userId: dbNotification.user_id,
+    message: dbNotification.message,
+    linkTo: dbNotification.link_to,
+    isRead: dbNotification.is_read,
+    createdAt: dbNotification.created_at,
+});
 
 
 // Products
@@ -411,6 +420,36 @@ export const updateWishlist = async (userId: string, productIds: string[]) => {
         const { error: insertError } = await supabase.from('wishlists').insert(rowsToInsert);
         handleSupabaseError(insertError, 'updateWishlist (insert)');
     }
+};
+
+// User Notifications
+export const onUserNotificationsChange = (userId: string, callback: (notifications: UserNotification[]) => void) => {
+    const fetchAndCallback = async () => {
+        const { data, error } = await supabase
+            .from('user_notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(20); // Limit to recent 20
+        handleSupabaseError(error, 'onUserNotificationsChange initial fetch');
+        callback((data || []).map(mapUserNotificationFromDb));
+    };
+    fetchAndCallback();
+
+    const channel = supabase.channel(`public:user_notifications:user_id=eq.${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_notifications', filter: `user_id=eq.${userId}` }, fetchAndCallback)
+        .subscribe();
+    return () => { supabase.removeChannel(channel) };
+};
+
+export const markUserNotificationsAsRead = async (userId: string, notificationIds: string[]) => {
+    if (notificationIds.length === 0) return;
+    const { error } = await supabase
+        .from('user_notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .in('id', notificationIds);
+    handleSupabaseError(error, 'markUserNotificationsAsRead');
 };
 
 // Newsletter

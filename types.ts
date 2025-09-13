@@ -88,6 +88,15 @@ export interface Notification {
   read: boolean;
 }
 
+export interface UserNotification {
+  id: string;
+  userId: string;
+  message: string;
+  linkTo?: string;
+  isRead: boolean;
+  createdAt: string; // ISO string
+}
+
 export interface CheckoutConfig {
     shippingChargeInsideDhaka: number;
     shippingChargeOutsideDhaka: number;
