@@ -44,6 +44,20 @@ This application requires a specific database schema to function. The "table not
 
 This script will create all the necessary tables (`products`, `categories`, `profiles`, etc.) and set up the required security policies. After the schema is created, the application will automatically seed the tables with sample data on its first run if they are empty.
 
+---
+
+### ধাপ ৩: Supabase ডেটাবেস স্কিমা সেটআপ (কিভাবে "Table Not Found" এরর ঠিক করবেন)
+
+এই অ্যাপ্লিকেশনটির কাজ করার জন্য একটি নির্দিষ্ট ডেটাবেস স্কিমার প্রয়োজন। "table not found" এরর মানে হলো এই ধাপটি সম্পন্ন করা হয়নি।
+
+১. আপনার Supabase প্রজেক্টের ড্যাশবোর্ডে গিয়ে বাম পাশের মেনু থেকে **SQL Editor** সেকশনে যান।
+২. **+ New query** বাটনে ক্লিক করুন।
+৩. এই রিপোজিটরির `supabase/schema.sql` ফাইলটি খুলুন এবং এর **সম্পূর্ণ কোডটি** কপি করুন।
+৪. কপি করা কোডটি Supabase SQL Editor-এ পেস্ট করুন।
+৫. সবুজ রঙের **RUN** বাটনে ক্লিক করুন।
+
+এই স্ক্রিপ্টটি আপনার সব প্রয়োজনীয় টেবিল (`products`, `categories`, `profiles`, ইত্যাদি) তৈরি করবে এবং নিরাপত্তা পলিসি সেট আপ করবে। স্কিমা তৈরি হয়ে গেলে, অ্যাপটি প্রথমবার চালানোর সময় টেবিলগুলো খালি থাকলে নমুনা ডেটা দিয়ে পূর্ণ করে দেবে।
+
 ### Step 4: Deploy Your Site
 
 1.  After configuring the environment variables and setting up the database, trigger a new deploy from the "Deploys" tab on Netlify.
