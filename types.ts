@@ -76,15 +76,19 @@ export interface UserRoleInfo {
   isBanned?: boolean;
 }
 
+export type NotificationType = 'success' | 'error' | 'info' | 'new-order' | 'new-user' | 'low-stock';
+
+
 export interface Notification {
   id: string;
-  type: 'new-order' | 'new-user' | 'low-stock';
+  type: NotificationType;
   message: string;
   timestamp: number;
   read: boolean;
 }
 
 export interface CheckoutConfig {
-    shippingCharge: number;
+    shippingChargeInsideDhaka: number;
+    shippingChargeOutsideDhaka: number;
     taxAmount: number;
 }

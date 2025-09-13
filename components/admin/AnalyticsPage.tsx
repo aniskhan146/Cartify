@@ -28,26 +28,37 @@ const AnalyticsPage: React.FC = () => {
     const [customerTrend, setCustomerTrend] = useState<CustomerTrendData[]>([]);
 
     useEffect(() => {
+        let isMounted = true;
         const fetchData = async () => {
             setIsLoading(true);
             try {
                 // Fetch all data concurrently
                 const [allOrders, allProducts, allUsers] = await Promise.all([
                     fetchAllOrders(),
-                    new Promise<Product[]>((resolve) => onProductsValueChange(resolve)),
-                    new Promise<UserRoleInfo[]>((resolve) => onAllUsersAndRolesValueChange(resolve))
+                    new Promise<Product[]>((resolve) => {
+                        const unsub = onProductsValueChange(products => {
+                            resolve(products);
+                            unsub(); 
+                        });
+                    }),
+                    new Promise<UserRoleInfo[]>((resolve) => {
+                         const unsub = onAllUsersAndRolesValueChange(users => {
+                            resolve(users);
+                            unsub();
+                        });
+                    })
                 ]);
+
+                if (!isMounted) return;
 
                 // 1. Process Sales by Category
                 const productMap = new Map(allProducts.map(p => [p.id, p]));
                 const categorySales: { [key: string]: number } = {};
                 allOrders.forEach(order => {
                     order.items.forEach(item => {
-                        // FIX: Property 'product' does not exist on type 'OrderItem'. Look up product details from allProducts.
                         const productDetails = productMap.get(item.productId);
                         if (productDetails) {
                             const category = productDetails.category;
-                            // FIX: Property 'product' does not exist on type 'OrderItem'. Use 'variantPrice' from OrderItem.
                             const itemTotal = item.variantPrice * item.quantity;
                             categorySales[category] = (categorySales[category] || 0) + itemTotal;
                         }
@@ -59,7 +70,6 @@ const AnalyticsPage: React.FC = () => {
                 // 2. Process Inventory Value by Category
                 const categoryInventory: { [key: string]: number } = {};
                 allProducts.forEach(product => {
-                    // FIX: Property 'price' and 'stock' do not exist on type 'Product'. Calculate value from variants.
                     const value = product.variants.reduce((sum, v) => sum + v.price * v.stock, 0);
                     categoryInventory[product.category] = (categoryInventory[product.category] || 0) + value;
                 });
@@ -80,11 +90,15 @@ const AnalyticsPage: React.FC = () => {
             } catch (error) {
                 console.error("Error fetching analytics data:", error);
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         fetchData();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     if (isLoading) {

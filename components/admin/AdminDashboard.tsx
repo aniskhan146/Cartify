@@ -51,7 +51,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
 
         if (!isInitialized.current.products) {
             products.forEach(p => {
-                // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
                 const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
                 if (totalStock <= 10) notifiedLowStockProducts.current.add(p.id);
             });
@@ -60,20 +59,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
         }
 
         products.forEach(product => {
-            // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
             const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
             if (totalStock <= 10 && !notifiedLowStockProducts.current.has(product.id)) {
                 const newNotif: Notification = {
                     id: `${Date.now()}-stock-${product.id}`,
                     type: 'low-stock',
-                    // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
                     message: `"${product.name}" has only ${totalStock} items left.`,
                     timestamp: Date.now(),
                     read: false,
                 };
                 setNotifications(prev => [newNotif, ...prev].slice(0, 20)); // Keep last 20
                 notifiedLowStockProducts.current.add(product.id);
-            // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
             } else if (totalStock > 10 && notifiedLowStockProducts.current.has(product.id)) {
                 notifiedLowStockProducts.current.delete(product.id);
             }
@@ -149,13 +145,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSwitchToUser }) => {
     return allProducts.filter(product => {
         const matchesCategory = !categoryFilter || product.category === categoryFilter;
         
-        // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
         const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
         const matchesStatus = 
             statusFilter === 'all' ||
-            // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
             (statusFilter === 'inStock' && totalStock > 0) ||
-            // FIX: Property 'stock' does not exist on type 'Product'. Use total stock from variants.
             (statusFilter === 'outOfStock' && totalStock === 0);
         
         const matchesSearch = 

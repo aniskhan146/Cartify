@@ -117,9 +117,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ categories, filters, onFi
               className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
             />
             <div className="flex justify-between text-sm text-muted-foreground">
-              {/* FIX: Use the imported 'formatCurrency' utility to display price values. */}
               <span>{formatCurrency(0)}</span>
-              {/* FIX: Use the imported 'formatCurrency' utility to display price values. */}
               <span>{formatCurrency(filters.priceRange[1])}</span>
             </div>
           </div>

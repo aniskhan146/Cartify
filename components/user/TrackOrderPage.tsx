@@ -135,17 +135,13 @@ const TrackOrderPage: React.FC<TrackOrderPageProps> = ({ onBackToShop }) => {
                              <div className="border-t border-border pt-6">
                                 <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
                                 <div className="space-y-3">
-                                    {/* FIX: Property 'product' does not exist on type 'OrderItem'. Use direct properties from the item. */}
                                     {searchedOrder.items.map((item, index) => (
                                         <div key={item.productId + index} className="flex items-center space-x-4 bg-muted p-3 rounded-md">
-                                            {/* FIX: Property 'product' does not exist on type 'OrderItem'. Use 'productImage'. */}
                                             <img src={item.productImage} alt={item.productName} className="w-16 h-16 rounded-md object-cover bg-background"/>
                                             <div className="flex-1">
-                                                {/* FIX: Property 'product' does not exist on type 'OrderItem'. Use 'productName'. */}
                                                 <p className="font-medium text-foreground text-sm">{item.productName}</p>
                                                 <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                                             </div>
-                                            {/* FIX: Property 'product' does not exist on type 'OrderItem'. Use 'variantPrice'. */}
                                             <p className="font-semibold text-sm">{formatCurrency(item.variantPrice * item.quantity)}</p>
                                         </div>
                                     ))}

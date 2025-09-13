@@ -5,6 +5,7 @@ import { placeOrder, onCheckoutConfigChange } from '../../services/databaseServi
 import { formatCurrency } from '../shared/utils';
 import type { Order, CheckoutConfig, OrderItem } from '../../types';
 import { UserIcon } from '../shared/icons';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface CheckoutPageProps {
   onBackToShop: () => void;
@@ -15,9 +16,11 @@ interface CheckoutPageProps {
 const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced, onLoginClick }) => {
     const { cartItems, cartItemCount, removeFromCart, updateItemQuantity } = useCart();
     const { currentUser } = useAuth();
+    const { addNotification } = useNotification();
     const [shippingInfo, setShippingInfo] = useState({ name: '', email: '', phone: '', address: '' });
     const [isPlacingOrder, setIsPlacingOrder] = useState(false);
     const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
+    const [shippingLocation, setShippingLocation] = useState<'inside' | 'outside'>('inside');
 
     useEffect(() => {
         if (currentUser) {
@@ -35,7 +38,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
     }, []);
 
     const subtotal = cartItems.reduce((sum, item) => sum + item.variant.price * item.quantity, 0);
-    const shipping = subtotal > 0 ? (checkoutConfig?.shippingCharge ?? 0) : 0;
+    const shipping = subtotal > 0
+        ? (shippingLocation === 'inside'
+            ? (checkoutConfig?.shippingChargeInsideDhaka ?? 0)
+            : (checkoutConfig?.shippingChargeOutsideDhaka ?? 0))
+        : 0;
     const tax = subtotal > 0 ? (checkoutConfig?.taxAmount ?? 0) : 0;
     const total = subtotal + shipping + tax;
 
@@ -50,7 +57,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!currentUser) {
-            alert("Please log in to place an order.");
+            addNotification("Please log in to place an order.", "error");
             onLoginClick();
             return;
         }
@@ -80,7 +87,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
             onOrderPlaced(newOrderId);
         } catch (err) {
             console.error("Failed to place order:", err);
-            alert("There was an issue placing your order. Please try again.");
+            addNotification("There was an issue placing your order. Please try again.", "error");
             setIsPlacingOrder(false);
         }
     };
@@ -170,6 +177,26 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ onBackToShop, onOrderPlaced
                                     <input name="email" type="email" placeholder="Email" required value={shippingInfo.email} onChange={handleInputChange} readOnly={!!currentUser} className={`block w-full rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-700 px-3 py-2 shadow-sm outline-none text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-black focus:ring-offset-1 text-sm ${!!currentUser ? 'cursor-not-allowed bg-muted text-muted-foreground' : ''}`} />
                                     <input name="phone" type="tel" placeholder="Phone No." required value={shippingInfo.phone} onChange={handleInputChange} className="block w-full rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-700 px-3 py-2 shadow-sm outline-none text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-black focus:ring-offset-1 text-sm" />
                                     <textarea name="address" placeholder="Address" required value={shippingInfo.address} onChange={handleInputChange} className="block w-full rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-700 px-3 py-2 shadow-sm outline-none text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-black focus:ring-offset-1 text-sm"></textarea>
+                                </div>
+                            </div>
+                             <div className="mt-6">
+                                <h3 className="text-base text-gray-800 dark:text-gray-200 font-semibold mb-2">Shipping Method</h3>
+                                <div className="space-y-2 rounded-md bg-white dark:bg-black border border-gray-200 dark:border-gray-800 p-3">
+                                    <label className="flex items-center gap-4 cursor-pointer">
+                                        <input type="radio" name="shipping" className="size-4" checked={shippingLocation === 'inside'} onChange={() => setShippingLocation('inside')} />
+                                        <div className="w-full flex justify-between">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Inside Dhaka</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(checkoutConfig?.shippingChargeInsideDhaka ?? 0)}</p>
+                                        </div>
+                                    </label>
+                                    <hr className="border-gray-300 dark:border-gray-700" />
+                                    <label className="flex items-center gap-4 cursor-pointer">
+                                        <input type="radio" name="shipping" className="size-4" checked={shippingLocation === 'outside'} onChange={() => setShippingLocation('outside')} />
+                                        <div className="w-full flex justify-between">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Outside Dhaka</p>
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{formatCurrency(checkoutConfig?.shippingChargeOutsideDhaka ?? 0)}</p>
+                                        </div>
+                                    </label>
                                 </div>
                             </div>
                             <OrderTotals />

@@ -48,27 +48,30 @@ const DashboardHome: React.FC = () => {
 
     useEffect(() => {
         setIsLoading(true);
+        let isMounted = true;
+
         const fetchData = async () => {
             try {
-                const allOrders = await fetchAllOrders();
+                const allOrdersPromise = fetchAllOrders();
                 
-                const unsubscribeProducts = onProductsValueChange((allProducts) => {
+                const unsubProducts = onProductsValueChange(async (allProducts) => {
+                    const allOrders = await allOrdersPromise;
+                    if (!isMounted) return;
+
                     const sortedTopProducts = [...allProducts].sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
                     setTopProducts(sortedTopProducts.slice(0, 5));
 
-                    // FIX: Property 'price' and 'stock' do not exist on type 'Product'. Calculate inventory value by iterating over variants for each product.
                     const totalInventoryValue = allProducts.reduce((sum, p) => sum + (p.variants || []).reduce((variantSum, v) => variantSum + v.price * v.stock, 0), 0);
 
-                    const unsubscribeUsers = onAllUsersAndRolesValueChange((allUsers) => {
-                        // All data is now available, perform calculations
+                    const unsubUsers = onAllUsersAndRolesValueChange((allUsers) => {
+                        if (!isMounted) return;
+                        
                         const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0);
                         
-                        // Process sales trend data
                         const monthlySales: { [key: string]: number } = {};
                         const monthOrder: string[] = [];
                         const now = new Date();
 
-                        // Initialize last 12 months
                         for (let i = 11; i >= 0; i--) {
                            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                            const monthKey = d.toLocaleString('default', { month: 'short', year: '2-digit' });
@@ -98,31 +101,28 @@ const DashboardHome: React.FC = () => {
                         });
 
                         setRecentOrders(allOrders.slice(0, 5));
-                        setIsLoading(false);
+                        if (isLoading) setIsLoading(false);
                     });
 
-                    // Return cleanup for users listener
-                    return () => unsubscribeUsers();
+                    return unsubUsers;
                 });
 
-                // Return cleanup for products listener
-                return () => unsubscribeProducts();
+                return async () => {
+                    const unsubUsers = await unsubProducts;
+                    if (unsubUsers) unsubUsers();
+                };
 
             } catch (error) {
                 console.error("Error fetching dashboard data: ", error);
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
-        const cleanup = fetchData();
+        const cleanupPromise = fetchData();
 
         return () => {
-            // This is complex because of nested listeners. 
-            // In a real app, you might use a different pattern or state management library.
-            // For now, we rely on the returned cleanup functions.
-            if (cleanup instanceof Promise) {
-                cleanup.then(fn => fn && fn());
-            }
+            isMounted = false;
+            cleanupPromise.then(cleanup => cleanup && cleanup());
         };
     }, []);
 
@@ -243,7 +243,6 @@ const DashboardHome: React.FC = () => {
                                     <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
                                     <p className="text-xs text-muted-foreground">{p.category}</p>
                                 </div>
-                                {/* FIX: Property 'price' does not exist on type 'Product'. Display the price of the first variant. */}
                                 <p className="font-semibold text-sm">{formatCurrency(p.variants?.[0]?.price ?? 0)}</p>
                             </li>
                         ))}

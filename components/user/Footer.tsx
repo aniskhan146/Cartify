@@ -1,11 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LogoIcon, FacebookIcon, TwitterIcon, InstagramIcon, LinkedinIcon } from '../shared/icons';
+import { useNotification } from '../../contexts/NotificationContext';
+import { subscribeToNewsletter } from '../../services/databaseService';
 
 interface FooterProps {
   onTrackOrderClick: () => void;
+  // A bit of a hack to get "All Products" page to show, but better than non-functional links.
+  onViewAllProductsClick: () => void; 
 }
 
-const Footer: React.FC<FooterProps> = ({ onTrackOrderClick }) => {
+const Footer: React.FC<FooterProps> = ({ onTrackOrderClick, onViewAllProductsClick }) => {
+  const { addNotification } = useNotification();
+  const [email, setEmail] = useState('');
+
+  const handleLinkClick = (e: React.MouseEvent, action: () => void) => {
+    e.preventDefault();
+    action();
+  };
+  
+  const handleComingSoonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addNotification('This feature is coming soon!', 'info');
+  };
+  
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email)) {
+        addNotification('Please enter a valid email address.', 'error');
+        return;
+    }
+    try {
+        await subscribeToNewsletter(email);
+        addNotification("Thank you for subscribing!", 'success');
+        setEmail('');
+    } catch (error) {
+        addNotification('There was an error subscribing. Please try again.', 'error');
+    }
+  };
+  
   return (
     <footer className="bg-card text-secondary-foreground border-t border-border">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -40,20 +72,20 @@ const Footer: React.FC<FooterProps> = ({ onTrackOrderClick }) => {
           <div>
             <h3 className="text-lg font-semibold text-foreground">Shop</h3>
             <ul className="mt-4 space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Categories</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">New Arrivals</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Best Sellers</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Sale</a></li>
+              <li><a href="#" onClick={(e) => handleLinkClick(e, onViewAllProductsClick)} className="text-muted-foreground hover:text-primary transition-colors">Categories</a></li>
+              <li><a href="#" onClick={(e) => handleLinkClick(e, onViewAllProductsClick)} className="text-muted-foreground hover:text-primary transition-colors">New Arrivals</a></li>
+              <li><a href="#" onClick={(e) => handleLinkClick(e, onViewAllProductsClick)} className="text-muted-foreground hover:text-primary transition-colors">Best Sellers</a></li>
+              <li><a href="#" onClick={(e) => handleLinkClick(e, onViewAllProductsClick)} className="text-muted-foreground hover:text-primary transition-colors">All Products</a></li>
             </ul>
           </div>
 
           <div>
             <h3 className="text-lg font-semibold text-foreground">Support</h3>
             <ul className="mt-4 space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Contact Us</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors">Shipping & Returns</a></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); onTrackOrderClick(); }} className="text-muted-foreground hover:text-primary transition-colors">Track Order</a></li>
+              <li><a href="#" onClick={handleComingSoonClick} className="text-muted-foreground hover:text-primary transition-colors">Contact Us</a></li>
+              <li><a href="#" onClick={handleComingSoonClick} className="text-muted-foreground hover:text-primary transition-colors">FAQ</a></li>
+              <li><a href="#" onClick={handleComingSoonClick} className="text-muted-foreground hover:text-primary transition-colors">Shipping & Returns</a></li>
+              <li><a href="#" onClick={(e) => handleLinkClick(e, onTrackOrderClick)} className="text-muted-foreground hover:text-primary transition-colors">Track Order</a></li>
             </ul>
           </div>
 
@@ -61,10 +93,12 @@ const Footer: React.FC<FooterProps> = ({ onTrackOrderClick }) => {
           <div>
             <h3 className="text-lg font-semibold text-foreground">Stay Connected</h3>
             <p className="mt-4 text-muted-foreground">Subscribe to our newsletter for the latest updates.</p>
-            <form className="mt-4 flex" onSubmit={(e) => e.preventDefault()}>
+            <form className="mt-4 flex" onSubmit={handleNewsletterSubmit}>
               <input 
                 type="email" 
-                placeholder="Your email" 
+                placeholder="Your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)} 
                 className="w-full px-4 py-2 rounded-l-md text-foreground bg-background border border-input focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow" 
                 aria-label="Email for newsletter"
               />
@@ -82,8 +116,8 @@ const Footer: React.FC<FooterProps> = ({ onTrackOrderClick }) => {
         <div className="mt-12 border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground space-y-4 md:space-y-0">
           <p>&copy; {new Date().getFullYear()} Cartify. All rights reserved.</p>
           <div className="flex space-x-6">
-             <a href="#" className="hover:text-primary transition-colors">Terms of Service</a>
-             <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>
+             <a href="#" onClick={handleComingSoonClick} className="hover:text-primary transition-colors">Terms of Service</a>
+             <a href="#" onClick={handleComingSoonClick} className="hover:text-primary transition-colors">Privacy Policy</a>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { Product, Variant } from '../../types';
+import React, { useState, useEffect } from 'react';
+import type { Product } from '../../types';
 import { StarIcon, XIcon, HeartIcon, TruckIcon } from '../shared/icons';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,7 @@ import AnimatedCartButton from '../shared/AnimatedCartButton';
 import Toast from '../shared/Toast';
 import { cn } from '../../lib/utils';
 import { addProductToRecentlyViewed } from '../../services/recentlyViewedService';
-
+import { useProductVariant } from '../../hooks/useProductVariant';
 
 interface QuickViewModalProps {
   product: Product;
@@ -23,84 +23,32 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
     const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
     const [showToast, setShowToast] = useState(false);
     
-    // Variant selection state
-    const [selectedOptions, setSelectedOptions] = useState<{ [key: string]: string }>({});
-    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-    const [quantity, setQuantity] = useState(1);
-    const [mainImage, setMainImage] = useState(product.imageUrls?.[0] || '');
-
-    const optionTypes = useMemo(() => {
-        if (!product.variants || product.variants.length === 0) return [];
-        return Object.keys(product.variants[0].options || {});
-    }, [product.variants]);
-
-    const availableOptions = useMemo(() => {
-        const options: { [key: string]: string[] } = {};
-        const variants = product.variants || [];
-        optionTypes.forEach(type => {
-            options[type] = [...new Set(variants.map(v => v.options[type]))];
-        });
-        return options;
-    }, [product.variants, optionTypes]);
+    const {
+        selectedOptions,
+        selectedVariant,
+        quantity,
+        optionTypes,
+        availableOptions,
+        isOptionAvailable,
+        handleOptionSelect,
+        decreaseQuantity,
+        increaseQuantity,
+        isOutOfStock,
+        mainImage: derivedMainImage,
+        currentPrice,
+        originalPrice,
+        currentStock
+    } = useProductVariant(product);
     
-    const isOptionAvailable = useCallback((type: string, value: string): boolean => {
-        const tempSelection = { ...selectedOptions };
-        delete tempSelection[type];
-        
-        return (product.variants || []).some(variant => 
-             variant.options[type] === value &&
-             Object.entries(tempSelection).every(([otherType, otherValue]) => variant.options[otherType] === otherValue)
-        );
-    }, [product.variants, selectedOptions]);
+    const [mainImage, setMainImage] = useState(derivedMainImage);
 
     useEffect(() => {
         addProductToRecentlyViewed(product.id);
-        const variants = product.variants || [];
-        const firstAvailableVariant = variants.find(v => v.stock > 0) || variants[0];
-        if (firstAvailableVariant) {
-            setSelectedOptions(firstAvailableVariant.options || {});
-        }
     }, [product]);
 
     useEffect(() => {
-        const variants = product.variants || [];
-        const allOptionsSelected = optionTypes.every(type => selectedOptions[type]);
-        if (allOptionsSelected) {
-            const foundVariant = variants.find(v => 
-                optionTypes.every(type => (v.options || {})[type] === selectedOptions[type])
-            );
-            setSelectedVariant(foundVariant || null);
-        } else {
-            setSelectedVariant(null);
-        }
-        setQuantity(1);
-    }, [selectedOptions, product.variants, optionTypes]);
-
-    useEffect(() => {
-        setMainImage(selectedVariant?.imageUrl || product.imageUrls?.[0] || '');
-    }, [selectedVariant, product.imageUrls]);
-
-    const handleOptionSelect = (type: string, value: string) => {
-        setSelectedOptions(prev => {
-            const newSelection = { ...prev, [type]: value };
-            optionTypes.forEach(otherType => {
-                if (otherType !== type && newSelection[otherType]) {
-                    const tempSelection = { ...newSelection };
-                    delete tempSelection[otherType];
-                    const isStillValid = (product.variants || []).some(variant => 
-                        variant.options[otherType] === newSelection[otherType] &&
-                        Object.entries(tempSelection).every(([key, val]) => variant.options[key] === val)
-                    );
-                    if (!isStillValid) {
-                        delete newSelection[otherType];
-                    }
-                }
-            });
-            return newSelection;
-        });
-    };
-
-    const isOutOfStock = !selectedVariant || selectedVariant.stock <= 0;
+        setMainImage(derivedMainImage);
+    }, [derivedMainImage]);
 
     const handleAddToCart = () => {
         if (isOutOfStock || !selectedVariant) return;
@@ -124,13 +72,6 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
             removeFromWishlist(product.id);
         } else {
             addToWishlist(product);
-        }
-    };
-
-    const decreaseQuantity = () => setQuantity(q => Math.max(1, q - 1));
-    const increaseQuantity = () => {
-        if (selectedVariant) {
-            setQuantity(q => Math.min(selectedVariant.stock, q + 1));
         }
     };
 
@@ -185,9 +126,9 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                 <span className="text-sm text-muted-foreground ml-2">{product.rating} ({product.reviews} reviews)</span>
             </div>
             <div className="mb-4">
-              <span className="text-xl font-bold text-foreground">{formatCurrency(selectedVariant?.price ?? product.variants?.[0]?.price ?? 0)}</span>
-              {selectedVariant?.originalPrice && (
-                <span className="text-md text-muted-foreground line-through ml-3">{formatCurrency(selectedVariant.originalPrice)}</span>
+              <span className="text-xl font-bold text-foreground">{formatCurrency(currentPrice)}</span>
+              {originalPrice && (
+                <span className="text-md text-muted-foreground line-through ml-3">{formatCurrency(originalPrice)}</span>
               )}
             </div>
             
@@ -196,7 +137,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                     <div key={type}>
                         <h3 className="text-sm font-semibold text-background bg-foreground mb-2 px-2 py-1 rounded-md inline-block">{type}:</h3>
                         <div className="flex flex-wrap gap-2">
-                            {availableOptions[type].map(value => {
+                            {availableOptions[type]?.map(value => {
                                 const isAvailable = isOptionAvailable(type, value);
                                 return (
                                 <button key={value} onClick={() => handleOptionSelect(type, value)} disabled={!isAvailable} className={cn(
@@ -238,7 +179,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                             type="button"
                             className="px-3 py-1 bg-muted rounded-r-md text-foreground disabled:opacity-50"
                             onClick={increaseQuantity}
-                            disabled={!selectedVariant || quantity >= selectedVariant.stock}
+                            disabled={quantity >= currentStock}
                         >
                             +
                         </button>
@@ -279,7 +220,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                 )}
             </div>
              <p className={`text-sm font-semibold mt-3 ${isOutOfStock ? 'text-destructive' : 'text-green-600'}`}>
-                {isOutOfStock ? 'Currently unavailable' : `${selectedVariant?.stock} in stock`}
+                {isOutOfStock ? 'Currently unavailable' : `${currentStock} in stock`}
               </p>
             {product.deliveryTimescale && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-3">

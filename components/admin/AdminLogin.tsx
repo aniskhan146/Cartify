@@ -36,23 +36,11 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onSwitchToUser 
                 }
             }
         } catch (err: any) {
-            // Special handling for the initial super-admin setup.
-            // If login fails because the user doesn't exist, and the credentials match the default admin,
-            // we automatically create the account.
-            if (err.message === "This account has been suspended.") {
+             if (err.message === "This account has been suspended.") {
                 setError(err.message);
-            } else if (err.code === 'auth/invalid-credential' && email.toLowerCase() === 'kanis8871@gmail.com' && password === 'aniskhan') {
-                try {
-                    // Attempt to sign up the super-admin. This will trigger the role creation logic.
-                    await signup(email, password);
-                    // On successful signup, the user is automatically logged in.
-                    onLoginSuccess();
-                } catch (signupError: any) {
-                    setError(`Initial admin setup failed: ${signupError.message}`);
-                }
             } else {
                 let message = 'Failed to authenticate. Please try again.';
-                if (err.code === 'auth/invalid-credential') {
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
                     message = 'Invalid email or password. Please check your credentials.';
                 } else if (err.code === 'auth/too-many-requests') {
                     message = 'Access temporarily disabled due to too many failed login attempts. Please try again later.';

@@ -29,7 +29,6 @@ export const ProductCardContent: React.FC<ProductCardContentProps> = ({ product 
         if (isInWishlist(product.id)) {
             removeFromWishlist(product.id);
         } else {
-            // FIX: The `addToWishlist` function expects a `Product` object, not just the ID.
             addToWishlist(product);
         }
     };

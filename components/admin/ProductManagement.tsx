@@ -7,6 +7,7 @@ import { formatCurrency } from '../shared/utils';
 import ConfirmationModal from './ConfirmationModal';
 import { cn } from '../../lib/utils';
 import { v4 as uuidv4 } from 'uuid'; // For unique variant IDs
+import { useNotification } from '../../contexts/NotificationContext';
 
 const initialFormState: Omit<Product, 'id' | 'rating' | 'reviews' | 'variants'> & { variants: Variant[] } = {
     name: '',
@@ -579,6 +580,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
     categoryFilter, onClearCategoryFilter,
     isFormModalOpen, modalMode, currentProduct, formError, openFormModal, closeFormModal, onFormSubmit
 }) => {
+    const { addNotification } = useNotification();
     const [categories, setCategories] = useState<DbCategory[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -608,10 +610,11 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
         if (!productToDelete) return;
         try {
             await deleteProduct(productToDelete.id);
+            addNotification(`Product "${productToDelete.name}" deleted successfully.`, 'success');
             setIsConfirmModalOpen(false);
             setProductToDelete(null);
         } catch (err) {
-            alert("Failed to delete product.");
+            addNotification("Failed to delete product.", 'error');
             setIsConfirmModalOpen(false);
         }
     };
@@ -642,6 +645,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
             setIsSavingCategory(false);
             setNewCategoryData({ name: '', iconUrl: '' });
             setIsCategoryModalOpen(false);
+            addNotification('New category added!', 'success');
         } catch (err) {
             setCategoryError(err instanceof Error ? err.message : 'Failed to save category');
             setIsSavingCategory(false);
@@ -716,12 +720,11 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
             </div>
         </div>
     );
-    
+    // FIX: Add return statement with JSX to render the component UI.
     return (
         <>
-            {isCategoryModalOpen && <AddCategoryModal />}
             {isFormModalOpen && (
-                <ProductFormModal 
+                <ProductFormModal
                     mode={modalMode}
                     product={currentProduct}
                     onClose={closeFormModal}
@@ -731,111 +734,130 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
                     onAddNewCategory={() => setIsCategoryModalOpen(true)}
                 />
             )}
-            <ConfirmationModal 
+            {isCategoryModalOpen && <AddCategoryModal />}
+            <ConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}
                 onConfirm={handleConfirmDelete}
                 title="Delete Product"
                 message={`Are you sure you want to delete the product "${productToDelete?.name}"? This action cannot be undone.`}
             />
-            <div className="flex justify-between items-center mb-6">
-                {categoryFilter ? (
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-2xl font-bold text-foreground">
-                            Products in "{categoryFilter}"
-                        </h1>
-                        <button
-                            onClick={onClearCategoryFilter}
-                            className="text-sm font-medium text-primary hover:underline"
-                        >
-                            (View All Products)
-                        </button>
-                    </div>
-                ) : (
-                    <h1 className="text-2xl font-bold text-foreground">Products</h1>
-                )}
 
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-foreground">Products</h1>
                 <div className="flex items-center space-x-2">
-                    <div className="relative">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <input type="text" placeholder="Search products..." value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} className="bg-muted pl-10 pr-4 py-1.5 rounded-lg text-sm w-48 focus:ring-2 focus:ring-ring focus:outline-none"/>
-                    </div>
-                    <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'inStock' | 'outOfStock')} className="bg-muted border border-border rounded-lg py-1.5 px-3 text-sm focus:ring-2 focus:ring-ring focus:outline-none">
-                        <option value="all">All Statuses</option>
-                        <option value="inStock">In Stock</option>
-                        <option value="outOfStock">Out of Stock</option>
-                    </select>
-                    <button onClick={handleExportCSV} className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-lg font-semibold hover:bg-accent flex items-center space-x-2 transition-colors text-sm">
-                        <DownloadIcon className="h-4 w-4" /> <span>Export</span>
+                    <button onClick={handleExportCSV} className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-accent transition-colors text-sm flex items-center space-x-2">
+                        <DownloadIcon className="h-4 w-4" />
+                        <span>Export CSV</span>
                     </button>
-                    <button onClick={() => openFormModal('add', null, categoryFilter ? { category: categoryFilter } : {})} className="bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm">
+                    <button onClick={() => openFormModal('add')} className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors text-sm">
                         Add Product
                     </button>
                 </div>
             </div>
 
-            <div className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
+            <div className="bg-card p-4 rounded-lg shadow-sm border border-border mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="relative md:col-span-2">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search by product name or category..."
+                            value={searchQuery}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            className="w-full bg-background border border-input rounded-md py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                    </div>
+                    <div>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'inStock' | 'outOfStock')}
+                            className="w-full bg-background border border-input rounded-md py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="inStock">In Stock</option>
+                            <option value="outOfStock">Out of Stock</option>
+                        </select>
+                    </div>
+                </div>
+                {categoryFilter && (
+                    <div className="mt-4">
+                        <span className="text-sm font-medium text-muted-foreground">Filtered by category:</span>
+                        <span className="ml-2 inline-flex items-center bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-semibold">
+                            {categoryFilter}
+                            <button onClick={onClearCategoryFilter} className="ml-1.5 text-primary hover:text-primary/80">
+                                <XIcon className="h-4 w-4" />
+                            </button>
+                        </span>
+                    </div>
+                )}
+            </div>
+
+            <div className="bg-card rounded-lg shadow-sm border border-border overflow-x-auto">
                 {isLoadingData ? (
-                     <div className="flex justify-center items-center h-64"><div className="w-12 h-12 border-4 border-t-transparent border-primary rounded-full animate-spin"></div></div>
+                    <div className="flex justify-center items-center h-64"><div className="w-12 h-12 border-4 border-t-transparent border-primary rounded-full animate-spin"></div></div>
                 ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left text-muted-foreground">
+                    <table className="w-full min-w-[800px] text-sm text-left text-muted-foreground">
                         <thead className="text-xs text-foreground uppercase bg-muted">
                             <tr>
                                 <th scope="col" className="px-4 py-3">Product Name</th>
                                 <th scope="col" className="px-4 py-3">Category</th>
                                 <th scope="col" className="px-4 py-3">Price Range</th>
-                                <th scope="col" className="px-4 py-3">Total Stock</th>
-                                <th scope="col" className="px-4 py-3">Status</th>
+                                <th scope="col" className="px-4 py-3 text-center">Stock</th>
+                                <th scope="col" className="px-4 py-3 text-center">Status</th>
                                 <th scope="col" className="px-4 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {products.map(product => {
-                                const totalStock = product.variants?.reduce((acc, v) => acc + v.stock, 0) ?? 0;
-                                const hasStock = totalStock > 0;
+                                const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+                                const inStock = totalStock > 0;
                                 return (
-                                <tr key={product.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
-                                    <td className="px-4 py-3 font-medium text-foreground">
-                                        <div className="flex items-center space-x-3">
-                                            <img src={product.imageUrls?.[0] || ''} alt={product.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
-                                            <span>{product.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">{product.category}</td>
-                                    <td className="px-4 py-3">{getPriceRange(product.variants)}</td>
-                                    <td className="px-4 py-3">{totalStock}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                            hasStock ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                                        }`}>
-                                            {hasStock ? 'In Stock' : 'Out of Stock'}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="relative inline-block text-left">
-                                            <button onClick={() => setOpenActionMenu(openActionMenu === product.id ? null : product.id)} className="text-muted-foreground hover:text-foreground p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card focus:ring-ring">
-                                                <MoreVerticalIcon className="h-5 w-5" />
-                                            </button>
-                                            {openActionMenu === product.id && (
-                                                <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card ring-1 ring-border z-10">
-                                                    <div className="py-1">
-                                                        <a href="#" onClick={(e) => { e.preventDefault(); openFormModal('edit', product); setOpenActionMenu(null); }} className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Edit</a>
-                                                        <a href="#" onClick={(e) => { e.preventDefault(); handleDeleteClick(product); }} className="block px-4 py-2 text-sm text-destructive hover:bg-destructive/10">Delete</a>
+                                    <tr key={product.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
+                                        <td className="px-4 py-3 font-medium text-foreground">
+                                            <div className="flex items-center space-x-3">
+                                                <img src={product.imageUrls[0]} alt={product.name} className="h-10 w-10 object-cover rounded-md bg-muted" />
+                                                <span>{product.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">{product.category}</td>
+                                        <td className="px-4 py-3">{getPriceRange(product.variants)}</td>
+                                        <td className="px-4 py-3 text-center">{totalStock}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${inStock ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                {inStock ? 'In Stock' : 'Out of Stock'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                            <div className="relative inline-block text-left">
+                                                <button onClick={() => setOpenActionMenu(openActionMenu === product.id ? null : product.id)} className="text-muted-foreground hover:text-foreground p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card focus:ring-ring">
+                                                    <MoreVerticalIcon className="h-5 w-5" />
+                                                </button>
+                                                {openActionMenu === product.id && (
+                                                    <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card ring-1 ring-border z-10">
+                                                        <div className="py-1">
+                                                            <a href="#" onClick={(e) => { e.preventDefault(); openFormModal('edit', product); setOpenActionMenu(null); }} className="block px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">Edit</a>
+                                                            <a href="#" onClick={(e) => { e.preventDefault(); handleDeleteClick(product); }} className="block px-4 py-2 text-sm text-destructive hover:bg-destructive/10">Delete</a>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            )})}
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
-                </div>
-                 )}
+                )}
+                 {products.length === 0 && !isLoadingData && (
+                    <div className="text-center py-16">
+                        <p className="text-xl text-muted-foreground">No products found.</p>
+                        <p className="text-md text-muted-foreground mt-2">Try adjusting your search or filters.</p>
+                    </div>
+                )}
             </div>
         </>
     );
 };
-
+// FIX: Add default export to resolve module import error.
 export default ProductManagement;

@@ -1,4 +1,3 @@
-import { ref, get, set, push } from 'firebase/database';
 import { db } from './firebase';
 import type { Product, Variant, VariantOption } from '../types';
 
@@ -30,11 +29,8 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         reviews: 1250,
         deliveryTimescale: "Ships in 2-4 business days",
         variants: [
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
             { id: 'HDP-BLK', name: 'Color: Midnight Black', options: { 'Color': 'Midnight Black' }, price: 8500, originalPrice: 10000, stock: 75 },
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
             { id: 'HDP-WHT', name: 'Color: Arctic White', options: { 'Color': 'Arctic White' }, price: 8500, originalPrice: 10000, stock: 60 },
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
             { id: 'HDP-BLU', name: 'Color: Navy Blue', options: { 'Color': 'Navy Blue' }, price: 8700, stock: 40 },
         ]
     },
@@ -47,7 +43,6 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         reviews: 890,
         deliveryTimescale: "Ships in 1-3 business days",
         variants: [
-            // FIX: The 'Variant' type requires an 'options' property. Added an empty object for standard variants.
             { id: 'AC4K-STD', name: 'Standard', options: {}, price: 15000, stock: 50 }
         ]
     },
@@ -59,12 +54,9 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         rating: 4.7,
         reviews: 1500,
         variants: [
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
-            { id: 'SFW-42-GRY', name: 'Size: 42mm, Color: Space Gray', options: { 'Size': '42mm', 'Color': 'Space Gray' }, price: 12000, originalPrice: 13500, stock: 120 },
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
-            { id: 'SFW-42-SLV', name: 'Size: 42mm, Color: Silver', options: { 'Size': '42mm', 'Color': 'Silver' }, price: 12000, originalPrice: 13500, stock: 100 },
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
-            { id: 'SFW-46-GRY', name: 'Size: 46mm, Color: Space Gray', options: { 'Size': '46mm', 'Color': 'Space Gray' }, price: 14000, originalPrice: 15500, stock: 80 },
+            { id: 'SFW-42-GRY', name: 'Size: 42mm / Color: Space Gray', options: { 'Size': '42mm', 'Color': 'Space Gray' }, price: 12000, originalPrice: 13500, stock: 120 },
+            { id: 'SFW-42-SLV', name: 'Size: 42mm / Color: Silver', options: { 'Size': '42mm', 'Color': 'Silver' }, price: 12000, originalPrice: 13500, stock: 100 },
+            { id: 'SFW-46-GRY', name: 'Size: 46mm / Color: Space Gray', options: { 'Size': '46mm', 'Color': 'Space Gray' }, price: 14000, originalPrice: 15500, stock: 80 },
         ]
     },
     {
@@ -75,7 +67,6 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         rating: 4.9,
         reviews: 2100,
         variants: [
-            // FIX: The 'Variant' type requires an 'options' property. Added an empty object for standard variants.
             { id: 'EGM-RGB', name: 'Standard', options: {}, price: 4500, stock: 90 },
         ]
     },
@@ -88,9 +79,7 @@ const sampleProducts: Omit<Product, 'id'>[] = [
         reviews: 750,
         deliveryTimescale: "Ships in 3-5 business days",
         variants: [
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
             { id: 'SHS-CHR', name: 'Color: Charcoal', options: { 'Color': 'Charcoal' }, price: 7000, stock: 60 },
-            // FIX: The 'Variant' type requires an 'options' property. Added options based on the variant name.
             { id: 'SHS-WHT', name: 'Color: Chalk', options: { 'Color': 'Chalk' }, price: 7000, stock: 0 },
         ]
     },
@@ -137,59 +126,46 @@ export const seedDatabaseIfNeeded = async () => {
     }
 
     try {
-        // Check for products and seed if necessary
-        const productsRef = ref(db, 'products');
-        const productsSnapshot = await get(productsRef);
-        if (!productsSnapshot.exists() || Object.keys(productsSnapshot.val()).length === 0) {
+        const productsRef = db.ref('products');
+        const productsSnapshot = await productsRef.once('value');
+        if (!productsSnapshot.exists()) {
             console.log("No products found, adding example products...");
             const productUpdates: { [key: string]: any } = {};
             sampleProducts.forEach(prod => {
-                const newKey = push(productsRef).key;
-                if(newKey) {
-                    productUpdates[newKey] = prod;
-                }
+                const newKey = productsRef.push().key;
+                if(newKey) productUpdates[newKey] = prod;
             });
-            await set(productsRef, productUpdates);
+            await productsRef.update(productUpdates);
             console.log("Added example products.");
         }
 
-        // Check for categories and seed if necessary (independent of products)
-        const categoriesRef = ref(db, 'categories');
-        const categoriesSnapshot = await get(categoriesRef);
-        if (!categoriesSnapshot.exists() || Object.keys(categoriesSnapshot.val()).length === 0) {
+        const categoriesRef = db.ref('categories');
+        const categoriesSnapshot = await categoriesRef.once('value');
+        if (!categoriesSnapshot.exists()) {
              console.log("No categories found, seeding database...");
             const updates: { [key: string]: any } = {};
             sampleCategories.forEach(cat => {
-                const newKey = push(categoriesRef).key;
-                if(newKey) {
-                    updates[newKey] = cat;
-                }
+                const newKey = categoriesRef.push().key;
+                if(newKey) updates[newKey] = cat;
             });
-            await set(categoriesRef, updates);
+            await categoriesRef.update(updates);
             console.log("Seeded categories.");
         }
 
-        // Check for variant options and seed if necessary
-        const variantOptionsRef = ref(db, 'variantOptions');
-        const variantOptionsSnapshot = await get(variantOptionsRef);
-        if (!variantOptionsSnapshot.exists() || Object.keys(variantOptionsSnapshot.val()).length === 0) {
+        const variantOptionsRef = db.ref('variantOptions');
+        const variantOptionsSnapshot = await variantOptionsRef.once('value');
+        if (!variantOptionsSnapshot.exists()) {
             console.log("No variant options found, adding examples...");
             const updates: { [key: string]: any } = {};
             sampleVariantOptions.forEach(opt => {
-                const newKey = push(variantOptionsRef).key;
-                if (newKey) {
-                    updates[newKey] = opt;
-                }
+                const newKey = variantOptionsRef.push().key;
+                if (newKey) updates[newKey] = opt;
             });
-            await set(variantOptionsRef, updates);
+            await variantOptionsRef.update(updates);
             console.log("Added example variant options.");
         }
         
-        // Only log this if neither seeding process was needed.
-        if (productsSnapshot.exists() && categoriesSnapshot.exists()) {
-             console.log("Database already contains data, skipping seed.");
-        }
-        
+        console.log("Database already contains data or has been seeded.");
         sessionStorage.setItem('db_seeded', 'true');
     } catch (error) {
         console.error("Database seeding failed:", error);

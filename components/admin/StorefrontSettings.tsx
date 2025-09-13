@@ -12,7 +12,7 @@ const StorefrontSettings: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig>({ shippingCharge: 0, taxAmount: 0 });
+    const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig>({ shippingChargeInsideDhaka: 0, shippingChargeOutsideDhaka: 0, taxAmount: 0 });
     const [isConfigLoading, setIsConfigLoading] = useState(true);
     const [isConfigSaving, setIsConfigSaving] = useState(false);
     const [configError, setConfigError] = useState('');
@@ -132,11 +132,12 @@ const StorefrontSettings: React.FC = () => {
         setConfigError('');
         setConfigSuccess('');
         try {
-            if (Number(checkoutConfig.shippingCharge) < 0 || Number(checkoutConfig.taxAmount) < 0) {
+            if (Number(checkoutConfig.shippingChargeInsideDhaka) < 0 || Number(checkoutConfig.shippingChargeOutsideDhaka) < 0 || Number(checkoutConfig.taxAmount) < 0) {
                 throw new Error("Values cannot be negative.");
             }
             await saveCheckoutConfig({
-                shippingCharge: Number(checkoutConfig.shippingCharge),
+                shippingChargeInsideDhaka: Number(checkoutConfig.shippingChargeInsideDhaka),
+                shippingChargeOutsideDhaka: Number(checkoutConfig.shippingChargeOutsideDhaka),
                 taxAmount: Number(checkoutConfig.taxAmount)
             });
             setConfigSuccess('Checkout settings updated successfully!');
@@ -241,21 +242,34 @@ const StorefrontSettings: React.FC = () => {
                 {isConfigLoading ? (
                     <div className="flex justify-center items-center py-8"><div className="w-8 h-8 border-4 border-t-transparent border-primary rounded-full animate-spin"></div></div>
                 ) : (
-                    <div className="max-w-md space-y-4">
+                    <div className="max-w-md grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label htmlFor="shippingCharge" className="block text-sm font-medium text-muted-foreground mb-1">Shipping Charge (৳)</label>
+                            <label htmlFor="shippingChargeInsideDhaka" className="block text-sm font-medium text-muted-foreground mb-1">Shipping Charge (Inside Dhaka) (৳)</label>
                             <input
-                                id="shippingCharge"
-                                name="shippingCharge"
+                                id="shippingChargeInsideDhaka"
+                                name="shippingChargeInsideDhaka"
                                 type="number"
-                                value={checkoutConfig.shippingCharge}
+                                value={checkoutConfig.shippingChargeInsideDhaka}
                                 onChange={handleConfigChange}
-                                placeholder="e.g., 40"
+                                placeholder="e.g., 60"
                                 min="0"
                                 className="w-full p-2 border border-input rounded-md bg-background"
                             />
                         </div>
                         <div>
+                            <label htmlFor="shippingChargeOutsideDhaka" className="block text-sm font-medium text-muted-foreground mb-1">Shipping Charge (Outside Dhaka) (৳)</label>
+                            <input
+                                id="shippingChargeOutsideDhaka"
+                                name="shippingChargeOutsideDhaka"
+                                type="number"
+                                value={checkoutConfig.shippingChargeOutsideDhaka}
+                                onChange={handleConfigChange}
+                                placeholder="e.g., 120"
+                                min="0"
+                                className="w-full p-2 border border-input rounded-md bg-background"
+                            />
+                        </div>
+                        <div className="sm:col-span-2">
                             <label htmlFor="taxAmount" className="block text-sm font-medium text-muted-foreground mb-1">Fixed Tax Amount (৳)</label>
                             <input
                                 id="taxAmount"

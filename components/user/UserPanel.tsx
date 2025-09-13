@@ -274,7 +274,7 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
         </div>
       )}
       
-      <Footer onTrackOrderClick={handleTrackOrderClick} />
+      <Footer onTrackOrderClick={handleTrackOrderClick} onViewAllProductsClick={() => handleViewAllClick()} />
       
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center">
         <Dock items={dockItems} />

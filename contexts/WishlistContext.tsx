@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import type { Product } from '../types';
 import { useAuth } from './AuthContext';
+import { onWishlistChange, updateWishlist, onProductsValueChange } from '../services/databaseService';
 
 interface WishlistContextType {
   wishlistItems: Product[];
@@ -24,28 +25,64 @@ interface WishlistProviderProps {
 }
 
 export const WishlistProvider: React.FC<WishlistProviderProps> = ({ children }) => {
+    const [wishlistProductIds, setWishlistProductIds] = useState<Set<string>>(new Set());
     const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const { currentUser } = useAuth();
 
+    useEffect(() => {
+        const unsubscribe = onProductsValueChange(setAllProducts);
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (currentUser) {
+            const unsubscribe = onWishlistChange(currentUser.uid, (productIds) => {
+                setWishlistProductIds(new Set(productIds));
+            });
+            return () => unsubscribe();
+        } else {
+            setWishlistProductIds(new Set());
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (allProducts.length > 0) {
+            const productMap = new Map(allProducts.map(p => [p.id, p]));
+            const items = Array.from(wishlistProductIds)
+                .map(id => productMap.get(id))
+                .filter((p): p is Product => p !== undefined);
+            setWishlistItems(items);
+        } else {
+            setWishlistItems([]);
+        }
+    }, [wishlistProductIds, allProducts]);
+
+    const updateRemoteWishlist = (newIdSet: Set<string>) => {
+        if (currentUser) {
+            updateWishlist(currentUser.uid, Array.from(newIdSet));
+        }
+    };
+
     const addToWishlist = (product: Product) => {
-        if (!currentUser) return; // Wishlist is for logged-in users only
-        setWishlistItems(prevItems => {
-            if (prevItems.find(item => item.id === product.id)) {
-                return prevItems; // Already in wishlist
-            }
-            return [...prevItems, product];
-        });
+        if (!currentUser) return;
+        const newIdSet = new Set(wishlistProductIds);
+        newIdSet.add(product.id);
+        setWishlistProductIds(newIdSet);
+        updateRemoteWishlist(newIdSet);
     };
 
     const removeFromWishlist = (productId: string) => {
         if (!currentUser) return;
-        setWishlistItems(prevItems => prevItems.filter(item => item.id !== productId));
+        const newIdSet = new Set(wishlistProductIds);
+        newIdSet.delete(productId);
+        setWishlistProductIds(newIdSet);
+        updateRemoteWishlist(newIdSet);
     };
 
     const isInWishlist = useCallback((productId: string): boolean => {
-        if (!currentUser) return false;
-        return wishlistItems.some(item => item.id === productId);
-    }, [wishlistItems, currentUser]);
+        return wishlistProductIds.has(productId);
+    }, [wishlistProductIds]);
 
     const value: WishlistContextType = {
         wishlistItems,

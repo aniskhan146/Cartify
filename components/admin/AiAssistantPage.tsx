@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BotIcon, UserIcon } from '../shared/icons';
 import { getAiAssistantResponse, generateProductImage, generateProductDescription } from '../../services/geminiService';
-import { onProductsValueChange, fetchAllOrders, onAllUsersAndRolesValueChange, saveProduct } from '../../services/databaseService';
-import type { Product, Order, UserRoleInfo, Variant } from '../../types';
+import {
+    onProductsValueChange, onAllOrdersValueChange, onAllUsersAndRolesValueChange,
+    saveProduct, deleteProduct,
+    getCategoryByName, saveCategory, deleteCategory,
+    getVariantOptionByName, saveVariantOption, deleteVariantOption,
+    findUserByEmail, setUserBanStatus, updateUserRole,
+    getHeroImages, saveHeroImages, saveCheckoutConfig
+} from '../../services/databaseService';
+import type { Product, Order, UserRoleInfo, Variant, UserRole, CheckoutConfig } from '../../types';
+import { ref, get } from 'firebase/database';
+import { db } from '../../services/firebase';
+
 
 interface Message {
     role: 'user' | 'assistant';
@@ -10,6 +20,11 @@ interface Message {
     imageUrl?: string;
     isApprovalRequest?: boolean;
     productName?: string;
+    isConfirmation?: boolean;
+    confirmationAction?: {
+        name: string;
+        args: any;
+    };
 }
 
 interface AiAssistantPageProps {
@@ -25,32 +40,31 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
     const [isLoading, setIsLoading] = useState(false);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [handledApprovals, setHandledApprovals] = useState<number[]>([]);
-    const storeData = useRef<{products: Product[], orders: (Order & {userId: string})[], users: UserRoleInfo[]}>({ products: [], orders: [], users: [] });
+    const [handledConfirmations, setHandledConfirmations] = useState<number[]>([]);
+    const [storeData, setStoreData] = useState<{products: Product[], orders: (Order & {userId: string})[], users: UserRoleInfo[]}>({ products: [], orders: [], users: [] });
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const fetchStoreData = async () => {
-            try {
-                const [products, orders, users] = await Promise.all([
-                    new Promise<Product[]>(resolve => onProductsValueChange(resolve)),
-                    fetchAllOrders(),
-                    new Promise<UserRoleInfo[]>(resolve => onAllUsersAndRolesValueChange(resolve))
-                ]);
-                storeData.current = { products, orders, users };
+        let loaded = false;
+        const unsubProducts = onProductsValueChange(products => setStoreData(prev => ({ ...prev, products })));
+        const unsubOrders = onAllOrdersValueChange(orders => setStoreData(prev => ({ ...prev, orders })));
+        const unsubUsers = onAllUsersAndRolesValueChange(users => {
+            setStoreData(prev => ({ ...prev, users }));
+            if (!loaded) {
                 setIsDataLoaded(true);
                 setMessages([{
                     role: 'assistant',
                     text: "Hello! I'm your Cartify AI Assistant. I've loaded the latest store data. How can I help you manage your store today?"
                 }]);
-            } catch (error) {
-                console.error("Failed to load store data for AI assistant:", error);
-                setMessages([{
-                    role: 'assistant',
-                    text: "Hello! I'm your Cartify AI Assistant. I'm having trouble loading your store data right now, but you can still ask me general questions."
-                }]);
+                loaded = true;
             }
+        });
+    
+        return () => {
+            unsubProducts();
+            unsubOrders();
+            unsubUsers();
         };
-        fetchStoreData();
     }, []);
 
     const scrollToBottom = () => {
@@ -58,6 +72,92 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
     };
 
     useEffect(scrollToBottom, [messages]);
+
+    const executeFunctionCall = async (name: string, args: any) => {
+        let resultMessage = "I've completed the task.";
+        try {
+            switch (name) {
+                case 'generateImageForProduct':
+                    setMessages(prev => [...prev, { role: 'assistant', text: `Got it. Generating an image for "${args.promptDetails || args.productName}"...` }]);
+                    const imageUrl = await generateProductImage(args.promptDetails || args.productName);
+                    setMessages(prev => [
+                        ...prev,
+                        { 
+                            role: 'assistant', 
+                            text: "Here is the image I generated. Would you like to use this to create a new product?",
+                            imageUrl: imageUrl,
+                            isApprovalRequest: true,
+                            productName: args.productName,
+                        }
+                    ]);
+                    return; // Return early as this has its own UI flow
+                case 'addProduct':
+                    const newProductData: Omit<Product, 'id'> = {
+                        name: args.name, category: args.category,
+                        variants: [{ id: `v_${Date.now()}`, name: 'Standard', options: {}, price: args.price, stock: args.stock } as Variant],
+                        description: args.description || 'Product added by AI. Please review and update.',
+                        imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(args.name)}/400/300`],
+                        rating: 0, reviews: 0,
+                    };
+                    await saveProduct(newProductData);
+                    resultMessage = `Alright, I've added the product "${args.name}" to the store.`;
+                    break;
+                case 'deleteProduct':
+                    const productToDelete = storeData.products.find(p => p.name.toLowerCase() === args.productName.toLowerCase());
+                    if (!productToDelete) throw new Error(`Product "${args.productName}" not found.`);
+                    await deleteProduct(productToDelete.id);
+                    resultMessage = `I've deleted the product "${args.productName}".`;
+                    break;
+                case 'deleteCategory':
+                    const categoryToDelete = await getCategoryByName(args.categoryName);
+                    if (!categoryToDelete) throw new Error(`Category "${args.categoryName}" not found.`);
+                    await deleteCategory(categoryToDelete.id);
+                    resultMessage = `I've deleted the "${args.categoryName}" category.`;
+                    break;
+                case 'banUserByEmail':
+                    const userToBan = await findUserByEmail(args.email);
+                    if (!userToBan) throw new Error(`User with email "${args.email}" not found.`);
+                    await setUserBanStatus(userToBan.uid, true);
+                    resultMessage = `User ${args.email} has been banned.`;
+                    break;
+                case 'unbanUserByEmail':
+                    const userToUnban = await findUserByEmail(args.email);
+                    if (!userToUnban) throw new Error(`User with email "${args.email}" not found.`);
+                    await setUserBanStatus(userToUnban.uid, false);
+                    resultMessage = `User ${args.email} has been unbanned.`;
+                    break;
+                case 'addHeroImageByUrl':
+                    const currentImages = await getHeroImages();
+                    await saveHeroImages([...currentImages, args.imageUrl]);
+                    resultMessage = `I've added the new hero image.`;
+                    break;
+                case 'removeHeroImageByUrl':
+                    const existingImages = await getHeroImages();
+                    await saveHeroImages(existingImages.filter(img => img !== args.imageUrl));
+                    resultMessage = `I've removed the hero image.`;
+                    break;
+                case 'updateCheckoutSettings':
+                    const configRef = ref(db, 'publicStorefront/checkoutConfig');
+                    const snapshot = await get(configRef);
+                    const currentConfig: CheckoutConfig = snapshot.val() || { shippingChargeInsideDhaka: 60, shippingChargeOutsideDhaka: 120, taxAmount: 4 };
+
+                    const newConfig: CheckoutConfig = {
+                        shippingChargeInsideDhaka: args.shippingChargeInsideDhaka ?? currentConfig.shippingChargeInsideDhaka,
+                        shippingChargeOutsideDhaka: args.shippingChargeOutsideDhaka ?? currentConfig.shippingChargeOutsideDhaka,
+                        taxAmount: args.taxAmount ?? currentConfig.taxAmount,
+                    };
+
+                    await saveCheckoutConfig(newConfig);
+                    resultMessage = `Checkout settings updated. Inside Dhaka: ৳${newConfig.shippingChargeInsideDhaka}, Outside Dhaka: ৳${newConfig.shippingChargeOutsideDhaka}, Tax: ৳${newConfig.taxAmount}.`;
+                    break;
+                default:
+                    resultMessage = `Sorry, I don't know how to perform the action: ${name}.`;
+            }
+        } catch (e) {
+            resultMessage = `I ran into an error: ${e instanceof Error ? e.message : String(e)}`;
+        }
+        setMessages(prev => [...prev, { role: 'assistant', text: resultMessage }]);
+    };
 
     const handleSendMessage = async (e: React.FormEvent, prompt?: string) => {
         e.preventDefault();
@@ -75,63 +175,26 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                 parts: [{ text: m.text }]
             }));
             
-            const response = await getAiAssistantResponse(query, historyForApi.slice(0, -1), storeData.current, viewContext);
+            const response = await getAiAssistantResponse(query, historyForApi.slice(0, -1), storeData, viewContext);
             
-            if (typeof response === 'object' && response.functionCall) {
+            if (response.functionCall) {
                 const { name, args } = response.functionCall;
-                
-                if (name === 'generateImageForProduct') {
-                    setIsLoading(true); // Keep loading state for image generation
-                    setMessages(prev => [...prev, { role: 'assistant', text: `Got it. Generating an image for "${args.promptDetails || args.productName}"...` }]);
-                    try {
-                        const b64Image = await generateProductImage(args.promptDetails || args.productName);
-                        const imageUrl = `data:image/png;base64,${b64Image}`;
-                        setMessages(prev => [
-                            ...prev,
-                            { 
-                                role: 'assistant', 
-                                text: "Here is the image I generated. Would you like to use this to create a new product?",
-                                imageUrl: imageUrl,
-                                isApprovalRequest: true,
-                                productName: args.productName,
-                            }
-                        ]);
-                    } catch (imgError) {
-                        setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I ran into an error while generating the image. Please try again." }]);
-                    } finally {
-                       setIsLoading(false);
-                    }
-                } else if (name === 'addProduct') {
-                    // This remains for adding products without an image
-                    try {
-                        const newProductData: Omit<Product, 'id'> = {
-                            name: args.name, category: args.category,
-                            // FIX: The 'Variant' type requires an 'options' property. Added an empty object for standard variants.
-                            variants: [{ id: `v_${Date.now()}`, name: 'Standard', options: {}, price: args.price, stock: args.stock } as Variant],
-                            description: 'Product added by AI. Please review and update the description.',
-                            imageUrls: [`https://picsum.photos/seed/${encodeURIComponent(args.name)}/400/300`],
-                            rating: 0, reviews: 0,
-                        };
-                        await saveProduct(newProductData);
-                        setMessages(prev => [...prev, { role: 'assistant', text: `Alright, I've added the product "${args.name}" to the store.` }]);
-                    } catch (dbError) {
-                         setMessages(prev => [...prev, { role: 'assistant', text: `I failed to add the product. Error: ${dbError instanceof Error ? dbError.message : 'Unknown DB error'}` }]);
-                    }
-                } else if (name === 'generateProductDescription') {
-                    setIsLoading(true);
-                    setMessages(prev => [...prev, { role: 'assistant', text: `Of course. Generating a description for "${args.productName}"...` }]);
-                    try {
-                        const description = await generateProductDescription(args.productName, args.keywords);
-                        const fullMessage = `Here is the description I generated for "${args.productName}":\n\n${description}`;
-                        setMessages(prev => [...prev, { role: 'assistant', text: fullMessage }]);
-                    } catch (descError) {
-                        setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I couldn't generate the description right now. Please try again." }]);
-                    } finally {
-                        setIsLoading(false);
-                    }
+                const destructiveActions = ['deleteProduct', 'deleteCategory', 'deleteVariantOption', 'banUserByEmail'];
+
+                if (destructiveActions.includes(name)) {
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        text: `I am about to perform the action: **${name}** with the details: \`${JSON.stringify(args)}\`.\n\nPlease confirm if you want to proceed.`,
+                        isConfirmation: true,
+                        confirmationAction: { name, args }
+                    }]);
+                    setIsLoading(false);
+                    return;
                 }
-            } else if (typeof response === 'string') {
-                setMessages(prev => [...prev, { role: 'assistant', text: response }]);
+                
+                await executeFunctionCall(name, args);
+            } else if (response.text) {
+                setMessages(prev => [...prev, { role: 'assistant', text: response.text }]);
             }
         } catch (error) {
             setMessages(prev => [...prev, { role: 'assistant', text: "Sorry, I encountered an error. Please try again." }]);
@@ -139,6 +202,19 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
             setIsLoading(false);
         }
     };
+
+    const handleConfirmation = async (confirm: boolean, action: { name: string; args: any }, messageIndex: number) => {
+        setHandledConfirmations(prev => [...prev, messageIndex]);
+        if (confirm) {
+            setMessages(prev => [...prev, { role: 'user', text: `Yes, please proceed.` }]);
+            setIsLoading(true);
+            await executeFunctionCall(action.name, action.args);
+            setIsLoading(false);
+        } else {
+            setMessages(prev => [...prev, { role: 'user', text: `No, cancel that action.` }, { role: 'assistant', text: "Okay, I've cancelled the action." }]);
+        }
+    };
+
 
     const handleImageApproval = (productName: string, imageUrl: string, messageIndex: number) => {
         openProductModal('add', null, { name: productName, imageUrls: [imageUrl] });
@@ -170,7 +246,7 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                         <div key={index} className={`flex items-start gap-3 message-animate-in ${msg.role === 'user' ? 'justify-end' : ''}`}>
                             {msg.role === 'assistant' && <div className="flex-shrink-0 h-8 w-8 rounded-full bg-muted flex items-center justify-center"><BotIcon className="h-5 w-5 text-muted-foreground" /></div>}
                             <div className={`p-3 rounded-lg max-w-lg ${msg.role === 'assistant' ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'}`}>
-                                {msg.text && <p className="text-sm whitespace-pre-wrap">{msg.text}</p>}
+                                {msg.text && <p className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`(.*?)`/g, '<code class="bg-background/50 px-1 py-0.5 rounded text-xs">$1</code>') }}></p>}
                                 {msg.isApprovalRequest && msg.imageUrl && (
                                     <div className="mt-2 p-2 bg-background rounded-lg">
                                         <img src={msg.imageUrl} alt={msg.productName} className="rounded-md max-w-xs mx-auto" />
@@ -180,6 +256,12 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                                                 <button onClick={() => handleImageRejection(index)} className="text-xs bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md font-semibold hover:bg-accent transition-colors">Cancel</button>
                                             </div>
                                         )}
+                                    </div>
+                                )}
+                                 {msg.isConfirmation && !handledConfirmations.includes(index) && (
+                                    <div className="flex justify-center space-x-2 mt-2 border-t border-border pt-2">
+                                        <button onClick={() => handleConfirmation(true, msg.confirmationAction!, index)} className="text-xs bg-destructive text-white px-3 py-1.5 rounded-md font-semibold hover:bg-destructive/90 transition-colors">Confirm</button>
+                                        <button onClick={() => handleConfirmation(false, msg.confirmationAction!, index)} className="text-xs bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md font-semibold hover:bg-accent transition-colors">Cancel</button>
                                     </div>
                                 )}
                             </div>
@@ -202,10 +284,10 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                         <div className="border-t border-border pt-4">
                             <p className="text-sm text-muted-foreground mb-3 text-center">Here are some things you can ask:</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <PromptSuggestion text="What is the total inventory value of the currently displayed items?" />
-                                <PromptSuggestion text="Create an image for a 'vintage leather backpack'." />
-                                <PromptSuggestion text="Write a description for 'Smart Fitness Watch' with keywords: sleek, heart rate monitor, long battery." />
-                                <PromptSuggestion text="Add a new product called 'Premium Leather Wallet' to the 'Fashion' category, price 3500, stock 150." />
+                                <PromptSuggestion text="Delete the 'Toys' category." />
+                                <PromptSuggestion text="Ban the user with email 'customer@example.com'." />
+                                <PromptSuggestion text="Set the shipping charge for inside Dhaka to 80." />
+                                <PromptSuggestion text="Set shipping to 70 for inside Dhaka and 130 for outside Dhaka." />
                             </div>
                         </div>
                     )}
@@ -217,7 +299,7 @@ const AiAssistantPage: React.FC<AiAssistantPageProps> = ({ viewContext, openProd
                             type="text"
                             value={userInput}
                             onChange={(e) => setUserInput(e.target.value)}
-                            placeholder={isDataLoaded ? "Ask about your store or ask me to create a product image..." : "Loading store data..."}
+                            placeholder={isDataLoaded ? "Ask me to do anything for your store..." : "Loading store data..."}
                             disabled={isLoading || !isDataLoaded}
                             className="flex-grow p-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                         />

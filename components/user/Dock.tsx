@@ -59,7 +59,7 @@ function DockItem({
   badgeCount,
 }: DockItemProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isHovered = useMotionValue(0);
+  const [isHovered, setIsHovered] = useState(false);
   const size = useDockItemSize(
     mouseX,
     baseItemSize,
@@ -68,24 +68,15 @@ function DockItem({
     ref,
     spring
   );
-  const [showLabel, setShowLabel] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = isHovered.on("change", (value) =>
-      setShowLabel(value === 1)
-    );
-    return () => unsubscribe();
-  }, [isHovered]);
 
   return (
     <motion.div
       ref={ref}
       style={{ width: size, height: size }}
-      // FIX: `onHoverStart` and `onHoverEnd` are not standard props and were causing errors. They have been replaced with the standard React `onMouseEnter` and `onMouseLeave` events, which achieve the same effect.
-      onMouseEnter={() => isHovered.set(1)}
-      onMouseLeave={() => isHovered.set(0)}
-      onFocus={() => isHovered.set(1)}
-      onBlur={() => isHovered.set(0)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
       onClick={onClick}
       className="relative inline-flex items-center justify-center rounded-full 
       bg-background/80 backdrop-blur-sm shadow-md cursor-pointer"
@@ -100,7 +91,7 @@ function DockItem({
         </span>
       )}
       <AnimatePresence>
-        {showLabel && (
+        {isHovered && (
           <motion.div
             initial={{ opacity: 0, y: 0 }}
             animate={{ opacity: 1, y: -10 }}
@@ -108,7 +99,6 @@ function DockItem({
             transition={{ duration: 0.2 }}
             className="absolute -top-8 left-1/2 w-fit whitespace-pre rounded-md 
             border border-border bg-card px-2 py-1 text-xs text-foreground shadow-lg"
-            // FIX: The `x` property is not a standard CSS property for the `style` attribute and was causing a type error. Replaced with `transform: 'translateX(-50%)'` to achieve the correct horizontal centering.
             style={{ transform: "translateX(-50%)" }}
             role="tooltip"
           >

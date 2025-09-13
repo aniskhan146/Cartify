@@ -18,7 +18,6 @@ const ProductListItem: React.FC<{ product: Product, onSelect: (product: Product)
                 <p className="font-semibold text-foreground truncate">{product.name}</p>
                 <p className="text-sm text-muted-foreground">{product.category}</p>
             </div>
-            {/* FIX: Property 'price' does not exist on type 'Product'. Display the price of the first variant. */}
             <p className="font-bold text-foreground">{formatCurrency(product.variants?.[0]?.price ?? 0)}</p>
         </button>
     </li>
