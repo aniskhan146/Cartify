@@ -141,7 +141,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ onViewCategoryP
                      <div className="flex items-center space-x-4">
                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center border border-border overflow-hidden">
                              {formData.iconUrl ? (
-                                 <img src={formData.iconUrl} alt="Icon Preview" className="w-full h-full object-cover" />
+                                 <img src={formData.iconUrl} alt="Icon Preview" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                              ) : (
                                  <span className="text-xs text-center text-muted-foreground">No Icon</span>
                              )}
@@ -196,7 +196,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ onViewCategoryP
                             <tr key={category.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
                                 <td className="px-4 py-3 font-medium text-foreground">
                                     <div className="flex items-center space-x-3">
-                                        <img src={category.iconUrl} alt={category.name} className="h-8 w-8 object-contain rounded-md" />
+                                        <img src={category.iconUrl} alt={category.name} loading="lazy" decoding="async" className="h-8 w-8 object-contain rounded-md" />
                                         <span>{category.name}</span>
                                     </div>
                                 </td>

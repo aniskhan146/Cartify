@@ -133,9 +133,9 @@ export const BorderBeam = ({
           borderRadius: beamBorderRadius ? `${beamBorderRadius}px` : undefined,
           ...style,
         } as any}
-        variants={beamVariants}
-        initial="initial"
-        animate="animate"
+        // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+        initial={{ offsetDistance: beamVariants.initial.offsetDistance }}
+        animate={{ offsetDistance: beamVariants.animate.offsetDistance }}
         transition={{
           repeat: Infinity,
           ease: "linear",

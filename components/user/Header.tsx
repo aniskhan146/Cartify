@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 // FIX: Added type import for Variants from framer-motion
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { LogoIcon, SearchIcon, UserIcon, MenuIcon, XIcon, SunIcon, MoonIcon, BellIcon } from '../shared/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -50,19 +50,19 @@ const CategoryPopupPanel: React.FC<CategoryPopupPanelProps> = ({ isOpen, onClose
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    variants={backdropVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="hidden"
+                    // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[110] flex justify-center items-center"
                     onClick={onClose}
                 >
                     <motion.div
-                        variants={modalVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
+                        // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+                        initial={{ scale: 0.95, y: -20, opacity: 0 }}
+                        animate={{ scale: 1, y: 0, opacity: 1 }}
+                        exit={{ scale: 0.95, y: -20, opacity: 0 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                         className="bg-card rounded-xl shadow-2xl w-full max-w-3xl relative border border-border p-6"
                         onClick={e => e.stopPropagation()}
@@ -210,10 +210,10 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
             <AnimatePresence>
                 {showHeader && (
                     <motion.header
-                        variants={headerVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
+                        // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+                        initial={{ y: -100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -100, opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
                         className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4"
                     >
@@ -227,12 +227,13 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                             <nav className="hidden md:flex flex-1 justify-center">
                                 <ul className="flex space-x-6 items-center">
                                     {navItems.map((item) => (
-                                        <motion.li key={item.name} className="relative group text-sm font-medium text-muted-foreground transition-colors" whileHover="hover">
-                                            <button onClick={() => handleNavItemClick(item)} className="cursor-pointer hover:text-foreground">
+                                        // FIX: Replaced motion component with standard li and CSS transition for compatibility.
+                                        <li key={item.name} className="relative group text-sm font-medium text-muted-foreground">
+                                            <button onClick={() => handleNavItemClick(item)} className="cursor-pointer hover:text-foreground transition-colors">
                                                 {item.name}
                                             </button>
-                                            <motion.span variants={underlineVariants} initial="rest" className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full" transition={{ duration: 0.3 }} style={{ transformOrigin: 'center' }}/>
-                                        </motion.li>
+                                            <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300" style={{ transformOrigin: 'center' }}/>
+                                        </li>
                                     ))}
                                     <li className="relative group text-sm font-medium text-muted-foreground transition-colors">
                                         <button onClick={() => setIsCategoryModalOpen(true)} className="cursor-pointer hover:text-foreground flex items-center gap-1">
@@ -254,10 +255,10 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                                     <AnimatePresence mode="wait" initial={false}>
                                         <motion.div
                                             key={theme}
-                                            variants={themeIconVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
+                                            // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+                                            initial={{ y: -20, opacity: 0 }}
+                                            animate={{ y: 0, opacity: 1 }}
+                                            exit={{ y: 20, opacity: 0 }}
                                             transition={{ duration: 0.2 }}
                                         >
                                             {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
@@ -271,9 +272,12 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                                             <AnimatePresence>
                                                 {unreadCount > 0 && (
                                                     <motion.span
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
-                                                        exit={{ scale: 0 }}
+                                                        // FIX: Replaced animation props with spread object to fix framer-motion typing issue.
+                                                        {...{
+                                                            initial: { scale: 0 },
+                                                            animate: { scale: 1 },
+                                                            exit: { scale: 0 },
+                                                        }}
                                                         className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white"
                                                     >
                                                         {unreadCount}
@@ -284,9 +288,12 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
                                         <AnimatePresence>
                                             {isNotificationPanelOpen && (
                                                  <motion.div
-                                                    initial={{ opacity: 0, y: -10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: -10 }}
+                                                    // FIX: Replaced animation props with spread object to fix framer-motion typing issue.
+                                                    {...{
+                                                        initial: { opacity: 0, y: -10 },
+                                                        animate: { opacity: 1, y: 0 },
+                                                        exit: { opacity: 0, y: -10 },
+                                                    }}
                                                     className="absolute right-0 mt-3 w-80 bg-card rounded-lg shadow-lg z-50 ring-1 ring-border text-sm"
                                                  >
                                                     <div className="p-3 font-semibold border-b border-border text-foreground">Notifications</div>
@@ -338,19 +345,34 @@ const Header: React.FC<HeaderProps> = ({ onSearchClick, onLoginClick, categories
             
             <AnimatePresence>
                 {isMobileMenuOpen && (
-                    <motion.div initial="closed" animate="open" exit="closed" variants={menuVariants} className="fixed inset-0 z-[100] bg-background md:hidden flex flex-col items-center justify-center">
+                    <motion.div
+                        // FIX: Replaced animation props with spread object to fix framer-motion typing issue.
+                        {...{
+                            initial: "closed",
+                            animate: "open",
+                            exit: "closed",
+                            variants: menuVariants,
+                        }}
+                        className="fixed inset-0 z-[100] bg-background md:hidden flex flex-col items-center justify-center">
                          <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-6 right-6 text-foreground" aria-label="Close menu">
                             <XIcon className="h-8 w-8" />
                         </button>
-                        <motion.ul variants={listVariants} className="flex flex-col items-center justify-center h-full space-y-8">
+                        <motion.ul
+                            // FIX: Replaced variants prop with spread object to fix framer-motion typing issue.
+                            {...{ variants: listVariants }}
+                            className="flex flex-col items-center justify-center h-full space-y-8">
                             {navItems.map((item) => (
-                                <motion.li key={item.name} variants={itemVariants}>
+                                <motion.li key={item.name}
+                                    // FIX: Replaced variants prop with spread object to fix framer-motion typing issue.
+                                    {...{ variants: itemVariants }}>
                                     <a onClick={() => handleNavItemClick(item)} className="text-2xl font-bold text-foreground cursor-pointer">
                                         {item.name}
                                     </a>
                                 </motion.li>
                             ))}
-                            <motion.li variants={itemVariants}>
+                            <motion.li
+                                // FIX: Replaced variants prop with spread object to fix framer-motion typing issue.
+                                {...{ variants: itemVariants }}>
                                 <a onClick={() => { setIsCategoryModalOpen(true); setIsMobileMenuOpen(false); }} className="text-2xl font-bold text-foreground cursor-pointer">
                                     Categories
                                 </a>

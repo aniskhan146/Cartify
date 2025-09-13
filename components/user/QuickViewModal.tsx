@@ -100,6 +100,8 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                 <img 
                     src={mainImage} 
                     alt={product.name} 
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-auto max-h-[400px] object-contain rounded-lg"
                 />
             </div>
@@ -111,7 +113,7 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, onClose, onNav
                     onClick={() => setMainImage(url)}
                     className={`block w-14 h-14 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors ${mainImage === url ? 'border-primary' : 'border-border hover:border-muted-foreground'}`}
                   >
-                    <img src={url} alt={`thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={url} alt={`thumbnail ${index + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

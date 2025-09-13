@@ -119,7 +119,7 @@ const BrandManagement: React.FC = () => {
                      <div className="flex items-center space-x-4">
                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center border border-border overflow-hidden">
                              {formData.logoUrl ? (
-                                 <img src={formData.logoUrl} alt="Logo Preview" className="w-full h-full object-contain" />
+                                 <img src={formData.logoUrl} alt="Logo Preview" loading="lazy" decoding="async" className="w-full h-full object-contain" />
                              ) : (
                                  <span className="text-xs text-center text-muted-foreground">No Logo</span>
                              )}
@@ -186,7 +186,7 @@ const BrandManagement: React.FC = () => {
                             <tr key={brand.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
                                 <td className="px-4 py-3 font-medium text-foreground">
                                     <div className="flex items-center space-x-3">
-                                        <img src={brand.logoUrl} alt={brand.name} className="h-8 w-8 object-contain rounded-md bg-white p-1" />
+                                        <img src={brand.logoUrl} alt={brand.name} loading="lazy" decoding="async" className="h-8 w-8 object-contain rounded-md bg-white p-1" />
                                         <span>{brand.name}</span>
                                     </div>
                                 </td>

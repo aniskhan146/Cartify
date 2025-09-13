@@ -43,7 +43,7 @@ const ShopeeMall: React.FC<ShopeeMallProps> = ({ onViewAllClick, onBrandClick })
                             {featuredBrands.map((brand) => (
                                 <div key={brand.id} className="snap-start w-40 flex-shrink-0">
                                     <button onClick={() => onBrandClick(brand)} className="block bg-card border border-border rounded-lg h-full overflow-hidden shadow-sm hover:shadow-lg transition-shadow p-4 aspect-[4/3] flex items-center justify-center w-full">
-                                        <img src={brand.logoUrl} alt={brand.name} className="max-w-full max-h-full object-contain"/>
+                                        <img src={brand.logoUrl} alt={brand.name} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain"/>
                                     </button>
                                 </div>
                             ))}

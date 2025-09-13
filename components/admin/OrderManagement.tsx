@@ -177,7 +177,7 @@ const OrderManagement: React.FC = () => {
                                                 <ul className="space-y-3">
                                                     {order.items.map((item, index) => (
                                                         <li key={item.productId + item.variantName + index} className="flex items-center space-x-4 bg-background p-3 rounded-md border border-border">
-                                                            <img src={item.productImage} alt={item.productName} className="w-16 h-16 rounded-md object-cover bg-muted"/>
+                                                            <img src={item.productImage} alt={item.productName} loading="lazy" decoding="async" className="w-16 h-16 rounded-md object-cover bg-muted"/>
                                                             <div className="flex-1">
                                                                 <p className="font-medium text-foreground text-sm">{item.productName}</p>
                                                                 <p className="text-xs text-muted-foreground">Variant: {item.variantName}</p>

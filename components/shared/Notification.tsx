@@ -54,11 +54,10 @@ const Notification: React.FC<NotificationProps> = ({ id, message, type, onDismis
 
   return (
     <motion.div
-      layout
-      variants={notificationVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      // FIX: Replaced variants and layout props with inline animation props to resolve framer-motion typing issue.
+      initial={{ opacity: 0, y: 50, scale: 0.5 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.5, transition: { duration: 0.3 } }}
       className={`relative w-full max-w-sm p-4 rounded-lg shadow-lg border backdrop-blur-md ${containerClasses[type]}`}
     >
       <div className="flex items-start">

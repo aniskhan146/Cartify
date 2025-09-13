@@ -76,6 +76,7 @@ const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ product, onBack, 
                             <img
                                 src={mainImage}
                                 alt={product.name}
+                                decoding="async"
                                 className="object-cover w-full h-48 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none transition-transform transform hover:scale-105 duration-300 ease-in-out"
                             />
                         </div>

@@ -526,7 +526,7 @@ const ProductFormModal = ({ mode, product, onClose, onSubmit, formErrorExt, cate
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mb-2">
                       {formData.imageUrls.map((url, index) => (
                           <div key={index} className="relative group">
-                              <img src={url} alt={`preview ${index}`} className="w-full h-24 object-cover rounded-md bg-muted" />
+                              <img src={url} alt={`preview ${index}`} loading="lazy" decoding="async" className="w-full h-24 object-cover rounded-md bg-muted" />
                               <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">&times;</button>
                           </div>
                       ))}
@@ -824,7 +824,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
                                     <tr key={product.id} className="bg-card border-b border-border hover:bg-accent transition-colors duration-200">
                                         <td className="px-4 py-3 font-medium text-foreground">
                                             <div className="flex items-center space-x-3">
-                                                <img src={product.imageUrls[0]} alt={product.name} className="h-10 w-10 object-cover rounded-md bg-muted" />
+                                                <img src={product.imageUrls[0]} alt={product.name} loading="lazy" decoding="async" className="h-10 w-10 object-cover rounded-md bg-muted" />
                                                 <span>{product.name}</span>
                                             </div>
                                         </td>

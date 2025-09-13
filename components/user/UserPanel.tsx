@@ -338,10 +338,10 @@ const UserPanel: React.FC<UserPanelProps> = ({ onSwitchToAdminLogin, onLoginClic
                     onClick={scrollToTop}
                     className="fixed bottom-24 right-5 z-50 bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:bg-primary/90 transition-colors"
                     aria-label="Scroll to top"
-                    variants={scrollButtonVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
+                    // FIX: Replaced variants prop with inline animation props to resolve framer-motion typing issue.
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
                 >
                     <ChevronUpIcon className="h-6 w-6" />
                 </motion.button>

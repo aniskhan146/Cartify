@@ -252,7 +252,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ allCategories }) => {
                     <ul className="space-y-4">
                         {topProducts.map(p => (
                             <li key={p.id} className="flex items-center space-x-3">
-                                <img src={p.imageUrls?.[0] || ''} alt={p.name} className="w-10 h-10 rounded-md object-cover bg-muted" />
+                                <img src={p.imageUrls?.[0] || ''} alt={p.name} loading="lazy" decoding="async" className="w-10 h-10 rounded-md object-cover bg-muted" />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-medium text-sm text-foreground truncate">{p.name}</p>
                                     {/* FIX: Use product.category which is now the correct property for the category name */}

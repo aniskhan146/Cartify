@@ -4,7 +4,7 @@ import {
   useSpring,
   useTransform,
   AnimatePresence,
-  type MotionValue,
+  MotionValue,
 } from "framer-motion";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -99,10 +99,10 @@ function DockItem({
       <AnimatePresence>
         {isHovered && (
           <motion.div
-            variants={tooltipVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+            initial={{ opacity: 0, y: 0 }}
+            animate={{ opacity: 1, y: -10 }}
+            exit={{ opacity: 0, y: 0 }}
             transition={{ duration: 0.2 }}
             className="absolute -top-8 left-1/2 w-fit whitespace-pre rounded-md 
             border border-border bg-card px-2 py-1 text-xs text-foreground shadow-lg"

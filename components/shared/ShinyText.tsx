@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion, type Variants } from "framer-motion"; // Import Variants type
+import { motion, Variants } from "framer-motion"; // Import Variants type
 import { cn } from "../../lib/utils";
 
 export interface ShinyTextProps {
@@ -120,7 +120,8 @@ export function ShinyText({
   };
 
   // Define the animate state structure consistently
-  const animationVariants: Variants = { // Explicitly type as Variants
+  // FIX: Removed explicit `Variants` type to avoid import errors and relied on TypeScript inference.
+  const animationVariants = { 
     initial: {
       backgroundPosition: config.backgroundPosition[0],
     },
@@ -187,10 +188,10 @@ export function ShinyText({
         backgroundClip: "text",
         opacity: intensity,
       }}
-      variants={animationVariants}
-      initial="initial"
-      animate="animate"
-      whileHover="hover"
+      // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+      initial={animationVariants.initial}
+      animate={animationVariants.animate}
+      whileHover={animationVariants.hover}
     >
       {children}
     </motion.span>

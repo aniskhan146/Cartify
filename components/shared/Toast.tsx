@@ -30,10 +30,10 @@ const Toast: React.FC<ToastProps> = ({ message, show, onClose, duration = 3000 }
     <AnimatePresence>
       {show && (
         <motion.div
-          variants={toastVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+          // FIX: Replaced variants with inline animation props to fix framer-motion typing issue.
+          initial={{ opacity: 0, y: 50, scale: 0.3 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.5 }}
           className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2 z-[150]"
         >
           <CheckIcon className="h-5 w-5" />

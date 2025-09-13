@@ -25,7 +25,7 @@ const ShopeeMallPage: React.FC<ShopeeMallPageProps> = ({ brands, onBrandClick, o
                                 onClick={() => onBrandClick(brand)}
                                 className="relative group block bg-card border border-border rounded-lg h-full overflow-hidden shadow-sm hover:shadow-lg transition-all p-4 aspect-square flex items-center justify-center hover:-translate-y-1"
                             >
-                                <img src={brand.logoUrl} alt={brand.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"/>
+                                <img src={brand.logoUrl} alt={brand.name} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"/>
                                 <BorderBeam size={100} duration={5} delay={Math.random() * 8} />
                             </button>
                         ))}

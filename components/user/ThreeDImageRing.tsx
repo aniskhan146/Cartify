@@ -253,29 +253,27 @@ export function ThreeDImageRing({
         <motion.div
           ref={ringRef}
           className={cn("w-full h-full absolute", ringClassName)}
+          // FIX: Moved `rotateY` out of the style object to be a direct motion prop, which is the correct API usage.
           style={{
             transformStyle: "preserve-3d",
-            rotateY: rotationY,
             cursor: draggable ? "grab" : "default",
           }}
+          rotateY={rotationY}
         >
           {images.map((imageUrl, index) => (
             <motion.div
               key={index}
               className={cn("w-full h-full absolute", imageClassName)}
+              // FIX: Moved `rotateY` and `z` out of the style object to be direct motion props.
               style={{
                 transformStyle: "preserve-3d",
-                backgroundImage: `url(${imageUrl})`,
-                backgroundSize: "contain",
-                backgroundRepeat: "no-repeat",
                 backfaceVisibility: "hidden",
-                rotateY: index * -angle,
-                z: -imageDistance * currentScale,
                 transformOrigin: `50% 50% ${
                   imageDistance * currentScale
                 }px`,
-                backgroundPosition: "center",
               }}
+              rotateY={index * -angle}
+              z={-imageDistance * currentScale}
               initial="hidden"
               animate="visible"
               variants={imageVariants}
@@ -309,7 +307,16 @@ export function ThreeDImageRing({
                   });
                 }
               }}
-            />
+            >
+                <img
+                    src={imageUrl}
+                    alt={`Promotional image ${index + 1}`}
+                    loading={index < 3 ? "eager" : "lazy"}
+                    fetchPriority={index < 3 ? "high" : "low"}
+                    decoding="async"
+                    className="w-full h-full object-contain"
+                />
+            </motion.div>
           ))}
         </motion.div>
       </div>
