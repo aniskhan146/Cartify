@@ -1,8 +1,9 @@
 import { GoogleGenAI, Type, Content } from "@google/genai";
 import type { Product, Order, UserRoleInfo, Variant, CheckoutConfig } from '../types';
 
-// Initialize the Google AI client directly.
-// The API_KEY is expected to be injected by the build environment (e.g., Vite, Netlify).
+// Initialize the Google AI client.
+// The API key is sourced from the environment variable `API_KEY`,
+// which should be set in your deployment environment (e.g., Netlify UI).
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Helper function for consistent error handling.

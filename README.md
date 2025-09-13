@@ -2,6 +2,22 @@
 
 This is a comprehensive e-commerce platform featuring a user-facing storefront and a powerful admin dashboard, built with React and **Supabase**. It leverages Google Gemini for AI-powered features.
 
+## Local Development Setup
+
+To run this project on your local machine, you need to set up your environment variables.
+
+1.  **Install Dependencies:** If you have `npm` installed, run `npm install` in the project directory.
+2.  **Create Environment File:** Find the `.env.example` file in the root of the project. Make a copy of this file and rename it to `.env`.
+3.  **Fill in Credentials:** Open your new `.env` file and fill in the required values:
+    *   `SUPABASE_URL`: Your Supabase Project URL (from Supabase Dashboard > Settings > API).
+    *   `SUPABASE_ANON_KEY`: Your Supabase `anon` public key (from the same API page).
+    *   `API_KEY`: Your secret Google Gemini API Key.
+4.  **Run the App:** Run `npm start` (or your configured run command). The application will automatically load the variables from your `.env` file.
+
+> **Important:** The `.env` file contains secret keys and should **never** be committed to Git. The `.gitignore` file is already configured to ignore it.
+
+---
+
 ## Deployment to Netlify (English)
 
 Follow these steps carefully to ensure your project deploys and runs correctly on Netlify. The most common issue (a blank screen, or API errors) is caused by missing environment variables.
@@ -14,7 +30,7 @@ Follow these steps carefully to ensure your project deploys and runs correctly o
 
 ### Step 2: Configure Environment Variables (Most Important Step!)
 
-This is the most critical step. Your app needs API keys to connect to Supabase and Google Gemini.
+This is the most critical step. Your app needs API keys to connect to Supabase and Google Gemini. These keys are read from `process.env`.
 
 1.  Navigate to your site's **Site configuration > Build & deploy > Environment > Environment variables** and click **"Edit variables"**.
 2.  You must add three variables:
@@ -26,10 +42,10 @@ This is the most critical step. Your app needs API keys to connect to Supabase a
     | `API_KEY`           | Your secret Google Gemini API Key                                  |
 
 3.  **Build Settings:**
-    *   Netlify will automatically detect and build this project. You can leave the **Build command** empty.
-    *   Set the **Publish directory** to your root directory (`/`).
+    *   **Build command:** (Leave this blank or at its default value).
+    *   **Publish directory:** `/` **(Important: Do NOT use `dist` or `build`. Set this to the root directory.)**
 
-> **Note for Local Development:** To run the project on your local machine, you must also make these environment variables available to your development server. The method depends on your setup (e.g., using a `.env` file with a tool like Vite).
+> **How it works:** When you set these variables in the Netlify UI, they are securely made available to your application as `process.env` variables during the build and runtime. The code is already set up to read from these variables.
 
 ### Step 3: Set Up the Supabase Database Schema (How to Fix "Table Not Found" Errors)
 
@@ -62,7 +78,7 @@ This script will create all the necessary tables (`products`, `categories`, `pro
 
 ### ধাপ ২: এনভায়রনমেন্ট ভেরিয়েবল কনফিগার করুন (সবচেয়ে গুরুত্বপূর্ণ ধাপ!)
 
-এটি সবচেয়ে গুরুত্বপূর্ণ ধাপ। আপনার অ্যাপটির Supabase এবং Google Gemini-এর সাথে সংযোগ করার জন্য API কী প্রয়োজন।
+এটি সবচেয়ে গুরুত্বপূর্ণ ধাপ। আপনার অ্যাপটির Supabase এবং Google Gemini-এর সাথে সংযোগ করার জন্য API কী প্রয়োজন। এই কী-গুলো `process.env` থেকে পড়া হয়।
 
 1.  **Site configuration > Build & deploy > Environment > Environment variables**-এ যান এবং **"Edit variables"**-এ ক্লিক করুন।
 2.  আপনাকে অবশ্যই তিনটি ভেরিয়েবল যোগ করতে হবে:
@@ -74,10 +90,10 @@ This script will create all the necessary tables (`products`, `categories`, `pro
     | `API_KEY`           | আপনার গোপন Google Gemini API কী                                    |
 
 3.  **বিল্ড সেটিংস:**
-    *   Netlify স্বয়ংক্রিয়ভাবে এই প্রজেক্টটি সনাক্ত এবং বিল্ড করবে। আপনি **Build command** খালি রাখতে পারেন।
-    *   **Publish directory** আপনার রুট ডিরেক্টরিতে (`/`) সেট করুন।
+    *   **Build command:** (এটি খালি রাখুন বা ডিফল্ট মান যা আছে তাই রাখুন)।
+    *   **Publish directory:** `/` **(গুরুত্বপূর্ণ: `dist` বা `build` ব্যবহার করবেন না। এটি রুট ডিরেক্টরি হিসেবে সেট করুন।)**
 
-> **লোকাল ডেভেলপমেন্টের জন্য নোট:** প্রকল্পটি আপনার লোকাল মেশিনে চালানোর জন্য, আপনাকে অবশ্যই এই এনভায়রনমেন্ট ভেরিয়েবলগুলো আপনার ডেভেলপমেন্ট সার্ভারে উপলব্ধ করতে হবে। এর পদ্ধতিটি আপনার সেটআপের উপর নির্ভর করে (যেমন, একটি `.env` ফাইল ব্যবহার করে)।
+> **এটা কিভাবে কাজ করে:** আপনি যখন Netlify UI-তে এই ভেরিয়েবলগুলি সেট করেন, তখন সেগুলি বিল্ড এবং রানটাইমের সময় আপনার অ্যাপ্লিকেশনের জন্য `process.env` ভেরিয়েবল হিসাবে নিরাপদে উপলব্ধ করা হয়। কোডটি ইতিমধ্যেই এই ভেরিয়েবলগুলি থেকে ডেটা পড়ার জন্য সেট আপ করা আছে।
 
 ### ধাপ ৩: Supabase ডেটাবেস স্কিমা সেটআপ করুন (কিভাবে "Table Not Found" এরর ঠিক করবেন)
 
