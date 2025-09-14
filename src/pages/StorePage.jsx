@@ -10,7 +10,7 @@ import { Label } from '../components/ui/label.jsx';
 import { Textarea } from '../components/ui/textarea.jsx';
 import { Slider } from '../components/ui/slider.jsx';
 import Pagination from '../components/Pagination.jsx';
-import { getProducts, getUniqueCategories } from '../api/EcommerceApi.js';
+import { getProducts, getCategories } from '../api/EcommerceApi.js';
 import { getSearchParamsFromNaturalLanguage } from '../api/GeminiApi.js';
 import { useDebounce } from '../hooks/useDebounce.jsx';
 import { formatCurrency } from '../lib/utils.js';
@@ -31,7 +31,7 @@ const MAX_PRICE_CENTS = 500000; // $5000
 
 const StorePage = () => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(['All']);
+  const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,18 +56,39 @@ const StorePage = () => {
   const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
 
   const fetchCategories = useCallback(async () => {
-    const uniqueCategories = await getUniqueCategories();
-    setCategories(['All', ...uniqueCategories]);
-  }, []);
+    try {
+      const uniqueCategories = await getCategories();
+      setAllCategories(uniqueCategories);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Failed to load categories.' });
+    }
+  }, [toast]);
+  
 
   const fetchStoreProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const getCategoryAndDescendants = (catId) => {
+        const ids = [catId];
+        const queue = [catId];
+        while (queue.length > 0) {
+            const currentId = queue.shift();
+            const children = allCategories.filter(c => c.parent_id === currentId);
+            for (const child of children) {
+                ids.push(child.id);
+                queue.push(child.id);
+            }
+        }
+        return ids;
+      };
+      
+      const categoryIdsToFilter = selectedCategory === 'All' ? null : getCategoryAndDescendants(parseInt(selectedCategory, 10));
+
       const { products: fetchedProducts, count } = await getProducts({
         page: currentPage,
         limit: PRODUCTS_PER_PAGE,
-        category: selectedCategory,
+        categoryIds: categoryIdsToFilter,
         searchTerm: debouncedSearchTerm,
         priceRange: debouncedPriceRange,
       });
@@ -79,7 +100,7 @@ const StorePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedCategory, debouncedSearchTerm, debouncedPriceRange]);
+  }, [currentPage, selectedCategory, debouncedSearchTerm, debouncedPriceRange, allCategories]);
 
   useEffect(() => {
     fetchCategories();
@@ -106,15 +127,20 @@ const StorePage = () => {
   const handleAiSearch = async () => {
     setIsAiLoading(true);
     try {
-      const availableCats = categories.filter(c => c !== 'All');
+      const availableCats = allCategories.map(c => c.name);
       const params = await getSearchParamsFromNaturalLanguage(aiQuery, availableCats);
+      
+      const matchedCategory = allCategories.find(c => c.name.toLowerCase() === params.category.toLowerCase());
+      const categoryIdToSet = matchedCategory ? matchedCategory.id : 'All';
+      
       setSearchTerm(params.searchTerm);
-      setSelectedCategory(params.category);
+      setSelectedCategory(categoryIdToSet);
+
       setIsAiDialogOpen(false);
       setAiQuery('');
       toast({
         title: 'AI Search Applied!',
-        description: `Now showing results for "${params.searchTerm}" in ${params.category}.`,
+        description: `Now showing results for "${params.searchTerm}" in ${matchedCategory ? matchedCategory.name : 'All Categories'}.`,
       });
     } catch (error) {
       toast({
@@ -211,17 +237,28 @@ const StorePage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-4">Categories</h3>
                     <div className="space-y-2">
-                      {categories.map(category => (
-                        <button
-                          key={category}
-                          onClick={() => setSelectedCategory(category)}
+                      <button
+                          key="All"
+                          onClick={() => setSelectedCategory('All')}
                           className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${
-                            selectedCategory === category
+                            selectedCategory === 'All'
                               ? 'bg-purple-500/30 text-white font-semibold'
                               : 'text-white/80 hover:bg-white/10'
                           }`}
                         >
-                          {category}
+                          All
+                      </button>
+                      {allCategories.map(category => (
+                        <button
+                          key={category.id}
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${
+                            selectedCategory === category.id
+                              ? 'bg-purple-500/30 text-white font-semibold'
+                              : 'text-white/80 hover:bg-white/10'
+                          }`}
+                        >
+                          {category.name}
                         </button>
                       ))}
                     </div>

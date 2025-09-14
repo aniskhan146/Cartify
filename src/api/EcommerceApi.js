@@ -130,7 +130,7 @@ const formatProduct = (product) => {
     };
 };
 
-export const getProducts = async ({ page = 1, limit = 8, category = 'All', searchTerm = '', sortBy = 'name', priceRange = [0, MAX_PRICE_CENTS] }) => {
+export const getProducts = async ({ page = 1, limit = 8, categoryIds = null, searchTerm = '', sortBy = 'name', priceRange = [0, MAX_PRICE_CENTS] }) => {
     const offset = (page - 1) * limit;
 
     let productIdsFromPriceFilter = null;
@@ -150,9 +150,10 @@ export const getProducts = async ({ page = 1, limit = 8, category = 'All', searc
         .select('*, variants(*), categories(name), brands(name)', { count: 'exact' })
         .eq('purchasable', true);
 
-    if (category !== 'All' && !isNaN(parseInt(category, 10))) {
-        query = query.eq('category_id', parseInt(category, 10));
+    if (categoryIds && categoryIds.length > 0) {
+        query = query.in('category_id', categoryIds);
     }
+    
     if (searchTerm) {
         query = query.ilike('title', `%${searchTerm}%`);
     }
@@ -275,7 +276,7 @@ export const deleteProduct = async (productId) => {
 export const getCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
-      .select('*, parent:parent_id(id, name)')
+      .select('id, name, parent_id')
       .order('name');
     if (error) throw error;
     return data;
