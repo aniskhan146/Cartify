@@ -84,6 +84,8 @@ const ProductCard = ({ product, index = 0 }) => {
               src={product.image}
               alt={product.title}
               className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute top-2 right-2 flex flex-col space-y-2 transition-opacity duration-300">
@@ -141,4 +143,4 @@ const ProductCard = ({ product, index = 0 }) => {
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);

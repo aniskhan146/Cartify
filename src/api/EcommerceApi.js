@@ -172,12 +172,12 @@ const transformSupabaseImage = (url, width, height) => {
     return `${transformedUrl}?width=${width}&height=${height}&resize=cover`;
 };
 
-const formatProduct = (product) => {
+const formatProduct = (product, imageWidth = 500, imageHeight = 500) => {
     if (!product) return null;
     const mainImage = product.image || product.images?.[0]?.url;
     return {
         ...product,
-        image: transformSupabaseImage(mainImage, 500, 500),
+        image: transformSupabaseImage(mainImage, imageWidth, imageHeight),
         galleryImages: (product.images?.map(img => img.url) || []),
         variants: (product.variants || []).map(variant => ({
             ...variant,
@@ -230,7 +230,7 @@ export const getProducts = async ({ page = 1, limit = 8, categoryIds = null, sea
     }
     
     return { 
-        products: (productsData || []).map(formatProduct),
+        products: (productsData || []).map(p => formatProduct(p, 500, 500)),
         count: count || 0,
     };
 };
@@ -245,7 +245,7 @@ export const getProduct = async (id) => {
         console.error('Error fetching product:', productError);
         throw new Error('Product not found.');
     }
-    return formatProduct(productData);
+    return formatProduct(productData, 800, 800);
 };
 
 export const getRelatedProducts = async (productId, categoryId) => {
@@ -261,7 +261,7 @@ export const getRelatedProducts = async (productId, categoryId) => {
         console.error('Error fetching related products:', error);
         return [];
     }
-    return (data || []).map(formatProduct);
+    return (data || []).map(p => formatProduct(p, 500, 500));
 };
 
 // ===== Product Management (Admin) =====

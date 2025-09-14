@@ -215,6 +215,8 @@ function ProductDetailPage() {
                       src={imgUrl} 
                       alt={`Product thumbnail ${index + 1}`}
                       className={`w-16 h-16 object-cover rounded-md cursor-pointer border-2 transition-all ${currentImage === imgUrl ? 'border-purple-500' : 'border-transparent hover:border-white/50'}`}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </button>
                 ))}

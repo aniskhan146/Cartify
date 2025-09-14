@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { supabase } from '../lib/supabase.js';
 
@@ -46,7 +46,7 @@ export const WishlistProvider = ({ children }) => {
         fetchWishlist();
     }, [fetchWishlist]);
 
-    const addToWishlist = async (productId) => {
+    const addToWishlist = useCallback(async (productId) => {
         if (!user) return;
         try {
             const { error } = await supabase.from('wishlist').insert({ user_id: user.id, product_id: productId });
@@ -55,9 +55,9 @@ export const WishlistProvider = ({ children }) => {
         } catch (error) {
             console.error("Error adding to wishlist:", error);
         }
-    };
+    }, [user]);
 
-    const removeFromWishlist = async (productId) => {
+    const removeFromWishlist = useCallback(async (productId) => {
         if (!user) return;
         try {
             const { error } = await supabase.from('wishlist').delete().match({ user_id: user.id, product_id: productId });
@@ -70,18 +70,18 @@ export const WishlistProvider = ({ children }) => {
         } catch (error) {
             console.error("Error removing from wishlist:", error);
         }
-    };
+    }, [user]);
     
-    const isWishlisted = (productId) => wishlist.has(productId);
+    const isWishlisted = useCallback((productId) => wishlist.has(productId), [wishlist]);
     
-    const value = { 
+    const value = useMemo(() => ({ 
         wishlist, 
         isWishlisted, 
         addToWishlist, 
         removeFromWishlist, 
         loading, 
         wishlistCount: wishlist.size 
-    };
+    }), [wishlist, isWishlisted, addToWishlist, removeFromWishlist, loading]);
 
     return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 }
