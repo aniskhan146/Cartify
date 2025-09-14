@@ -1,12 +1,10 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button.jsx';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
 import { useToast } from './ui/use-toast.js';
-import { getProducts } from '../api/EcommerceApi.js';
-import { supabase } from '../lib/supabase.js';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
 
@@ -20,7 +18,7 @@ const ProductCard = ({ product, index }) => {
   const displayPrice = useMemo(() => hasSale ? displayVariant.sale_price_formatted : displayVariant.price_formatted, [displayVariant, hasSale]);
   const originalPrice = useMemo(() => hasSale ? displayVariant.price_formatted : null, [displayVariant, hasSale]);
 
-  const handleAddToCart = useCallback(async (e) => {
+  const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -53,7 +51,7 @@ const ProductCard = ({ product, index }) => {
         variant: "destructive"
       });
     }
-  }, [product, addToCart, toast, navigate]);
+  };
 
   return (
     <motion.div
@@ -106,48 +104,12 @@ const ProductCardSkeleton = () => (
     </div>
 );
 
-const ProductsList = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchProducts = useCallback(async () => {
-      try {
-        setError(null);
-        const productsResponse = await getProducts();
-        setProducts(productsResponse.products);
-      } catch (err) {
-        setError(err.message || 'Failed to load products');
-      } finally {
-        setLoading(false);
-      }
-    }, []);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchProducts();
-
-    const channel = supabase.channel('public:products');
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-        console.log('Products change received!', payload);
-        fetchProducts();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'variants' }, (payload) => {
-        console.log('Variants change received!', payload);
-        fetchProducts();
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchProducts]);
+const ProductsList = ({ products, loading, error, skeletonCount = 8 }) => {
 
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(skeletonCount)].map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
       </div>
@@ -165,8 +127,8 @@ const ProductsList = () => {
   if (products.length === 0) {
     return (
       <div className="text-center text-gray-400 p-8 glass-effect rounded-2xl">
-        <h3 className="text-2xl font-bold text-white mb-2">No Products Yet</h3>
-        <p>Check back later, or if you're an admin, add a new product!</p>
+        <h3 className="text-2xl font-bold text-white mb-2">No Products Found</h3>
+        <p>Try adjusting your filters or check back later!</p>
       </div>
     );
   }

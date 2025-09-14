@@ -4,12 +4,16 @@ import { ShoppingCart, Heart, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button.jsx';
 import { useCart } from '../hooks/useCart.jsx';
+import { useWishlist } from '../hooks/useWishlist.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useToast } from './ui/use-toast.js';
 
 const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -38,15 +42,32 @@ const ProductCard = ({ product, index = 0 }) => {
         });
   };
 
-  const handleWishlist = (e) => {
+  const handleWishlistToggle = (e) => {
     e.preventDefault();
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
+    e.stopPropagation();
+
+    if (!user) {
+      toast({ 
+        title: "Please login", 
+        description: "You need to be logged in to manage your wishlist."
+      });
+      navigate('/login');
+      return;
+    }
+
+    const wishlisted = isWishlisted(product.id);
+    if (wishlisted) {
+      removeFromWishlist(product.id);
+      toast({ title: "Removed from wishlist", description: `${product.title} removed from your wishlist.` });
+    } else {
+      addToWishlist(product.id);
+      toast({ title: "Added to wishlist!", description: `${product.title} added to your wishlist.` });
+    }
   };
   
   const displayVariant = product.variants?.[0];
   const displayPrice = displayVariant ? (displayVariant.sale_price_formatted || displayVariant.price_formatted) : '$0.00';
+  const wishlisted = isWishlisted(product.id);
 
   return (
     <motion.div
@@ -70,10 +91,10 @@ const ProductCard = ({ product, index = 0 }) => {
                 size="icon"
                 variant="secondary"
                 className="rounded-full bg-white/20 backdrop-blur-sm border-white/30 h-8 w-8"
-                onClick={handleWishlist}
+                onClick={handleWishlistToggle}
                 aria-label="Add to wishlist"
               >
-                <Heart className="h-4 w-4" />
+                <Heart className={`h-4 w-4 transition-colors ${wishlisted ? 'text-red-500 fill-red-500' : 'text-white'}`} />
               </Button>
             </div>
             {product.ribbon_text && (

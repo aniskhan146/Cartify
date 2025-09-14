@@ -8,6 +8,8 @@ const formatProduct = (product) => {
     return {
         ...product,
         image: product.image || product.images?.[0]?.url,
+        // Assumes an 'images' jsonb column like [{ "url": "..." }]
+        galleryImages: product.images?.map(img => img.url) || [],
         variants: (product.variants || []).map(variant => ({
             ...variant,
             price_formatted: formatCurrency(variant.price_in_cents),
@@ -17,19 +19,41 @@ const formatProduct = (product) => {
     };
 };
 
-// Fetch all products with their variants
-export const getProducts = async () => {
-    const { data: productsData, error: productsError } = await supabase
+// Fetch all products with their variants, with pagination and filtering
+export const getProducts = async ({ page = 1, limit = 8, category = 'All', searchTerm = '', sortBy = 'name' }) => {
+    const offset = (page - 1) * limit;
+
+    let query = supabase
         .from('products')
-        .select('*, variants(*)')
+        .select('*, variants(*)', { count: 'exact' })
         .eq('purchasable', true);
+
+    if (category !== 'All') {
+        query = query.eq('category', category);
+    }
+    if (searchTerm) {
+        query = query.ilike('title', `%${searchTerm}%`);
+    }
+
+    if (sortBy === 'name') {
+        query = query.order('title', { ascending: true });
+    }
+    // Note: Sorting by price is complex with multiple variants per product
+    // and would ideally be handled by a dedicated database function (RPC).
+
+    query = query.range(offset, offset + (limit - 1));
+    
+    const { data: productsData, error: productsError, count } = await query;
 
     if (productsError) {
         console.error('Error fetching products:', productsError);
         throw new Error('Failed to load products.');
     }
     
-    return { products: (productsData || []).map(formatProduct) };
+    return { 
+        products: (productsData || []).map(formatProduct),
+        count: count || 0,
+    };
 };
 
 // Fetch a single product by its ID

@@ -21,7 +21,7 @@ const ProductDetailSkeleton = () => (
             {/* Image Skeleton */}
             <div>
                 <div className="relative overflow-hidden rounded-lg shadow-2xl h-96 md:h-[500px] bg-slate-700/50" />
-                <div className="hidden md:flex gap-2 mt-4">
+                <div className="flex gap-2 mt-4">
                     <div className="flex-shrink-0 w-16 h-16 rounded-md bg-slate-700/50" />
                     <div className="flex-shrink-0 w-16 h-16 rounded-md bg-slate-700/50" />
                     <div className="flex-shrink-0 w-16 h-16 rounded-md bg-slate-700/50" />
@@ -66,7 +66,7 @@ function ProductDetailPage() {
   const [error, setError] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImage, setCurrentImage] = useState(null);
   const { addToCart } = useCart();
   const { toast } = useToast();
 
@@ -100,6 +100,7 @@ function ProductDetailPage() {
       try {
         const fetchedProduct = await getProduct(id);
         setProduct(fetchedProduct);
+        setCurrentImage(fetchedProduct.image || placeholderImage);
 
         if (fetchedProduct.variants && fetchedProduct.variants.length > 0) {
             const currentSelectedId = selectedVariant?.id;
@@ -153,7 +154,9 @@ function ProductDetailPage() {
   const availableStock = selectedVariant ? selectedVariant.inventory_quantity : 0;
   const isStockManaged = selectedVariant?.manage_inventory ?? false;
   const canAddToCart = !isStockManaged || quantity <= availableStock;
-  
+  const imageGallery = [product.image, ...(product.galleryImages || [])].filter((img, index, self) => img && self.indexOf(img) === index);
+
+
   return (
     <>
       <Helmet>
@@ -166,14 +169,27 @@ function ProductDetailPage() {
           Back to Store
         </Link>
         <div className="grid md:grid-cols-2 gap-8 glass-card p-8 rounded-2xl">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="relative">
-            <div className="relative overflow-hidden rounded-lg shadow-2xl h-96 md:h-[500px]">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+            <div className="relative overflow-hidden rounded-lg shadow-2xl h-96 md:h-[500px] group">
               <img
-                src={product.image || placeholderImage}
+                src={currentImage || placeholderImage}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
             </div>
+             {imageGallery.length > 1 && (
+              <div className="flex gap-2 mt-4">
+                {imageGallery.map((imgUrl, index) => (
+                  <button key={index} onClick={() => setCurrentImage(imgUrl)} className="focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg">
+                    <img 
+                      src={imgUrl} 
+                      alt={`Product thumbnail ${index + 1}`}
+                      className={`w-16 h-16 object-cover rounded-md cursor-pointer border-2 transition-all ${currentImage === imgUrl ? 'border-purple-500' : 'border-transparent hover:border-white/50'}`}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-col">

@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useWishlist } from '../hooks/useWishlist.jsx';
+import { useToast } from './ui/use-toast.js';
 import { Button } from './ui/button.jsx';
 import {
   DropdownMenu,
@@ -17,11 +19,20 @@ const Navbar = ({ setIsCartOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
+  const { wishlistCount } = useWishlist();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleWishlistClick = () => {
+    toast({
+      title: "🚧 Wishlist Page Coming Soon!",
+      description: "You can add or remove items from product cards.",
+    });
   };
 
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -56,9 +67,16 @@ const Navbar = ({ setIsCartOpen }) => {
               <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" aria-label="Search">
                 <Search className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" aria-label="View wishlist">
-                <Heart className="h-5 w-5" />
-              </Button>
+              <div className="relative">
+                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={handleWishlistClick} aria-label="View wishlist">
+                  <Heart className="h-5 w-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Button>
+              </div>
               <div className="relative">
                 <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)} aria-label="Open shopping cart">
                   <ShoppingCart className="h-5 w-5" />

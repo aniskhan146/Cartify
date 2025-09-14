@@ -1,12 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 import ProductsList from '../components/ProductsList.jsx';
+import { getProducts } from '../api/EcommerceApi.js';
 
 const HomePage = () => {
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        // Fetch a small number of products for the homepage.
+        // The API can be extended to support a 'featured' flag.
+        const { products } = await getProducts({ limit: 4 });
+        setFeaturedProducts(products);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFeatured();
+  }, []);
+
+
   return <>
       <Helmet>
         <title>AYExpress - Premium E-commerce Experience</title>
@@ -67,7 +89,7 @@ const HomePage = () => {
               <p className="text-lg text-white/70">Handpicked premium items just for you</p>
             </motion.div>
             
-            <ProductsList />
+            <ProductsList products={featuredProducts} loading={loading} error={error} skeletonCount={4} />
             
             <div className="text-center mt-12">
               <Link to="/store">
