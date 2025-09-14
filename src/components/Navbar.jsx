@@ -53,14 +53,14 @@ const Navbar = ({ setIsCartOpen }) => {
               Store
             </Link>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white">
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" aria-label="Search">
                 <Search className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white">
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" aria-label="View wishlist">
                 <Heart className="h-5 w-5" />
               </Button>
               <div className="relative">
-                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)}>
+                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)} aria-label="Open shopping cart">
                   <ShoppingCart className="h-5 w-5" />
                   {cartItemCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -72,7 +72,7 @@ const Navbar = ({ setIsCartOpen }) => {
               {user ? (
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full text-white/80 hover:text-white">
+                      <Button variant="ghost" size="icon" className="rounded-full text-white/80 hover:text-white" aria-label="User menu">
                         <User className="h-5 w-5" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -104,7 +104,7 @@ const Navbar = ({ setIsCartOpen }) => {
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
              <div className="relative">
-                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)}>
+                <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)} aria-label="Open shopping cart">
                   <ShoppingCart className="h-5 w-5" />
                   {cartItemCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -118,6 +118,7 @@ const Navbar = ({ setIsCartOpen }) => {
               size="icon"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-white"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>

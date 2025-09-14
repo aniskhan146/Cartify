@@ -96,6 +96,7 @@ const CartPage = () => {
                             size="sm"
                             onClick={() => updateQuantity(item.variant.id, item.quantity - 1)}
                             className="text-white hover:bg-white/10"
+                            aria-label={`Decrease quantity of ${item.product.title}`}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
@@ -105,6 +106,7 @@ const CartPage = () => {
                             size="sm"
                             onClick={() => updateQuantity(item.variant.id, item.quantity + 1)}
                             className="text-white hover:bg-white/10"
+                            aria-label={`Increase quantity of ${item.product.title}`}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -115,6 +117,7 @@ const CartPage = () => {
                           size="icon"
                           onClick={() => removeFromCart(item.variant.id)}
                           className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                          aria-label={`Remove ${item.product.title} from cart`}
                         >
                           <Trash2 className="h-5 w-5" />
                         </Button>

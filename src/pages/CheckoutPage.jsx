@@ -140,8 +140,10 @@ const CheckoutPage = () => {
                   {/* Contact Information */}
                   <div>
                     <h2 className="text-lg font-semibold text-white mb-4">Contact Information</h2>
+                    <label htmlFor="email" className="sr-only">Email address</label>
                     <input
                       type="email"
+                      id="email"
                       name="email"
                       placeholder="Email address"
                       value={formData.email}
@@ -155,53 +157,73 @@ const CheckoutPage = () => {
                   <div>
                     <h2 className="text-lg font-semibold text-white mb-4">Shipping Address</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="firstName" className="sr-only">First name</label>
+                        <input
+                          type="text"
+                          id="firstName"
+                          name="firstName"
+                          placeholder="First name"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="lastName" className="sr-only">Last name</label>
+                        <input
+                          type="text"
+                          id="lastName"
+                          name="lastName"
+                          placeholder="Last name"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <label htmlFor="address" className="sr-only">Address</label>
                       <input
                         type="text"
-                        name="firstName"
-                        placeholder="First name"
-                        value={formData.firstName}
+                        id="address"
+                        name="address"
+                        placeholder="Address"
+                        value={formData.address}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <input
-                        type="text"
-                        name="lastName"
-                        placeholder="Last name"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
-                    <input
-                      type="text"
-                      name="address"
-                      placeholder="Address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full mt-4 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                      <input
-                        type="text"
-                        name="city"
-                        placeholder="City"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <input
-                        type="text"
-                        name="zipCode"
-                        placeholder="ZIP code"
-                        value={formData.zipCode}
-                        onChange={handleInputChange}
-                        required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
+                      <div>
+                        <label htmlFor="city" className="sr-only">City</label>
+                        <input
+                          type="text"
+                          id="city"
+                          name="city"
+                          placeholder="City"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="zipCode" className="sr-only">ZIP code</label>
+                        <input
+                          type="text"
+                          id="zipCode"
+                          name="zipCode"
+                          placeholder="ZIP code"
+                          value={formData.zipCode}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -211,34 +233,46 @@ const CheckoutPage = () => {
                       <CreditCard className="h-5 w-5 mr-2" />
                       Payment Information
                     </h2>
-                    <input
-                      type="text"
-                      name="cardNumber"
-                      placeholder="Card number"
-                      value={formData.cardNumber}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
+                    <div>
+                      <label htmlFor="cardNumber" className="sr-only">Card number</label>
+                      <input
+                        type="text"
+                        id="cardNumber"
+                        name="cardNumber"
+                        placeholder="Card number"
+                        value={formData.cardNumber}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-4 mt-4">
-                      <input
-                        type="text"
-                        name="expiryDate"
-                        placeholder="MM/YY"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <input
-                        type="text"
-                        name="cvv"
-                        placeholder="CVV"
-                        value={formData.cvv}
-                        onChange={handleInputChange}
-                        required
-                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
+                      <div>
+                        <label htmlFor="expiryDate" className="sr-only">Expiry date (MM/YY)</label>
+                        <input
+                          type="text"
+                          id="expiryDate"
+                          name="expiryDate"
+                          placeholder="MM/YY"
+                          value={formData.expiryDate}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="cvv" className="sr-only">CVV</label>
+                        <input
+                          type="text"
+                          id="cvv"
+                          name="cvv"
+                          placeholder="CVV"
+                          value={formData.cvv}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
                     </div>
                   </div>
 

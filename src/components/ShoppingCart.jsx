@@ -30,7 +30,7 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
           >
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <h2 className="text-2xl font-bold text-white">Shopping Cart</h2>
-              <Button onClick={() => setIsCartOpen(false)} variant="ghost" size="icon" className="text-white hover:bg-white/10">
+              <Button onClick={() => setIsCartOpen(false)} variant="ghost" size="icon" className="text-white hover:bg-white/10" aria-label="Close cart">
                 <X />
               </Button>
             </div>
@@ -53,9 +53,9 @@ const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <div className="flex items-center border border-white/20 rounded-md">
-                        <Button onClick={() => updateQuantity(item.variant.id, Math.max(1, item.quantity - 1))} size="sm" variant="ghost" className="px-2 text-white hover:bg-white/10">-</Button>
+                        <Button onClick={() => updateQuantity(item.variant.id, Math.max(1, item.quantity - 1))} size="sm" variant="ghost" className="px-2 text-white hover:bg-white/10" aria-label="Decrease quantity">-</Button>
                         <span className="px-2 text-white">{item.quantity}</span>
-                        <Button onClick={() => updateQuantity(item.variant.id, item.quantity + 1)} size="sm" variant="ghost" className="px-2 text-white hover:bg-white/10">+</Button>
+                        <Button onClick={() => updateQuantity(item.variant.id, item.quantity + 1)} size="sm" variant="ghost" className="px-2 text-white hover:bg-white/10" aria-label="Increase quantity">+</Button>
                       </div>
                       <Button onClick={() => removeFromCart(item.variant.id)} size="sm" variant="ghost" className="text-red-400 hover:text-red-300 text-xs">Remove</Button>
                     </div>

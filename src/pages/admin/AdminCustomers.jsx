@@ -96,9 +96,11 @@ const AdminCustomers = () => {
             className="glass-effect rounded-xl p-4"
           >
             <div className="relative">
+              <label htmlFor="customer-search" className="sr-only">Search customers by email</label>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
               <input
                 type="text"
+                id="customer-search"
                 placeholder="Search customers by email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -171,6 +173,7 @@ const AdminCustomers = () => {
                               size="sm"
                               onClick={() => handleViewCustomer(customer.id)}
                               className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                              aria-label={`View details for ${customer.email}`}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>

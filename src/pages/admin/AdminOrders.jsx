@@ -134,9 +134,11 @@ const AdminOrders = () => {
           >
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 max-w-md">
+                <label htmlFor="order-search" className="sr-only">Search by order ID or customer email</label>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
                 <input
                   type="text"
+                  id="order-search"
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -145,7 +147,9 @@ const AdminOrders = () => {
               </div>
               
               <div className="flex items-center gap-4">
+                <label htmlFor="status-filter" className="sr-only">Filter by status</label>
                 <select
+                  id="status-filter"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -231,6 +235,7 @@ const AdminOrders = () => {
                               size="sm"
                               onClick={() => handleViewOrder(order.id)}
                               className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                              aria-label={`View details for order #${order.id}`}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>

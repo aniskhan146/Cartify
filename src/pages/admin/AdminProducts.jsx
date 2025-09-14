@@ -148,8 +148,10 @@ const AdminProducts = () => {
           >
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 max-w-md">
+                <label htmlFor="product-search" className="sr-only">Search products</label>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
                 <input
+                  id="product-search"
                   type="text"
                   placeholder="Search products..."
                   value={searchTerm}
@@ -159,7 +161,9 @@ const AdminProducts = () => {
               </div>
               
               <div className="flex items-center gap-4">
+                <label htmlFor="category-filter" className="sr-only">Filter by category</label>
                 <select
+                  id="category-filter"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -248,6 +252,7 @@ const AdminProducts = () => {
                                 size="sm"
                                 onClick={() => handleEdit(product)}
                                 className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                                aria-label={`Edit ${product.title}`}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -256,6 +261,7 @@ const AdminProducts = () => {
                                 size="sm"
                                 onClick={() => confirmDelete(product)}
                                 className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                                aria-label={`Delete ${product.title}`}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

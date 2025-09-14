@@ -71,6 +71,7 @@ const ProductCard = ({ product, index = 0 }) => {
                 variant="secondary"
                 className="rounded-full bg-white/20 backdrop-blur-sm border-white/30 h-8 w-8"
                 onClick={handleWishlist}
+                aria-label="Add to wishlist"
               >
                 <Heart className="h-4 w-4" />
               </Button>
@@ -107,6 +108,7 @@ const ProductCard = ({ product, index = 0 }) => {
                 onClick={handleAddToCart}
                 size="sm"
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-full px-3"
+                aria-label="Add to cart"
               >
                 <ShoppingCart className="h-4 w-4" />
               </Button>

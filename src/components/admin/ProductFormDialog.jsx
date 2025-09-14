@@ -215,7 +215,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
             {variants.map((variant, index) => (
                 <div key={variant.id} className="glass-card p-4 rounded-lg space-y-3 relative">
                     {variants.length > 1 && (
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)}>
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)} aria-label="Remove variant">
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     )}
