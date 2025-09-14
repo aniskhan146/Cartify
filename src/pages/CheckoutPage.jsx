@@ -89,7 +89,17 @@ const CheckoutPage = () => {
         // 3. Decrease inventory for each item
         await decreaseInventory(orderData.id);
 
-        // 4. Success
+        // 4. Trigger the order confirmation email function (fire-and-forget)
+        supabase.functions.invoke('send-order-confirmation', {
+            body: { orderId: orderData.id },
+        }).then(({ error }) => {
+            if (error) {
+                console.error("Failed to send confirmation email:", error);
+                 // We can notify an admin here, but don't block the user.
+            }
+        });
+
+        // 5. Success
         clearCart();
         addNotification({
             type: "success",
