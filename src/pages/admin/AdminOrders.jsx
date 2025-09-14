@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Search, Eye, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
@@ -47,14 +48,15 @@ const AdminOrders = () => {
     fetchOrders();
 
     const channel = supabase.channel('public:orders')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-          console.log('New order received!', payload);
-          toast({
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+          console.log('Order change received!', payload);
+          if (payload.eventType === 'INSERT') {
+             toast({
               title: "🎉 New Order Received!",
               description: "A new order has been placed and added to the list.",
-          });
-          setOrders(currentOrders => [payload.new, ...currentOrders]);
-          fetchOrders(); // Re-fetch to get all data correctly
+            });
+          }
+          fetchOrders();
       })
       .subscribe();
 
@@ -68,12 +70,6 @@ const AdminOrders = () => {
     return (customer?.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
            order.id.toString().includes(searchTerm);
   });
-
-  const handleViewOrder = (orderId) => {
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
-  };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
@@ -230,15 +226,16 @@ const AdminOrders = () => {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewOrder(order.id)}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                              aria-label={`View details for order #${order.id}`}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <Link to={`/order/${order.id}`} target="_blank" rel="noopener noreferrer">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                                  aria-label={`View details for order #${order.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                            </Link>
                           </div>
                         </td>
                       </motion.tr>

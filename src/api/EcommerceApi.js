@@ -111,6 +111,26 @@ export const getProduct = async (id) => {
     return formatProduct(productData);
 };
 
+// Fetch related products based on category
+export const getRelatedProducts = async (productId, category) => {
+    if (!category) return [];
+
+    const { data, error } = await supabase
+        .from('products')
+        .select('*, variants(*)')
+        .eq('category', category)
+        .neq('id', productId)
+        .eq('purchasable', true)
+        .limit(4);
+
+    if (error) {
+        console.error('Error fetching related products:', error);
+        return [];
+    }
+
+    return (data || []).map(formatProduct);
+};
+
 // ===== Product Management (Admin) =====
 
 export const createProduct = async (productData, variantsData) => {
@@ -165,6 +185,13 @@ export const updateProduct = async (productId, productData, variantsData) => {
             .not('id', 'in', `(${variantIdsToKeep.join(',')})`);
             
         if (deleteError) console.error("Error deleting old variants:", deleteError);
+    } else {
+        // If all variants are removed (which shouldn't happen with UI constraints but is a good safeguard)
+        const { error: deleteAllError } = await supabase
+            .from('variants')
+            .delete()
+            .eq('product_id', productId);
+        if (deleteAllError) console.error("Error deleting all variants:", deleteAllError);
     }
 };
 
@@ -177,7 +204,7 @@ export const deleteProduct = async (productId) => {
     if (error) throw error;
 };
 
-// ===== Order Management (Admin) =====
+// ===== Order Management (Admin & Checkout) =====
 
 export const updateOrderStatus = async (orderId, newStatus) => {
     const { data, error } = await supabase
@@ -190,6 +217,67 @@ export const updateOrderStatus = async (orderId, newStatus) => {
     if (error) throw error;
     return data;
 };
+
+export const getOrderDetails = async (orderId) => {
+    const { data, error } = await supabase
+        .from('orders')
+        .select(`
+            *,
+            order_items (
+                *,
+                variants (
+                    *,
+                    products (
+                        title,
+                        image
+                    )
+                )
+            )
+        `)
+        .eq('id', orderId)
+        .single();
+
+    if (error) {
+        console.error('Error fetching order details:', error);
+        throw new Error('Could not retrieve order details.');
+    }
+    return data;
+};
+
+// This function calls a database function (RPC) to safely decrease inventory.
+export const decreaseInventory = async (orderId) => {
+    const { error } = await supabase.rpc('decrease_inventory_for_order', {
+        p_order_id: orderId
+    });
+
+    if (error) {
+        console.error('Error decreasing inventory:', error);
+        throw new Error('Failed to update product stock.');
+    }
+};
+// NOTE: You MUST add the following SQL function to your Supabase project
+// via the SQL Editor for the inventory management to work correctly.
+/*
+CREATE OR REPLACE FUNCTION decrease_inventory_for_order(p_order_id bigint)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    item RECORD;
+BEGIN
+    FOR item IN
+        SELECT oi.variant_id, oi.quantity
+        FROM public.order_items oi
+        WHERE oi.order_id = p_order_id
+    LOOP
+        UPDATE public.variants
+        SET inventory_quantity = inventory_quantity - item.quantity
+        WHERE id = item.variant_id AND manage_inventory = true;
+    END LOOP;
+END;
+$$;
+*/
+
 
 // ===== Customer Management (Admin) =====
 

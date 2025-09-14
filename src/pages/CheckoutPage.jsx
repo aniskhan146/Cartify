@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useToast } from '../components/ui/use-toast.js';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
+import { decreaseInventory } from '../api/EcommerceApi.js';
 
 const CheckoutPage = () => {
   const { user } = useAuth();
@@ -85,7 +86,10 @@ const CheckoutPage = () => {
             
         if (itemsError) throw itemsError;
 
-        // 3. Success
+        // 3. Decrease inventory for each item
+        await decreaseInventory(orderData.id);
+
+        // 4. Success
         clearCart();
         toast({
             title: "Order placed successfully!",

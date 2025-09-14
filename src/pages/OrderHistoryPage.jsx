@@ -162,9 +162,11 @@ const OrderHistoryPage = () => {
                         <ListOrdered className="h-5 w-5" />
                         <span>{order.order_items.length} items</span>
                     </div>
-                    <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                        View Details
-                    </Button>
+                    <Link to={`/order/${order.id}`}>
+                        <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                            View Details
+                        </Button>
+                    </Link>
                   </div>
                 </motion.div>
               ))}

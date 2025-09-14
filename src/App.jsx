@@ -30,6 +30,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const CartPage = lazy(() => import('./pages/CartPage.jsx'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage.jsx'));
 const OrderHistoryPage = lazy(() => import('./pages/OrderHistoryPage.jsx'));
+const OrderDetailsPage = lazy(() => import('./pages/OrderDetailsPage.jsx'));
 
 // Lazy-loaded admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
@@ -60,6 +61,7 @@ function App() {
                     <Route path="/success" element={<SuccessPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/orders" element={<OrderHistoryPage />} />
+                    <Route path="/order/:id" element={<OrderDetailsPage />} />
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/products" element={<AdminProducts />} />
                     <Route path="/admin/orders" element={<AdminOrders />} />

@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { getProduct } from '../api/EcommerceApi.js';
+import { getProduct, getRelatedProducts } from '../api/EcommerceApi.js';
 import { Button } from '../components/ui/button.jsx';
 import { useCart } from '../hooks/useCart.jsx';
 import { useToast } from '../components/ui/use-toast.js';
 import { supabase } from '../lib/supabase.js';
+import ProductsList from '../components/ProductsList.jsx';
 import { ShoppingCart, Loader2, ArrowLeft, CheckCircle, Minus, Plus, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
@@ -62,6 +63,7 @@ function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
@@ -98,6 +100,7 @@ function ProductDetailPage() {
   
   const fetchProductData = useCallback(async () => {
       try {
+        setLoading(true);
         const fetchedProduct = await getProduct(id);
         setProduct(fetchedProduct);
         setCurrentImage(fetchedProduct.image || placeholderImage);
@@ -107,6 +110,10 @@ function ProductDetailPage() {
             const newSelectedVariant = fetchedProduct.variants.find(v => v.id === currentSelectedId) || fetchedProduct.variants[0];
             setSelectedVariant(newSelectedVariant);
         }
+
+        const fetchedRelated = await getRelatedProducts(id, fetchedProduct.category);
+        setRelatedProducts(fetchedRelated);
+
       } catch (err) {
         setError(err.message || 'Failed to load product');
         setProduct(null); // Ensure product is null on error
@@ -116,7 +123,6 @@ function ProductDetailPage() {
     }, [id, selectedVariant?.id]);
 
   useEffect(() => {
-    setLoading(true);
     fetchProductData();
 
     const productChannel = supabase.channel(`product-${id}`)
@@ -129,7 +135,7 @@ function ProductDetailPage() {
     };
   }, [id, fetchProductData]);
 
-  if (loading) {
+  if (loading && !product) { // Only show full-page skeleton on initial load
     return <div className="pt-24 pb-16"><ProductDetailSkeleton /></div>;
   }
 
@@ -262,6 +268,17 @@ function ProductDetailPage() {
             </div>
           </motion.div>
         </div>
+        
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-16">
+            <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-3">You Might Also Like</h2>
+              <p className="text-lg text-white/70">Customers also viewed these products</p>
+            </motion.div>
+            <ProductsList products={relatedProducts} loading={loading} error={null} skeletonCount={4} />
+          </div>
+        )}
       </div>
     </>
   );
