@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, FolderTree, Tags, LogOut, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
 const navItems = [
@@ -9,6 +9,8 @@ const navItems = [
   { href: '/admin/products', icon: Package, label: 'Products' },
   { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
   { href: '/admin/customers', icon: Users, label: 'Customers' },
+  { href: '/admin/categories', icon: FolderTree, label: 'Categories' },
+  { href: '/admin/brands', icon: Tags, label: 'Brands' },
 ];
 
 const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
@@ -35,7 +37,7 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
             key={item.href}
             to={item.href}
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-              location.pathname === item.href
+              location.pathname.startsWith(item.href) && (item.href !== '/admin' || location.pathname === '/admin')
                 ? 'bg-purple-500/20 text-purple-200 font-semibold'
                 : 'text-white/70 hover:bg-white/10 hover:text-white'
             }`}

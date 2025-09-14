@@ -23,7 +23,7 @@ import {
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(['All']);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -38,7 +38,7 @@ const AdminProducts = () => {
   const fetchProducts = useCallback(async () => {
     const { data, error } = await supabase
         .from('products')
-        .select('*, variants(*)')
+        .select('*, variants(*), categories(name), brands(name)')
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -46,36 +46,34 @@ const AdminProducts = () => {
         toast({ variant: "destructive", title: "Failed to load products." });
     } else {
         setProducts(data);
-        const uniqueCategories = ['All', ...new Set(data.map(p => p.category).filter(Boolean))];
-        setCategories(uniqueCategories);
     }
   }, [toast]);
+  
+  const fetchCategories = useCallback(async () => {
+    const { data, error } = await supabase.from('categories').select('id, name');
+    if (error) console.error("Error fetching categories:", error);
+    else setCategories([{ id: 'All', name: 'All Categories' }, ...data]);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    fetchProducts().finally(() => setLoading(false));
+    Promise.all([fetchProducts(), fetchCategories()]).finally(() => setLoading(false));
 
-    const channel = supabase.channel('public:products');
+    const channel = supabase.channel('public:products_admin');
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
-        console.log('Products change received!', payload);
-        fetchProducts();
-      })
-       .on('postgres_changes', { event: '*', schema: 'public', table: 'variants' }, (payload) => {
-        console.log('Variants change received!', payload);
-        fetchProducts();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchProducts)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'variants' }, fetchProducts)
       .subscribe();
       
     return () => {
       supabase.removeChannel(channel);
     };
 
-  }, [fetchProducts]);
+  }, [fetchProducts, fetchCategories]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'All' || product.category_id == selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -169,7 +167,7 @@ const AdminProducts = () => {
                   className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
                 </select>
               </div>
@@ -194,6 +192,7 @@ const AdminProducts = () => {
                     <tr>
                       <th className="text-left p-4 text-white font-semibold">Product</th>
                       <th className="text-left p-4 text-white font-semibold">Category</th>
+                      <th className="text-left p-4 text-white font-semibold">Brand</th>
                       <th className="text-left p-4 text-white font-semibold">Price</th>
                       <th className="text-left p-4 text-white font-semibold">Stock</th>
                       <th className="text-left p-4 text-white font-semibold">Status</th>
@@ -221,12 +220,15 @@ const AdminProducts = () => {
                               />
                               <div>
                                 <h3 className="text-white font-medium">{product.title}</h3>
-                                <p className="text-white/70 text-xs">ID: {product.id}</p>
+                                <p className="text-white/70 text-xs">SKU: {primaryVariant?.sku || 'N/A'}</p>
                               </div>
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className="text-purple-300">{product.category}</span>
+                            <span className="text-purple-300">{product.categories?.name || 'N/A'}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-blue-300">{product.brands?.name || 'N/A'}</span>
                           </td>
                           <td className="p-4">
                             <span className="text-white font-semibold">{formatCurrency(primaryVariant?.price_in_cents)}</span>

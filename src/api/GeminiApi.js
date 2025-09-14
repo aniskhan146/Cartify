@@ -1,14 +1,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 let ai;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
 
 function getAiClient() {
     if (!ai) {
-        if (!process.env.API_KEY) {
-            console.error("API_KEY environment variable is not set.");
+        if (!apiKey) {
+            console.error("VITE_GEMINI_API_KEY environment variable is not set.");
             throw new Error("Gemini API key is not configured. This feature is unavailable.");
         }
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        ai = new GoogleGenAI({ apiKey });
     }
     return ai;
 }

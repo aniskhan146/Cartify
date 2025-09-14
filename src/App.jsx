@@ -37,6 +37,9 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProducts.jsx'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx'));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories.jsx'));
+const AdminBrands = lazy(() => import('./pages/admin/AdminBrands.jsx'));
+
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -66,6 +69,8 @@ function App() {
                     <Route path="/admin/products" element={<AdminProducts />} />
                     <Route path="/admin/orders" element={<AdminOrders />} />
                     <Route path="/admin/customers" element={<AdminCustomers />} />
+                    <Route path="/admin/categories" element={<AdminCategories />} />
+                    <Route path="/admin/brands" element={<AdminBrands />} />
                   </Routes>
                 </Suspense>
               </main>

@@ -134,7 +134,7 @@ function ProductDetailPage() {
             setSelectedVariant(newSelectedVariant);
         }
 
-        const fetchedRelated = await getRelatedProducts(id, fetchedProduct.category);
+        const fetchedRelated = await getRelatedProducts(id, fetchedProduct.category_id);
         setRelatedProducts(fetchedRelated);
 
       } catch (err) {
@@ -184,7 +184,7 @@ function ProductDetailPage() {
   const canAddToCart = !isStockManaged || quantity <= availableStock;
   const imageGallery = [product.image, ...(product.galleryImages || [])].filter((img, index, self) => img && self.indexOf(img) === index);
   const wishlisted = isWishlisted(product.id);
-
+  const hasSpecifications = product.specifications && Object.keys(product.specifications).length > 0;
 
   return (
     <>
@@ -222,6 +222,11 @@ function ProductDetailPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-col">
+            <div className="flex items-center gap-4 text-sm text-purple-300 mb-2">
+                {product.brands?.name && <span>{product.brands.name}</span>}
+                {product.brands?.name && product.categories?.name && <span>&bull;</span>}
+                {product.categories?.name && <span>{product.categories.name}</span>}
+            </div>
             <h1 className="text-3xl font-bold text-white mb-2">{product.title}</h1>
             <p className="text-lg text-gray-300 mb-4">{product.subtitle}</p>
 
@@ -245,6 +250,7 @@ function ProductDetailPage() {
                       onClick={() => setSelectedVariant(variant)}
                       className={`transition-all ${selectedVariant?.id === variant.id ? 'bg-purple-500 border-purple-500' : 'border-white/20 text-white hover:bg-white/10'}`}
                     >
+                      {variant.color_hex && <span className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: variant.color_hex }}></span>}
                       {variant.title}
                     </Button>
                   ))}
@@ -302,6 +308,23 @@ function ProductDetailPage() {
 
           </motion.div>
         </div>
+        
+        {/* Specifications */}
+        {hasSpecifications && (
+          <div className="mt-16">
+            <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="glass-card p-8 rounded-2xl">
+              <h2 className="text-2xl font-bold text-white mb-6">Specifications</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                {Object.entries(product.specifications).map(([key, value]) => (
+                  <div key={key} className="flex justify-between border-b border-white/10 pb-2">
+                    <span className="text-white/70">{key}</span>
+                    <span className="text-white font-medium">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
         
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (
