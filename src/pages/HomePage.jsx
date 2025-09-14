@@ -19,7 +19,7 @@ const HomePage = () => {
         <section className="py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 opacity-70"></div>
             <div className="absolute inset-0 pattern-bg"></div>
-            <div className="relative z-10 max-w-4xl mx-auto">
+            <div className="relative z-10 max-w-screen-lg mx-auto">
                 <motion.h1 
                     initial={{ opacity: 0, y: -50 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -53,7 +53,7 @@ const HomePage = () => {
         
         {/* Featured Products */}
         <section className="py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-screen-xl mx-auto">
             <motion.div initial={{
             opacity: 0,
             y: 50
@@ -82,7 +82,7 @@ const HomePage = () => {
 
         {/* Testimonials */}
         <section className="py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-screen-xl mx-auto">
             <motion.div initial={{
             opacity: 0,
             y: 50
@@ -131,7 +131,7 @@ const HomePage = () => {
 
         {/* Footer */}
         <footer className="bg-black/20 border-t border-white/10 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
+          <div className="w-full">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <div className="text-2xl font-bold gradient-text mb-4">AYExpress</div>
