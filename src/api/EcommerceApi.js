@@ -156,6 +156,36 @@ CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
 -- 9. Add Payment Method to Orders
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'card';
 
+-- 10. Profiles Table RLS (Fix for Customer List)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow admin full read access to profiles" ON public.profiles;
+CREATE POLICY "Allow admin full read access to profiles" ON public.profiles FOR SELECT
+    USING (get_user_role(auth.uid()) = 'admin');
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT
+    USING (auth.uid() = id);
+
+-- 11. Function to update user role (Admin only)
+CREATE OR REPLACE FUNCTION update_user_role(target_user_id uuid, new_role text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF get_user_role(auth.uid()) != 'admin' THEN
+        RAISE EXCEPTION 'Only admins can change user roles.';
+    END IF;
+
+    IF new_role NOT IN ('admin', 'user') THEN
+        RAISE EXCEPTION 'Invalid role specified. Must be ''admin'' or ''user''.';
+    END IF;
+
+    UPDATE public.profiles
+    SET role = new_role
+    WHERE id = target_user_id;
+END;
+$$;
 
 */
 
@@ -425,6 +455,22 @@ export const getCustomersWithStats = async () => {
     }
     return data;
 }
+
+export const updateUserRole = async (userId, newRole) => {
+    const { error } = await supabase.rpc('update_user_role', {
+        target_user_id: userId,
+        new_role: newRole
+    });
+    if (error) throw error;
+};
+
+export const deleteUserByAdmin = async (userId) => {
+    const { error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+    });
+    if (error) throw error;
+};
+
 
 // ===== Cart Management =====
 

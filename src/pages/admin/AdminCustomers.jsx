@@ -1,19 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, Filter, Eye, Mail, Loader2 } from 'lucide-react';
+import { Search, Edit, Trash2, MoreVertical, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
-import { getCustomersWithStats } from '../../api/EcommerceApi.js';
+import { getCustomersWithStats, deleteUserByAdmin } from '../../api/EcommerceApi.js';
+import EditUserRoleDialog from '../../components/admin/EditUserRoleDialog.jsx';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog.jsx";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu.jsx";
+
 
 const AdminCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addNotification } = useNotification();
+  const { user } = useAuth();
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   
   const fetchCustomers = useCallback(async () => {
       try {
@@ -44,18 +69,31 @@ const AdminCustomers = () => {
 
   }, [fetchCustomers]);
 
+  const handleEdit = (customer) => {
+    setSelectedUser(customer);
+    setIsEditDialogOpen(true);
+  };
+
+  const confirmDelete = (customer) => {
+    setUserToDelete(customer);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUserByAdmin(userToDelete.id);
+      addNotification({ type: 'success', title: 'User Deleted', message: `${userToDelete.email} has been deleted.` });
+      setUserToDelete(null);
+      fetchCustomers(); // Refresh list
+    } catch (error) {
+      addNotification({ type: 'error', title: 'Deletion Failed', message: error.message });
+    }
+  };
 
   const filteredCustomers = customers.filter(customer =>
     (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const handleViewCustomer = (customerId) => {
-    addNotification({
-      type: 'info',
-      title: "Feature Coming Soon!",
-      message: "Viewing customer details isn't implemented yet, but you can request it!",
-    });
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -71,8 +109,8 @@ const AdminCustomers = () => {
   return (
     <>
       <Helmet>
-        <title>Customers Management - Admin - AYExpress</title>
-        <meta name="description" content="Manage customers in the AYExpress admin panel." />
+        <title>User Management - Admin - AYExpress</title>
+        <meta name="description" content="Manage users in the AYExpress admin panel." />
       </Helmet>
       
       <AdminLayout>
@@ -85,8 +123,8 @@ const AdminCustomers = () => {
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
           >
             <div>
-              <h1 className="text-2xl font-bold text-white mb-1">Customers</h1>
-              <p className="text-white/70">View and manage your customer base</p>
+              <h1 className="text-2xl font-bold text-white mb-1">User Management</h1>
+              <p className="text-white/70">View, edit, and manage user accounts</p>
             </div>
           </motion.div>
 
@@ -98,12 +136,12 @@ const AdminCustomers = () => {
             className="glass-effect rounded-xl p-4"
           >
             <div className="relative">
-              <label htmlFor="customer-search" className="sr-only">Search customers by email</label>
+              <label htmlFor="customer-search" className="sr-only">Search users by email</label>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
               <input
                 type="text"
                 id="customer-search"
-                placeholder="Search customers by email..."
+                placeholder="Search users by email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -127,12 +165,12 @@ const AdminCustomers = () => {
                 <table className="w-full text-sm">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="text-left p-4 text-white font-semibold">Customer</th>
+                      <th className="text-left p-4 text-white font-semibold">User</th>
                       <th className="text-left p-4 text-white font-semibold">Join Date</th>
                       <th className="text-left p-4 text-white font-semibold">Orders</th>
                       <th className="text-left p-4 text-white font-semibold">Total Spent</th>
                       <th className="text-left p-4 text-white font-semibold">Role</th>
-                      <th className="text-left p-4 text-white font-semibold">Actions</th>
+                      <th className="text-center p-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -168,18 +206,24 @@ const AdminCustomers = () => {
                             {customer.role}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleViewCustomer(customer.id)}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                              aria-label={`View details for ${customer.email}`}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        <td className="p-4 text-center">
+                          <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-white/10" disabled={customer.id === user.id}>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleEdit(customer)} className="cursor-pointer">
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Edit Role</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => confirmDelete(customer)} className="text-red-400 focus:text-red-300 focus:bg-red-400/10 cursor-pointer">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <span>Delete User</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                         </td>
                       </motion.tr>
                     ))}
@@ -196,9 +240,32 @@ const AdminCustomers = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-center text-white/70 text-sm"
           >
-            <p>Showing {filteredCustomers.length} of {customers.length} customers</p>
+            <p>Showing {filteredCustomers.length} of {customers.length} users</p>
           </motion.div>
         </div>
+
+        <EditUserRoleDialog 
+          user={selectedUser}
+          isOpen={isEditDialogOpen}
+          setIsOpen={setIsEditDialogOpen}
+          onSuccess={fetchCustomers}
+        />
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this user?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the account for "{userToDelete?.email}" and all associated data.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete User</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </AdminLayout>
     </>
   );
