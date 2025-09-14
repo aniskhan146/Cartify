@@ -93,14 +93,19 @@ const CheckoutPage = () => {
         await decreaseInventory(orderData.id);
 
         // 4. Trigger the order confirmation email function
+        // The Supabase client automatically stringifies the body and sets the correct headers.
         supabase.functions.invoke('send-order-confirmation', {
-            body: JSON.stringify({ orderId: orderData.id }),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        }).then(({ error }) => {
+            body: { orderId: orderData.id },
+        }).then(({ data, error }) => {
             if (error) {
                 console.error("Failed to invoke send-order-confirmation function:", error);
+                 addNotification({
+                    type: "warning",
+                    title: "Email Confirmation Delayed",
+                    message: "We're processing your order, but there was an issue sending the confirmation email.",
+                });
+            } else {
+                 console.log('Order confirmation function invoked successfully:', data);
             }
         });
 
