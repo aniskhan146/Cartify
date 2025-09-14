@@ -8,6 +8,18 @@ import { formatCurrency } from '../lib/utils.js';
 // new features (Brands, Categories, SKUs, etc.) to work correctly.
 
 /*
+-- 0. Helper function to get the current user's role
+-- This is more reliable than JWT claims for RLS, resolving permission issues for admins.
+CREATE OR REPLACE FUNCTION get_user_role(user_id uuid)
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public -- Important for security definer functions
+AS $$
+  SELECT role FROM public.profiles WHERE id = user_id;
+$$;
+
+
 -- 1. Brands Table
 CREATE TABLE IF NOT EXISTS public.brands (
     id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -19,7 +31,10 @@ ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access to brands" ON public.brands;
 CREATE POLICY "Allow public read access to brands" ON public.brands FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow admin full access to brands" ON public.brands;
-CREATE POLICY "Allow admin full access to brands" ON public.brands FOR ALL USING (auth.jwt() ->> 'user_role' = 'admin') WITH CHECK (auth.jwt() ->> 'user_role' = 'admin');
+-- Use the get_user_role function for a more reliable role check.
+CREATE POLICY "Allow admin full access to brands" ON public.brands FOR ALL 
+    USING (get_user_role(auth.uid()) = 'admin') 
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
 
 -- 2. Categories Table (with self-referencing for nesting)
 CREATE TABLE IF NOT EXISTS public.categories (
@@ -32,7 +47,10 @@ ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read access to categories" ON public.categories;
 CREATE POLICY "Allow public read access to categories" ON public.categories FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow admin full access to categories" ON public.categories;
-CREATE POLICY "Allow admin full access to categories" ON public.categories FOR ALL USING (auth.jwt() ->> 'user_role' = 'admin') WITH CHECK (auth.jwt() ->> 'user_role' = 'admin');
+-- Use the get_user_role function for a more reliable role check.
+CREATE POLICY "Allow admin full access to categories" ON public.categories FOR ALL 
+    USING (get_user_role(auth.uid()) = 'admin') 
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
 
 -- 3. Products Table Modifications
 -- First, remove the old text-based 'category' column
@@ -43,11 +61,28 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand_id bigint REFERENCES 
 -- Add specifications column to store product details
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS specifications jsonb;
 
+-- Add RLS for products
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to products" ON public.products;
+CREATE POLICY "Allow public read access to products" ON public.products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to products" ON public.products;
+CREATE POLICY "Allow admin full access to products" ON public.products FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin')
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
 
 -- 4. Variants Table Modifications
 -- Add SKU for unique product tracking and color hex for color picker
 ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS sku text UNIQUE;
 ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS color_hex text;
+
+-- Add RLS for variants
+ALTER TABLE public.variants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to variants" ON public.variants;
+CREATE POLICY "Allow public read access to variants" ON public.variants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to variants" ON public.variants;
+CREATE POLICY "Allow admin full access to variants" ON public.variants FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin')
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
 
 -- 5. Cart Items Table
 CREATE TABLE IF NOT EXISTS public.cart_items (
