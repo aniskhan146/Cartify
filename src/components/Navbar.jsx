@@ -90,17 +90,28 @@ const Navbar = ({ setIsCartOpen }) => {
             </DropdownMenuItem>
           ) : (
             notifications.map(n => (
-              <DropdownMenuItem key={n.id} className={`flex items-start gap-3 w-full cursor-default focus:bg-white/10 ${!n.read ? 'bg-white/5' : ''}`}>
-                {getIconForType(n.type)}
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-white">{n.title}</p>
-                  <p className="text-xs text-white/70 whitespace-pre-wrap">{n.message}</p>
-                  <p className="text-[10px] text-white/50 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
-                </div>
+              <DropdownMenuItem key={n.id} asChild>
+                <Link to="/notifications" className={`flex items-start gap-3 w-full cursor-pointer focus:bg-white/10 ${!n.read ? 'bg-white/5' : ''}`}>
+                  {getIconForType(n.type)}
+                  <div className="flex-1 overflow-hidden">
+                    <p className="font-semibold text-sm text-white truncate">{n.title}</p>
+                    <p className="text-xs text-white/70 line-clamp-2">{n.message}</p>
+                  </div>
+                </Link>
               </DropdownMenuItem>
             ))
           )}
         </div>
+        {notifications.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/notifications" className="w-full flex justify-center text-purple-300 font-semibold cursor-pointer hover:!text-purple-200">
+                View All Notifications
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
