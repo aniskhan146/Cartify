@@ -17,6 +17,7 @@ import ShoppingCart from '@/components/ShoppingCart';
 import ProductsPage from '@/pages/ProductsPage';
 import CartPage from '@/pages/CartPage';
 import CheckoutPage from '@/pages/CheckoutPage';
+import OrderHistoryPage from '@/pages/OrderHistoryPage';
 
 function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/success" element={<SuccessPage />} />
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/orders" element={<OrderHistoryPage />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/products" element={<AdminProducts />} />
                 <Route path="/admin/orders" element={<AdminOrders />} />

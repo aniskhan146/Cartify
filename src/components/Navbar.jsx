@@ -5,6 +5,13 @@ import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const Navbar = ({ setIsCartOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -63,18 +70,27 @@ const Navbar = ({ setIsCartOpen }) => {
                 </Button>
               </div>
               {user ? (
-                <div className="flex items-center space-x-2">
-                  {user.role === 'admin' && (
-                    <Link to="/admin">
-                      <Button variant="outline" size="sm">
-                        Admin
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="rounded-full text-white/80 hover:text-white">
+                        <User className="h-5 w-5" />
                       </Button>
-                    </Link>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={handleLogout}>
-                    <User className="h-5 w-5" />
-                  </Button>
-                </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link to="/orders" className="cursor-pointer">My Orders</Link>
+                      </DropdownMenuItem>
+                      {user.role === 'admin' && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="cursor-pointer">Admin Panel</Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
               ) : (
                 <Link to="/login">
                   <Button variant="outline" size="sm">
@@ -125,6 +141,9 @@ const Navbar = ({ setIsCartOpen }) => {
               </Link>
               {user ? (
                 <>
+                  <Link to="/orders" className="text-white/80 hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>
+                    My Orders
+                  </Link>
                   {user.role === 'admin' && (
                     <Link to="/admin" className="text-white/80 hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>
                       Admin Panel
