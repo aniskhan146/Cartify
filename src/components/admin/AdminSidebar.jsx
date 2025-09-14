@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Package, ShoppingCart, Users, FolderTree, Tags, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, FolderTree, Tags, LogOut, X, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/products', icon: Package, label: 'Products' },
   { href: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
   { href: '/admin/customers', icon: Users, label: 'Customers' },
+  { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
   { href: '/admin/categories', icon: FolderTree, label: 'Categories' },
   { href: '/admin/brands', icon: Tags, label: 'Brands' },
 ];
@@ -36,6 +37,7 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
           <Link
             key={item.href}
             to={item.href}
+            onClick={() => setSidebarOpen(false)}
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
               location.pathname.startsWith(item.href) && (item.href !== '/admin' || location.pathname === '/admin')
                 ? 'bg-purple-500/20 text-purple-200 font-semibold'
@@ -64,15 +66,24 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
       {/* Mobile Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 left-0 z-50 w-64 glass-effect border-r border-white/10 flex flex-col lg:hidden"
-          >
-            {sidebarContent}
-          </motion.div>
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed inset-y-0 left-0 z-50 w-64 glass-effect border-r border-white/10 flex flex-col lg:hidden"
+            >
+              {sidebarContent}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
       

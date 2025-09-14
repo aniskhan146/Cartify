@@ -6,47 +6,56 @@ import { Package, ShoppingCart, Users, DollarSign, Eye, Loader2 } from 'lucide-r
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, revenue: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   const fetchData = useCallback(async () => {
-    // Fetch stats
-    const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-    const { count: orderCount, data: orderData } = await supabase.from('orders').select('total', { count: 'exact' });
-    const { count: customerCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-    const totalRevenue = orderData.reduce((sum, order) => sum + order.total, 0);
+    try {
+      // Fetch stats
+      const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+      const { count: orderCount, data: orderData } = await supabase.from('orders').select('total', { count: 'exact' });
+      const { count: customerCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+      const totalRevenue = orderData.reduce((sum, order) => sum + order.total, 0);
 
-    setStats({
-      products: productCount || 0,
-      orders: orderCount || 0,
-      customers: customerCount || 0,
-      revenue: totalRevenue || 0,
-    });
+      setStats({
+        products: productCount || 0,
+        orders: orderCount || 0,
+        customers: customerCount || 0,
+        revenue: totalRevenue || 0,
+      });
 
-    // Fetch recent orders
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('id, status, total, profiles(email)')
-      .order('created_at', { ascending: false })
-      .limit(4);
-    setRecentOrders(orders || []);
+      // Fetch recent orders
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, status, total, profiles(email)')
+        .order('created_at', { ascending: false })
+        .limit(4);
+      setRecentOrders(orders || []);
 
-    // Fetch recent products
-    const { data: products } = await supabase
-      .from('products')
-      .select('id, title, category, image, variants(price_in_cents, inventory_quantity)')
-      .order('created_at', { ascending: false })
-      .limit(5);
-    setTopProducts(products || []);
-    
-    setLoading(false);
-  }, []);
+      // Fetch recent products
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, title, category, image, variants(price_in_cents, inventory_quantity)')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      setTopProducts(products || []);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      addAdminNotification({
+        category: 'Errors',
+        title: "Dashboard Load Failed",
+        message: "Could not fetch the latest statistics. Please check the console for details.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [addAdminNotification]);
 
   useEffect(() => {
     setLoading(true);
@@ -55,27 +64,34 @@ const AdminDashboard = () => {
     const channel = supabase.channel('dashboard-realtime');
     channel
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
-          addNotification({
-            type: 'info',
+          addAdminNotification({
+            category: 'Orders',
             title: "🎉 New Order!",
-            message: `A new order (#${payload.new.id}) was just placed for ${formatCurrency(payload.new.total)}.`,
+            message: `Order #${payload.new.id} was just placed for ${formatCurrency(payload.new.total)}.`,
+          });
+          fetchData();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, (payload) => {
+          addAdminNotification({
+            category: 'Customers',
+            title: "👋 New Customer!",
+            message: `A new user just signed up: ${payload.new.email}.`,
           });
           fetchData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchData)
       .subscribe();
 
     return () => {
         supabase.removeChannel(channel);
     }
 
-  }, [fetchData, addNotification]);
+  }, [fetchData, addAdminNotification]);
   
   if (loading) {
      return (
         <AdminLayout>
-            <div className="flex justify-center items-center h-screen -mt-16">
+            <div className="flex justify-center items-center h-[calc(100vh-10rem)]">
                 <Loader2 className="h-12 w-12 text-white animate-spin" />
             </div>
         </AdminLayout>

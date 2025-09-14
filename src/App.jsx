@@ -5,6 +5,7 @@ import { CartProvider } from './hooks/useCart.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { WishlistProvider } from './hooks/useWishlist.jsx';
 import { NotificationProvider } from './hooks/useNotification.jsx';
+import { AdminNotificationProvider } from './hooks/useAdminNotification.jsx'; // Import the new provider
 import Navbar from './components/Navbar.jsx';
 import ShoppingCart from './components/ShoppingCart.jsx';
 import { isSupabaseConfigured } from './lib/supabase.js';
@@ -41,6 +42,7 @@ const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx'));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories.jsx'));
 const AdminBrands = lazy(() => import('./pages/admin/AdminBrands.jsx'));
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications.jsx')); // Add new admin page import
 
 
 function App() {
@@ -49,40 +51,43 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <CartProvider>
-          <WishlistProvider>
-            {!isSupabaseConfigured && <MissingEnvBanner />}
-            <Router>
-              <div className="min-h-screen bg-background text-foreground">
-                <Navbar setIsCartOpen={setIsCartOpen} />
-                <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
-                <main className="pt-16">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Routes>
-                      <Route path="/" element={<HomePage />} />
-                      <Route path="/store" element={<StorePage />} />
-                      <Route path="/product/:id" element={<ProductDetailPage />} />
-                      <Route path="/cart" element={<CartPage />} />
-                      <Route path="/checkout" element={<CheckoutPage />} />
-                      <Route path="/success" element={<SuccessPage />} />
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/orders" element={<OrderHistoryPage />} />
-                      <Route path="/order/:id" element={<OrderDetailsPage />} />
-                      <Route path="/notifications" element={<NotificationPage />} />
-                      <Route path="/admin" element={<AdminDashboard />} />
-                      <Route path="/admin/products" element={<AdminProducts />} />
-                      <Route path="/admin/orders" element={<AdminOrders />} />
-                      <Route path="/admin/customers" element={<AdminCustomers />} />
-                      <Route path="/admin/categories" element={<AdminCategories />} />
-                      <Route path="/admin/brands" element={<AdminBrands />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Toaster />
-              </div>
-            </Router>
-          </WishlistProvider>
-        </CartProvider>
+        <AdminNotificationProvider>
+          <CartProvider>
+            <WishlistProvider>
+              {!isSupabaseConfigured && <MissingEnvBanner />}
+              <Router>
+                <div className="min-h-screen bg-background text-foreground">
+                  <Navbar setIsCartOpen={setIsCartOpen} />
+                  <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
+                  <main className="pt-16">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/store" element={<StorePage />} />
+                        <Route path="/product/:id" element={<ProductDetailPage />} />
+                        <Route path="/cart" element={<CartPage />} />
+                        <Route path="/checkout" element={<CheckoutPage />} />
+                        <Route path="/success" element={<SuccessPage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/orders" element={<OrderHistoryPage />} />
+                        <Route path="/order/:id" element={<OrderDetailsPage />} />
+                        <Route path="/notifications" element={<NotificationPage />} />
+                        <Route path="/admin" element={<AdminDashboard />} />
+                        <Route path="/admin/products" element={<AdminProducts />} />
+                        <Route path="/admin/orders" element={<AdminOrders />} />
+                        <Route path="/admin/customers" element={<AdminCustomers />} />
+                        <Route path="/admin/categories" element={<AdminCategories />} />
+                        <Route path="/admin/brands" element={<AdminBrands />} />
+                        <Route path="/admin/notifications" element={<AdminNotifications />} /> {/* Add new route */}
+                      </Routes>
+                    </Suspense>
+                  </main>
+                  <Toaster />
+                </div>
+              </Router>
+            </WishlistProvider>
+          </CartProvider>
+        </AdminNotificationProvider>
       </NotificationProvider>
     </AuthProvider>
   );
