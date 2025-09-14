@@ -23,7 +23,7 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 const MissingEnvBanner = () => (
     <div className="bg-red-800 text-white p-3 text-center fixed top-0 left-0 right-0 z-[2000] shadow-lg">
         <p className="font-bold">Configuration Error: Supabase Keys Missing</p>
-        <p className="text-sm">The application cannot connect to the database. Please ensure <strong>SUPABASE_URL</strong> and <strong>SUPABASE_ANON_KEY</strong> are set in your deployment environment.</p>
+        <p className="text-sm">The application cannot connect to the database. Please add <strong>VITE_SUPABASE_DATABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to your environment secrets.</p>
     </div>
 );
 

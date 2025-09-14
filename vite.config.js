@@ -11,10 +11,8 @@ export default defineConfig({
     }
   },
   define: {
-    // Expose Supabase env vars to client-side code.
-    // This allows the app to use variables provided by Netlify's Supabase integration (SUPABASE_URL, SUPABASE_ANON_KEY)
-    // as well as local .env variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY).
-    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL),
+    // Expose Supabase env vars to the client. This uses the variable names you provided.
+    'import.meta.env.VITE_SUPABASE_DATABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_DATABASE_URL || process.env.SUPABASE_DATABASE_URL),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY),
   }
 })

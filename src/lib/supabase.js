@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_DATABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
@@ -11,7 +11,7 @@ if (isSupabaseConfigured) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
 } else {
   console.warn(
-    "Supabase URL or Anon Key is not set. The application will not be able to connect to the database. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables."
+    "Supabase URL or Anon Key is not set. The application will not be able to connect to the database. Please add VITE_SUPABASE_DATABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables."
   );
 
   const errorResponse = { data: null, error: { message: 'Supabase is not configured.' } };
