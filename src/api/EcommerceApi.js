@@ -94,13 +94,15 @@ export const updateProduct = async (productId, productData, variantsData) => {
 
     // 3. Delete variants that were removed
     const variantIdsToKeep = variantsData.map(v => v.id).filter(Boolean);
-    const { error: deleteError } = await supabase
-        .from('variants')
-        .delete()
-        .eq('product_id', productId)
-        .not('id', 'in', `(${variantIdsToKeep.join(',')})`);
-        
-    if (deleteError) console.error("Error deleting old variants:", deleteError);
+    if (variantIdsToKeep.length > 0) {
+        const { error: deleteError } = await supabase
+            .from('variants')
+            .delete()
+            .eq('product_id', productId)
+            .not('id', 'in', `(${variantIdsToKeep.join(',')})`);
+            
+        if (deleteError) console.error("Error deleting old variants:", deleteError);
+    }
 };
 
 export const deleteProduct = async (productId) => {
@@ -130,34 +132,53 @@ export const updateOrderStatus = async (orderId, newStatus) => {
 
 export const getCustomersWithStats = async () => {
     // This uses an RPC function in Supabase for better performance.
-    // You need to create this function in your Supabase SQL editor.
     const { data, error } = await supabase.rpc('get_customer_stats');
 
     if (error) {
-        console.error("Error fetching customer stats:", error);
-        // Fallback to client-side calculation if RPC fails or doesn't exist
-        console.warn("Falling back to client-side customer stat calculation. For better performance, create the 'get_customer_stats' RPC function in Supabase.");
-        
-        const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
-        if(profileError) throw profileError;
-        
-        const { data: orders, error: orderError } = await supabase.from('orders').select('user_id, total');
-        if(orderError) throw orderError;
-        
-        const statsMap = orders.reduce((acc, order) => {
-            if (!acc[order.user_id]) {
-                acc[order.user_id] = { totalSpent: 0, orderCount: 0 };
-            }
-            acc[order.user_id].totalSpent += order.total;
-            acc[order.user_id].orderCount += 1;
-            return acc;
-        }, {});
+        console.error("Error fetching customer stats via RPC:", error);
 
-        return profiles.map(profile => ({
-            ...profile,
-            total_spent: statsMap[profile.id]?.totalSpent || 0,
-            order_count: statsMap[profile.id]?.orderCount || 0,
-        }));
+        // Specific check for missing 'profiles' table which causes the RPC to fail.
+        if (error.code === '42P01' || error.message.includes('relation "public.profiles" does not exist')) {
+             console.warn("RPC function failed because 'profiles' table is missing. Returning empty customer list. Please run the database setup script.");
+             return []; // Prevents crashing the admin page.
+        }
+
+        // Fallback to client-side calculation if RPC fails for other reasons
+        console.warn("Falling back to client-side customer stat calculation...");
+        
+        try {
+            const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
+            if (profileError) {
+                // Also handle the missing table error here in the fallback.
+                if (profileError.code === '42P01' || profileError.message.includes('relation "public.profiles" does not exist')) {
+                     console.warn("'profiles' table not found during fallback. Returning empty customer list. Please run the database setup script.");
+                     return [];
+                }
+                throw profileError;
+            }
+            
+            const { data: orders, error: orderError } = await supabase.from('orders').select('user_id, total');
+            if (orderError) throw orderError;
+            
+            const statsMap = orders.reduce((acc, order) => {
+                if (!acc[order.user_id]) {
+                    acc[order.user_id] = { totalSpent: 0, orderCount: 0 };
+                }
+                acc[order.user_id].totalSpent += order.total;
+                acc[order.user_id].orderCount += 1;
+                return acc;
+            }, {});
+    
+            return profiles.map(profile => ({
+                ...profile,
+                created_at: profile.created_at,
+                total_spent: statsMap[profile.id]?.totalSpent || 0,
+                order_count: statsMap[profile.id]?.orderCount || 0,
+            }));
+        } catch(fallbackError) {
+            console.error("Client-side fallback for customer stats also failed:", fallbackError);
+            return []; // Return empty array on any fallback failure to prevent crash
+        }
     }
     
     return data;
@@ -167,20 +188,20 @@ export const getCustomersWithStats = async () => {
 // via the SQL Editor for the `getCustomersWithStats` function to work optimally.
 /*
   CREATE OR REPLACE FUNCTION get_customer_stats()
-  RETURNS TABLE(id uuid, email text, role text, created_at timestamptz, total_spent bigint, order_count bigint)
+  RETURNS TABLE(id uuid, email text, role text, created_at timestptz, total_spent bigint, order_count bigint)
   LANGUAGE sql
   AS $$
     SELECT
       p.id,
       p.email,
       p.role,
-      p.created_at,
+      (SELECT created_at FROM auth.users WHERE id = p.id) as created_at,
       COALESCE(SUM(o.total), 0)::bigint AS total_spent,
       COALESCE(COUNT(o.id), 0)::bigint AS order_count
     FROM
-      profiles p
+      public.profiles p
     LEFT JOIN
-      orders o ON p.id = o.user_id
+      public.orders o ON p.id = o.user_id
     GROUP BY
       p.id;
   $$;
