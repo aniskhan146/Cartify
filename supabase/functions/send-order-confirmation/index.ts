@@ -1,5 +1,5 @@
-// Fix: Corrected the TypeScript reference for Supabase Edge Functions to use the recommended npm specifier. This resolves Deno runtime errors.
-/// <reference types="npm:@supabase/functions-js/src/edge-runtime.d.ts" />
+// Fix: Corrected the TypeScript reference for Supabase Edge Functions to use a URL specifier. This resolves Deno runtime errors.
+/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 
 // Follow this tutorial to get started with Supabase Edge Functions:
 // https://supabase.com/docs/guides/functions
@@ -7,6 +7,8 @@
 // Note: Ensure you have set the required environment variables in your Supabase project:
 // `supabase secrets set BREVO_API_KEY YOUR_KEY_HERE`
 // `supabase secrets set BREVO_TEMPLATE_ID YOUR_TEMPLATE_ID_HERE`
+// `supabase secrets set SENDER_EMAIL your-verified-sender@example.com`
+// `supabase secrets set SENDER_NAME "Your Store Name"`
 // The `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are automatically available in the function environment.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -46,12 +48,14 @@ Deno.serve(async (req) => {
     const brevoTemplateId = Deno.env.get('BREVO_TEMPLATE_ID')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const senderEmail = Deno.env.get('SENDER_EMAIL')
+    const senderName = Deno.env.get('SENDER_NAME') || 'AYExpress'
 
-    if (!brevoApiKey || !brevoTemplateId || !supabaseUrl || !serviceRoleKey) {
-      console.error('Missing one or more required environment variables.')
+    if (!brevoApiKey || !brevoTemplateId || !supabaseUrl || !serviceRoleKey || !senderEmail) {
+      console.error('Missing one or more required environment variables (BREVO_API_KEY, BREVO_TEMPLATE_ID, SENDER_EMAIL, etc).')
       throw new Error('Server configuration error. Please contact support.')
     }
-    console.log(`Configuration loaded. Using Brevo Template ID: ${brevoTemplateId}`);
+    console.log(`Configuration loaded. Sending from: ${senderName} <${senderEmail}>. Using Template ID: ${brevoTemplateId}`);
     
     // 3. Create a Supabase admin client to securely fetch data.
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -116,6 +120,7 @@ Deno.serve(async (req) => {
 
     // 7. Prepare the payload for the Brevo API.
     const brevoPayload = {
+      sender: { email: senderEmail, name: senderName },
       to: [{ email: customerEmail, name: customerName }],
       templateId: numericTemplateId,
       params: params,
@@ -123,6 +128,7 @@ Deno.serve(async (req) => {
     
     console.log('Sending request to Brevo API...');
     console.log('Payload details:', JSON.stringify({ 
+        sender: brevoPayload.sender,
         to: brevoPayload.to.map(r => ({ email: '...hidden...', name: r.name })),
         templateId: brevoPayload.templateId 
     }));
