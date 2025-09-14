@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Search, Eye, Loader2, CreditCard, Truck } from 'lucide-react';
+import { Search, Eye, Loader2, CreditCard, Truck, MoreVertical, Mail } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useNotification } from '../../hooks/useNotification.jsx';
@@ -21,6 +21,7 @@ const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isResending, setIsResending] = useState(null); // Holds the ID of the order being resent
   const { addNotification } = useNotification();
   
   const fetchOrders = useCallback(async () => {
@@ -88,6 +89,30 @@ const AdminOrders = () => {
             title: "Update Failed",
             message: error.message || "Could not update order status.",
         });
+    }
+  };
+
+  const handleResendConfirmation = async (orderId) => {
+    setIsResending(orderId);
+    try {
+        const { error } = await supabase.functions.invoke('send-order-confirmation', {
+            body: { orderId },
+        });
+        if (error) throw error;
+        addNotification({
+            type: "success",
+            title: "Email Sent!",
+            message: `Confirmation for order #${orderId} has been resent.`,
+        });
+    } catch (error) {
+        console.error("Failed to resend confirmation email:", error);
+        addNotification({
+            type: "error",
+            title: "Failed to Send Email",
+            message: "There was an issue resending the confirmation email.",
+        });
+    } finally {
+        setIsResending(null);
     }
   };
 
@@ -181,7 +206,7 @@ const AdminOrders = () => {
                       <th className="text-left p-4 text-white font-semibold">Total</th>
                       <th className="text-left p-4 text-white font-semibold">Payment</th>
                       <th className="text-left p-4 text-white font-semibold">Status</th>
-                      <th className="text-left p-4 text-white font-semibold">Actions</th>
+                      <th className="text-center p-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -239,19 +264,34 @@ const AdminOrders = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2">
-                            <Link to={`/order/${order.id}`} target="_blank" rel="noopener noreferrer">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                                  aria-label={`View details for order #${order.id}`}
-                                >
-                                  <Eye className="h-4 w-4" />
+                        <td className="p-4 text-center">
+                           <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 data-[state=open]:bg-white/10">
+                                  <MoreVertical className="h-4 w-4" />
                                 </Button>
-                            </Link>
-                          </div>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                    <Link to={`/order/${order.id}`} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        <span>View Details</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onSelect={() => handleResendConfirmation(order.id)}
+                                    disabled={isResending === order.id}
+                                    className="cursor-pointer"
+                                >
+                                    {isResending === order.id ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Mail className="mr-2 h-4 w-4" />
+                                    )}
+                                    <span>Resend Confirmation</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                         </td>
                       </motion.tr>
                     ))}
