@@ -125,6 +125,7 @@ $$;
 CREATE OR REPLACE FUNCTION get_customer_stats()
 RETURNS TABLE(id uuid, email text, role text, created_at timestamptz, total_spent bigint, order_count bigint)
 LANGUAGE sql
+SECURITY DEFINER
 AS $$
   SELECT
     p.id,

@@ -272,11 +272,8 @@ export const getCustomersWithStats = async () => {
     const { data, error } = await supabase.rpc('get_customer_stats');
     if (error) {
         console.error("Error fetching customer stats via RPC:", error);
-        if (error.code === '42P01' || error.message.includes('relation "public.profiles" does not exist')) {
-             console.warn("RPC function failed because 'profiles' table is missing. Returning empty customer list.");
-             return [];
-        }
-        return [];
+        // Throw the original error so the frontend can display a meaningful message.
+        throw error;
     }
     return data;
 }
