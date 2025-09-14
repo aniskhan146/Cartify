@@ -369,3 +369,119 @@ export const getCustomersWithStats = async () => {
       p.id;
   $$;
 */
+
+// ===== Cart Management =====
+
+// NOTE: You MUST add the following SQL table to your Supabase project for the cart to work.
+/*
+CREATE TABLE public.cart_items (
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    variant_id bigint NOT NULL REFERENCES public.variants(id) ON DELETE CASCADE,
+    quantity integer NOT NULL CHECK (quantity > 0),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, variant_id)
+);
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own cart items" ON public.cart_items
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+*/
+
+export const getCartForUser = async (userId) => {
+    const { data, error } = await supabase
+        .from('cart_items')
+        .select('quantity, variants(*, products(*))')
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error("Error fetching user cart:", error);
+        throw error;
+    }
+
+    // Format the data to match the structure expected by the useCart hook
+    return data.map(item => {
+        const product = item.variants.products;
+        const variant = { ...item.variants, products: undefined }; // Clean up nested product
+        return {
+            quantity: item.quantity,
+            product: {
+                id: product.id,
+                title: product.title,
+                image: transformSupabaseImage(product.image, 100, 100),
+            },
+            variant: {
+                ...variant,
+                price_formatted: formatCurrency(variant.price_in_cents),
+                sale_price_formatted: variant.sale_price_in_cents ? formatCurrency(variant.sale_price_in_cents) : null,
+            }
+        };
+    });
+};
+
+export const addOrUpdateCartItem = async (userId, variantId, quantity) => {
+    const { error: upsertError } = await supabase
+        .from('cart_items')
+        .upsert(
+            { user_id: userId, variant_id: variantId, quantity: quantity },
+            { onConflict: 'user_id,variant_id' }
+        );
+        
+    if (upsertError) {
+        console.error("Error upserting cart item:", upsertError);
+        throw upsertError;
+    }
+
+    // Fetch the newly updated item to get all joined data for the UI state
+    const { data, error: fetchError } = await supabase
+        .from('cart_items')
+        .select('quantity, variants(*, products(*))')
+        .eq('user_id', userId)
+        .eq('variant_id', variantId)
+        .single();
+    
+    if (fetchError) {
+        console.error("Error fetching updated cart item:", fetchError);
+        throw fetchError;
+    }
+
+    const product = data.variants.products;
+    const variant = { ...data.variants, products: undefined };
+    return {
+        quantity: data.quantity,
+        product: {
+            id: product.id,
+            title: product.title,
+            image: transformSupabaseImage(product.image, 100, 100),
+        },
+        variant: {
+            ...variant,
+            price_formatted: formatCurrency(variant.price_in_cents),
+            sale_price_formatted: variant.sale_price_in_cents ? formatCurrency(variant.sale_price_in_cents) : null,
+        }
+    };
+};
+
+export const removeCartItem = async (userId, variantId) => {
+    const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .match({ user_id: userId, variant_id: variantId });
+
+    if (error) {
+        console.error("Error removing cart item:", error);
+        throw error;
+    }
+};
+
+export const clearUserCart = async (userId) => {
+    const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error("Error clearing user cart:", error);
+        throw error;
+    }
+};
