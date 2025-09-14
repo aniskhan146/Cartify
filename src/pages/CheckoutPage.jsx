@@ -94,7 +94,10 @@ const CheckoutPage = () => {
 
         // 4. Trigger the order confirmation email function
         supabase.functions.invoke('send-order-confirmation', {
-            body: { orderId: orderData.id },
+            body: JSON.stringify({ orderId: orderData.id }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
         }).then(({ error }) => {
             if (error) {
                 console.error("Failed to invoke send-order-confirmation function:", error);

@@ -1,5 +1,11 @@
-// Fix: Corrected the TypeScript reference for Supabase Edge Functions to use a URL specifier. This resolves Deno runtime errors.
-/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
+// Fix: Replace Deno-specific type reference with a manual declaration to support standard TypeScript tooling.
+// This resolves "Cannot find name 'Deno'" and "Cannot find type definition file" errors.
+declare const Deno: {
+  serve: (handler: (req: Request) => Response | Promise<Response>) => void;
+  env: {
+    get: (key: string) => string | undefined;
+  };
+};
 
 // Follow this tutorial to get started with Supabase Edge Functions:
 // https://supabase.com/docs/guides/functions
@@ -36,10 +42,28 @@ Deno.serve(async (req) => {
   console.log('--- Order Confirmation Function Invoked ---');
 
   try {
-    // 1. Extract orderId from the request body.
-    const { orderId } = await req.json()
+    // 1. Improved body parsing to prevent "Unexpected end of JSON input" error.
+    if (req.method !== 'POST') {
+      throw new Error(`Invalid request method: ${req.method}. Must be POST.`);
+    }
+
+    const bodyText = await req.text();
+    if (!bodyText) {
+        console.error("Function received an empty request body.");
+        throw new Error('Request body is required and cannot be empty.');
+    }
+
+    let payload;
+    try {
+        payload = JSON.parse(bodyText);
+    } catch (e) {
+        console.error("Failed to parse request body as JSON.", { bodyText });
+        throw new Error('Invalid JSON format in request body.');
+    }
+
+    const { orderId } = payload;
     if (!orderId) {
-      throw new Error('Order ID is required.')
+      throw new Error('`orderId` is required in the JSON payload.');
     }
     console.log(`Processing orderId: ${orderId}`);
 
