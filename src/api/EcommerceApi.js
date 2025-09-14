@@ -173,8 +173,24 @@ export const updateProduct = async (productId, productData, variantsData) => {
 };
 
 export const deleteProduct = async (productId) => {
-    const { error } = await supabase.from('products').delete().eq('id', productId);
-    if (error) throw error;
+    // Soft delete: Instead of deleting, we archive the product by making it non-purchasable.
+    // This preserves historical data in orders that reference this product's variants,
+    // avoiding the foreign key constraint violation.
+    const { data, error } = await supabase
+        .from('products')
+        .update({ purchasable: false })
+        .eq('id', productId)
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error archiving product:", error);
+        throw error;
+    }
+
+    if (!data) {
+        throw new Error("Product not found or could not be archived.");
+    }
 };
 
 

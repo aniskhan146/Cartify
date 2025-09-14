@@ -96,10 +96,11 @@ const AdminProducts = () => {
     if (!productToDelete) return;
     try {
         await deleteProduct(productToDelete.id);
-        addNotification({ type: 'success', title: "Product Deleted", message: `"${productToDelete.title}" has been removed.` });
+        addNotification({ type: 'success', title: "Product Archived", message: `"${productToDelete.title}" has been archived and is no longer purchasable.` });
         setProductToDelete(null);
+        fetchProducts(); // Refresh list immediately
     } catch (error) {
-        addNotification({ type: 'error', title: "Deletion Failed", message: error.message });
+        addNotification({ type: 'error', title: "Archive Failed", message: error.message });
     }
   };
 
@@ -289,14 +290,14 @@ const AdminProducts = () => {
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogTitle>Archive Product?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the product "{productToDelete?.title}" and all its data from our servers.
+                This will archive the product "{productToDelete?.title}", making it unavailable for purchase. It will not be removed from existing orders. You can re-enable it later by editing the product.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+              <AlertDialogAction onClick={handleDelete}>Archive Product</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
