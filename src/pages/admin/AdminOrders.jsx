@@ -21,7 +21,7 @@ const AdminOrders = () => {
       
       let query = supabase
         .from('orders')
-        .select('id, created_at, total, status, profiles(full_name, email), order_items(id)');
+        .select('id, created_at, total, status, profiles(email), order_items(id)');
 
       if (statusFilter !== 'All') {
         query = query.eq('status', statusFilter);
@@ -42,8 +42,7 @@ const AdminOrders = () => {
 
   const filteredOrders = orders.filter(order => {
     const customer = order.profiles;
-    return customer?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           customer?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    return (customer?.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
            order.id.toString().includes(searchTerm);
   });
 
@@ -167,8 +166,7 @@ const AdminOrders = () => {
                         </td>
                         <td className="p-6">
                           <div>
-                            <p className="text-white font-medium">{order.profiles?.full_name || 'N/A'}</p>
-                            <p className="text-white/70 text-sm">{order.profiles?.email || 'N/A'}</p>
+                            <p className="text-white font-medium">{order.profiles?.email || 'N/A'}</p>
                           </div>
                         </td>
                         <td className="p-6">

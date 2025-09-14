@@ -30,10 +30,10 @@ const AdminDashboard = () => {
         revenue: totalRevenue || 0,
       });
 
-      // Fetch recent orders
+      // Fetch recent orders, selecting email instead of full_name
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, status, total, profiles(full_name)')
+        .select('id, status, total, profiles(email)')
         .order('created_at', { ascending: false })
         .limit(4);
       setRecentOrders(orders || []);
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
                   <div key={order.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                     <div>
                       <p className="text-white font-medium">Order #{order.id}</p>
-                      <p className="text-white/70 text-sm">{order.profiles?.full_name || 'N/A'}</p>
+                      <p className="text-white/70 text-sm">{order.profiles?.email || 'N/A'}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-white font-semibold">{formatCurrency(order.total)}</p>

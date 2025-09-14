@@ -17,20 +17,19 @@ const AdminCustomers = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       setLoading(true);
-      // This is a simplified query. A real-world scenario might involve a database function (RPC)
-      // to calculate total spent and orders per customer efficiently.
+      // Select email and other fields, but not full_name which causes an error.
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, created_at, role');
+        .select('id, email, created_at, role');
 
       if (error) {
         console.error("Error fetching customers:", error);
         toast({ variant: "destructive", title: "Failed to load customers." });
       } else {
-        // Mocking orders and total spent for demonstration
+        // Use email as the name and mock other stats for demonstration
         const customersWithMockStats = data.map(c => ({
           ...c,
-          name: c.full_name,
+          name: c.email, // Use email as name to avoid crash
           joinDate: new Date(c.created_at).toLocaleDateString(),
           orders: Math.floor(Math.random() * 20),
           totalSpent: Math.random() * 2000,
@@ -45,8 +44,8 @@ const AdminCustomers = () => {
 
 
   const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (customer.name && customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleViewCustomer = (customerId) => {
@@ -153,7 +152,7 @@ const AdminCustomers = () => {
                         <td className="p-6">
                           <div className="flex items-center space-x-4">
                             <div className="w-12 h-12 flex items-center justify-center bg-purple-500 rounded-full font-bold text-white">
-                              {customer.name?.charAt(0) || 'U'}
+                              {customer.name?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
                               <p className="text-white font-medium">{customer.name}</p>

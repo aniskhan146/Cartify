@@ -14,18 +14,28 @@ export const AuthProvider = ({ children }) => {
       return;
     }
     
-    // Fetch profile from 'profiles' table
+    // Fetch only the role from 'profiles' table
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('role, full_name')
+      .select('role')
       .eq('id', authUser.id)
       .single();
       
     if (error) {
       console.error("Error fetching user profile:", error);
-      setUser(null); // Or handle more gracefully
+      // Fallback: still set user from auth session but without a role
+      setUser({
+        ...authUser,
+        full_name: authUser.user_metadata?.full_name,
+      });
     } else {
-      setUser({ ...authUser, ...profile });
+      // Combine auth user data with the role from profiles
+      const fullUser = {
+        ...authUser,
+        full_name: authUser.user_metadata?.full_name,
+        role: profile?.role,
+      };
+      setUser(fullUser);
     }
     setIsLoading(false);
   }, []);
