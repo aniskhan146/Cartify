@@ -1,16 +1,30 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { Search, Sparkles, Loader2 } from 'lucide-react';
 import ProductsList from '../components/ProductsList.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
+import { Label } from '../components/ui/label.jsx';
+import { Textarea } from '../components/ui/textarea.jsx';
 import { Slider } from '../components/ui/slider.jsx';
 import Pagination from '../components/Pagination.jsx';
-import { getProducts } from '../api/EcommerceApi.js';
-import { supabase } from '../lib/supabase.js';
+import { getProducts, getUniqueCategories } from '../api/EcommerceApi.js';
+import { getSearchParamsFromNaturalLanguage } from '../api/GeminiApi.js';
 import { useDebounce } from '../hooks/useDebounce.jsx';
 import { formatCurrency } from '../lib/utils.js';
+import { useToast } from '../components/ui/use-toast.js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from '../components/ui/dialog.jsx';
+
 
 const PRODUCTS_PER_PAGE = 8;
 const MAX_PRICE_CENTS = 500000; // $5000
@@ -20,17 +34,21 @@ const StorePage = () => {
   const [categories, setCategories] = useState(['All']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
   
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('name');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   
-  // Separate states for slider UI and committed filter value
   const [priceRange, setPriceRange] = useState([0, MAX_PRICE_CENTS]);
   const [uiPriceRange, setUiPriceRange] = useState([0, MAX_PRICE_CENTS]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
+
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const debouncedPriceRange = useDebounce(priceRange, 500);
@@ -38,15 +56,8 @@ const StorePage = () => {
   const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
 
   const fetchCategories = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('products')
-      .select('category');
-    if (error) {
-      console.error("Error fetching categories:", error);
-    } else {
-      const uniqueCategories = ['All', ...new Set(data.map(p => p.category).filter(Boolean))];
-      setCategories(uniqueCategories);
-    }
+    const uniqueCategories = await getUniqueCategories();
+    setCategories(['All', ...uniqueCategories]);
   }, []);
 
   const fetchStoreProducts = useCallback(async () => {
@@ -58,7 +69,6 @@ const StorePage = () => {
         limit: PRODUCTS_PER_PAGE,
         category: selectedCategory,
         searchTerm: debouncedSearchTerm,
-        sortBy,
         priceRange: debouncedPriceRange,
       });
 
@@ -69,7 +79,7 @@ const StorePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedCategory, debouncedSearchTerm, sortBy, debouncedPriceRange]);
+  }, [currentPage, selectedCategory, debouncedSearchTerm, debouncedPriceRange]);
 
   useEffect(() => {
     fetchCategories();
@@ -82,7 +92,41 @@ const StorePage = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, debouncedSearchTerm, sortBy, debouncedPriceRange]);
+  }, [selectedCategory, debouncedSearchTerm, debouncedPriceRange]);
+
+  // Sync search term with URL
+  useEffect(() => {
+     if (debouncedSearchTerm) {
+        setSearchParams({ q: debouncedSearchTerm }, { replace: true });
+     } else {
+        setSearchParams({}, { replace: true });
+     }
+  }, [debouncedSearchTerm, setSearchParams]);
+
+  const handleAiSearch = async () => {
+    setIsAiLoading(true);
+    try {
+      const availableCats = categories.filter(c => c !== 'All');
+      const params = await getSearchParamsFromNaturalLanguage(aiQuery, availableCats);
+      setSearchTerm(params.searchTerm);
+      setSelectedCategory(params.category);
+      setIsAiDialogOpen(false);
+      setAiQuery('');
+      toast({
+        title: 'AI Search Applied!',
+        description: `Now showing results for "${params.searchTerm}" in ${params.category}.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: 'AI Assistant Error',
+        description: error.message,
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
 
   return (
     <>
@@ -119,15 +163,48 @@ const StorePage = () => {
                 <div className="glass-effect rounded-2xl p-6 space-y-8 sticky top-24">
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-4">Search</h3>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 h-5 w-5" />
-                      <Input
-                        type="text"
-                        placeholder="Search products..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                    <div className="flex items-center gap-2">
+                       <div className="relative flex-grow">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 h-5 w-5" />
+                        <Input
+                          type="text"
+                          placeholder="Search products..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+                        <DialogTrigger asChild>
+                           <Button variant="outline" size="icon" className="border-purple-400/50 text-purple-300 hover:bg-purple-400/10 hover:text-purple-200 flex-shrink-0" aria-label="Open AI search assistant">
+                             <Sparkles className="h-5 w-5"/>
+                           </Button>
+                        </DialogTrigger>
+                        <DialogContent className="glass-effect text-white border-white/20">
+                          <DialogHeader>
+                            <DialogTitle className="text-2xl flex items-center gap-2"><Sparkles className="text-purple-300"/>AI Search Assistant</DialogTitle>
+                            <DialogDescription>
+                              Describe what you're looking for, and our AI will suggest the best filters for you.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-2">
+                            <Label htmlFor="ai-query">Your Request</Label>
+                            <Textarea 
+                              id="ai-query" 
+                              placeholder="e.g., 'A gift for my mom who loves gardening'"
+                              value={aiQuery}
+                              onChange={(e) => setAiQuery(e.target.value)}
+                            />
+                          </div>
+                          <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsAiDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleAiSearch} disabled={isAiLoading || !aiQuery} className="bg-gradient-to-r from-purple-500 to-pink-500">
+                               {isAiLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                               Get Suggestions
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
 

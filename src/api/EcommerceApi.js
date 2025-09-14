@@ -131,6 +131,18 @@ export const getRelatedProducts = async (productId, category) => {
     return (data || []).map(formatProduct);
 };
 
+// Fetch all unique categories
+export const getUniqueCategories = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('category');
+    if (error) {
+      console.error("Error fetching unique categories:", error);
+      return [];
+    }
+    return [...new Set(data.map(p => p.category).filter(Boolean))];
+};
+
 // ===== Product Management (Admin) =====
 
 export const createProduct = async (productData, variantsData) => {

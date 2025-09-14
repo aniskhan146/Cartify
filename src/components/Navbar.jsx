@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useWishlist } from '../hooks/useWishlist.jsx';
 import { useToast } from './ui/use-toast.js';
 import { Button } from './ui/button.jsx';
+import { Input } from './ui/input.jsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +18,8 @@ import {
 
 const Navbar = ({ setIsCartOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [navSearchTerm, setNavSearchTerm] = useState('');
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
   const { wishlistCount } = useWishlist();
@@ -33,6 +36,15 @@ const Navbar = ({ setIsCartOpen }) => {
       title: "🚧 Wishlist Page Coming Soon!",
       description: "You can add or remove items from product cards.",
     });
+  };
+
+  const handleNavSearchSubmit = (e) => {
+    e.preventDefault();
+    if (navSearchTerm.trim()) {
+      navigate(`/store?q=${encodeURIComponent(navSearchTerm.trim())}`);
+      setIsSearchOpen(false);
+      setNavSearchTerm('');
+    }
   };
 
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -63,8 +75,30 @@ const Navbar = ({ setIsCartOpen }) => {
             <Link to="/store" className="text-white/80 hover:text-white transition-colors">
               Store
             </Link>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" aria-label="Search">
+            <div className="flex items-center space-x-2">
+               <AnimatePresence>
+                {isSearchOpen && (
+                  <motion.div
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: "auto", opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <form onSubmit={handleNavSearchSubmit}>
+                      <Input
+                        type="text"
+                        placeholder="Search..."
+                        value={navSearchTerm}
+                        onChange={(e) => setNavSearchTerm(e.target.value)}
+                        className="h-9"
+                        autoFocus
+                        onBlur={() => setIsSearchOpen(false)}
+                      />
+                    </form>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
                 <Search className="h-5 w-5" />
               </Button>
               <div className="relative">
