@@ -113,10 +113,10 @@ const CheckoutPage = () => {
         clearCart();
         addNotification({
             type: "success",
-            title: "Order placed successfully!",
+            title: `Order #${orderData.id} Confirmed!`,
             message: "Thank you for your purchase. You'll receive a confirmation email shortly.",
         });
-        navigate('/success');
+        navigate(`/success?orderId=${orderData.id}`);
 
     } catch (error) {
         console.error("Checkout error:", error);

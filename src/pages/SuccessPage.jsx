@@ -1,11 +1,14 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 
 const SuccessPage = () => {
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('orderId');
+
   return (
     <>
       <Helmet>
@@ -28,19 +31,35 @@ const SuccessPage = () => {
             >
               <CheckCircle className="h-24 w-24 text-green-400 mx-auto mb-6" />
             </motion.div>
-            <h1 className="text-4xl font-bold text-white mb-4">Payment Successful!</h1>
+            <h1 className="text-4xl font-bold text-white mb-4">Order Successful!</h1>
             <p className="text-white/80 mb-8 text-lg">
-              Thank you for your order. You will receive a confirmation email shortly.
+              {orderId
+                ? `Thank you for your order #${orderId}.`
+                : 'Thank you for your order.'}
+              {' '}You will receive a confirmation email shortly.
             </p>
-            <Link to="/store">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-full text-base shadow-lg transform hover:scale-105 transition-transform"
-              >
-                Continue Shopping
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {orderId && (
+                <Link to={`/order/${orderId}`}>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10 font-semibold py-3 px-6 rounded-full text-base shadow-lg transform hover:scale-105 transition-transform w-full sm:w-auto"
+                  >
+                    View Order Details
+                  </Button>
+                </Link>
+              )}
+              <Link to="/store">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-full text-base shadow-lg transform hover:scale-105 transition-transform w-full sm:w-auto"
+                >
+                  Continue Shopping
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
           </motion.div>
         </div>
       </div>

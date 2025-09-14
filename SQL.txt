@@ -100,6 +100,10 @@ CREATE POLICY "Users can manage their own cart items" ON public.cart_items
     FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
+-- Add Admin policy for cart_items
+DROP POLICY IF EXISTS "Allow admin full access to cart items" ON public.cart_items;
+CREATE POLICY "Allow admin full access to cart items" ON public.cart_items FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin');
 
 -- 6. Inventory Decrease Function
 CREATE OR REPLACE FUNCTION decrease_inventory_for_order(p_order_id bigint)
@@ -154,6 +158,11 @@ DROP POLICY IF EXISTS "Users can manage their own wishlist" ON public.wishlist;
 CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
+-- Add Admin policy for wishlist
+DROP POLICY IF EXISTS "Allow admin full access to wishlist" ON public.wishlist;
+CREATE POLICY "Allow admin full access to wishlist" ON public.wishlist FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin');
+
 
 -- 9. Add Payment Method to Orders
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'card';
@@ -201,8 +210,7 @@ $$;
 -- This approach has been implemented in the application's API for deleting products.
 
 -- 13. Admin Access Policies for Orders (Critical Fix)
--- These policies were missing, preventing admins from viewing or managing any orders other than their own.
--- This also broke realtime functionality on the dashboard.
+-- These policies are essential for the admin panel to function correctly.
 
 -- Enable RLS on orders table
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
@@ -216,8 +224,9 @@ CREATE POLICY "Users can view their own orders" ON public.orders FOR SELECT
 
 -- Enable RLS on order_items table
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow admin read access to order items" ON public.order_items;
-CREATE POLICY "Allow admin read access to order items" ON public.order_items FOR SELECT
+DROP POLICY IF EXISTS "Allow admin full access to order items" ON public.order_items;
+-- Fix: Changed from SELECT to ALL to allow admins to fully manage orders.
+CREATE POLICY "Allow admin full access to order items" ON public.order_items FOR ALL
     USING (get_user_role(auth.uid()) = 'admin');
 DROP POLICY IF EXISTS "Users can view items in their own orders" ON public.order_items;
 CREATE POLICY "Users can view items in their own orders" ON public.order_items FOR SELECT
