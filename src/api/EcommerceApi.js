@@ -100,6 +100,19 @@ AS $$
   GROUP BY
     p.id;
 $$;
+
+-- 8. Wishlist Table
+CREATE TABLE public.wishlist (
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    product_id bigint NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, product_id)
+);
+ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
 */
 
 // =================================================================

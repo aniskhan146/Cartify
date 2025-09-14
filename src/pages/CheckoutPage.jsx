@@ -90,12 +90,32 @@ const CheckoutPage = () => {
         await decreaseInventory(orderData.id);
 
         // 4. Trigger the order confirmation email function (fire-and-forget)
+        // =================================================================================
+        // BACKEND SETUP REQUIRED: Brevo Order Confirmation Email
+        // =================================================================================
+        // The code below calls a Supabase Edge Function named 'send-order-confirmation'.
+        // The code for this function has been added to your project under:
+        //   - supabase/functions/send-order-confirmation/index.ts
+        //   - supabase/functions/_shared/cors.ts
+        //
+        // To make this work, you must:
+        // 1. Set Supabase Secrets:
+        //    - In your terminal, run the following commands with your actual keys:
+        //    - supabase secrets set BREVO_API_KEY=YOUR_BREVO_V3_API_KEY
+        //    - supabase secrets set BREVO_TEMPLATE_ID=YOUR_BREVO_TRANSACTIONAL_TEMPLATE_ID
+        //
+        // 2. Deploy the function:
+        //    - In your terminal, run: supabase functions deploy
+        //
+        // The function will then automatically handle sending the confirmation email.
+        // =================================================================================
         supabase.functions.invoke('send-order-confirmation', {
             body: { orderId: orderData.id },
         }).then(({ error }) => {
             if (error) {
-                console.error("Failed to send confirmation email:", error);
-                 // We can notify an admin here, but don't block the user.
+                console.error("Failed to invoke send-order-confirmation function:", error);
+                // This error typically means the function doesn't exist or has an issue.
+                // The user's checkout is NOT blocked, but you may want to log this for monitoring.
             }
         });
 
