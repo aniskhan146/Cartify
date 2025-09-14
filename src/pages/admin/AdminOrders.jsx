@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, Filter, Eye, Package, Truck, Loader2 } from 'lucide-react';
+import { Search, Eye, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
+import { updateOrderStatus } from '@/api/EcommerceApi';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,10 +22,7 @@ const AdminOrders = () => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setLoading(true);
-      
+  const fetchOrders = useCallback(async () => {
       let query = supabase
         .from('orders')
         .select('id, created_at, total, status, profiles(email), order_items(id)');
@@ -36,9 +40,28 @@ const AdminOrders = () => {
         setOrders(data);
       }
       setLoading(false);
-    };
+    }, [statusFilter, toast]);
+
+  useEffect(() => {
+    setLoading(true);
     fetchOrders();
-  }, [statusFilter, toast]);
+
+    const channel = supabase.channel('public:orders')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+          console.log('New order received!', payload);
+          toast({
+              title: "🎉 New Order Received!",
+              description: "A new order has been placed and added to the list.",
+          });
+          setOrders(currentOrders => [payload.new, ...currentOrders]);
+          fetchOrders(); // Re-fetch to get all data correctly
+      })
+      .subscribe();
+
+    return () => {
+        supabase.removeChannel(channel);
+    }
+  }, [statusFilter, toast, fetchOrders]);
 
   const filteredOrders = orders.filter(order => {
     const customer = order.profiles;
@@ -52,26 +75,36 @@ const AdminOrders = () => {
     });
   };
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+        await updateOrderStatus(orderId, newStatus);
+        setOrders(currentOrders => 
+            currentOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o)
+        );
+        toast({
+            title: "Status Updated",
+            description: `Order #${orderId} has been updated to ${newStatus}.`,
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update order status.",
+        });
+    }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Completed':
-        return 'bg-green-500/20 text-green-300';
-      case 'Processing':
-        return 'bg-yellow-500/20 text-yellow-300';
-      case 'Shipped':
-        return 'bg-blue-500/20 text-blue-300';
+      case 'Completed': return 'bg-green-500/20 text-green-300';
+      case 'Processing': return 'bg-yellow-500/20 text-yellow-300';
+      case 'Shipped': return 'bg-blue-500/20 text-blue-300';
       case 'Pending':
-        return 'bg-gray-500/20 text-gray-300';
-      default:
-        return 'bg-gray-500/20 text-gray-300';
+      default: return 'bg-gray-500/20 text-gray-300';
     }
   };
+
+  const orderStatuses = ['Processing', 'Shipped', 'Completed', 'Pending'];
 
   return (
     <>
@@ -118,10 +151,7 @@ const AdminOrders = () => {
                   className="bg-white/10 border border-white/20 rounded-xl text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="All">All Status</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Processing">Processing</option>
-                  <option value="Shipped">Shipped</option>
-                  <option value="Completed">Completed</option>
+                  {orderStatuses.map(status => <option key={status} value={status}>{status}</option>)}
                 </select>
               </div>
             </div>
@@ -179,9 +209,20 @@ const AdminOrders = () => {
                           <span className="text-white font-semibold">{formatCurrency(order.total)}</span>
                         </td>
                         <td className="p-6">
-                          <span className={`px-3 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </span>
+                           <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className={`px-3 py-1 h-auto rounded-full text-xs ${getStatusColor(order.status)}`}>
+                                {order.status}
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              {orderStatuses.map(status => (
+                                <DropdownMenuItem key={status} onSelect={() => handleUpdateStatus(order.id, status)}>
+                                  {status}
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                         <td className="p-6">
                           <div className="flex items-center space-x-2">
@@ -193,16 +234,6 @@ const AdminOrders = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            {order.status === 'Processing' && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUpdateStatus(order.id, 'Shipped')}
-                                className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
-                              >
-                                <Truck className="h-4 w-4" />
-                              </Button>
-                            )}
                           </div>
                         </td>
                       </motion.tr>

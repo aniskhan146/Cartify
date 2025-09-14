@@ -8,7 +8,7 @@ const formatProduct = (product) => {
     return {
         ...product,
         image: product.image || product.images?.[0]?.url,
-        variants: product.variants.map(variant => ({
+        variants: (product.variants || []).map(variant => ({
             ...variant,
             price_formatted: formatCurrency(variant.price_in_cents),
             sale_price_formatted: variant.sale_price_in_cents ? formatCurrency(variant.sale_price_in_cents) : null,
@@ -19,10 +19,9 @@ const formatProduct = (product) => {
 
 // Fetch all products with their variants
 export const getProducts = async () => {
-    // 1. Fetch products
     const { data: productsData, error: productsError } = await supabase
         .from('products')
-        .select('*')
+        .select('*, variants(*)')
         .eq('purchasable', true);
 
     if (productsError) {
@@ -30,44 +29,14 @@ export const getProducts = async () => {
         throw new Error('Failed to load products.');
     }
     
-    if (!productsData || productsData.length === 0) {
-        return { products: [] };
-    }
-    
-    // 2. Fetch all variants for those products
-    const productIds = productsData.map(p => p.id);
-    const { data: variantsData, error: variantsError } = await supabase
-        .from('variants')
-        .select('*')
-        .in('product_id', productIds);
-        
-    if (variantsError) {
-        console.error('Error fetching variants:', variantsError);
-        throw new Error('Failed to load product variants.');
-    }
-    
-    // 3. Combine products and variants
-    const variantsByProductId = variantsData.reduce((acc, variant) => {
-        if (!acc[variant.product_id]) {
-            acc[variant.product_id] = [];
-        }
-        acc[variant.product_id].push(variant);
-        return acc;
-    }, {});
-    
-    const combinedProducts = productsData.map(product => ({
-        ...product,
-        variants: variantsByProductId[product.id] || []
-    }));
-
-    return { products: combinedProducts.map(formatProduct) };
+    return { products: (productsData || []).map(formatProduct) };
 };
 
 // Fetch a single product by its ID
 export const getProduct = async (id) => {
     const { data: productData, error: productError } = await supabase
         .from('products')
-        .select('*')
+        .select('*, variants(*)')
         .eq('id', id)
         .single();
 
@@ -75,35 +44,144 @@ export const getProduct = async (id) => {
         console.error('Error fetching product:', productError);
         throw new Error('Product not found.');
     }
+    
+    return formatProduct(productData);
+};
 
-    const { data: variantsData, error: variantsError } = await supabase
+// ===== Product Management (Admin) =====
+
+export const createProduct = async (productData, variantsData) => {
+    // 1. Insert the product
+    const { data: newProduct, error: productError } = await supabase
+        .from('products')
+        .insert(productData)
+        .select()
+        .single();
+
+    if (productError) throw productError;
+
+    // 2. Add product_id to each variant and insert them
+    const variantsWithProductId = variantsData.map(v => ({ ...v, product_id: newProduct.id }));
+    const { error: variantsError } = await supabase
         .from('variants')
-        .select('*')
-        .eq('product_id', id);
-        
+        .insert(variantsWithProductId);
+
     if (variantsError) {
-        console.error('Error fetching variants for product:', variantsError);
+        // Rollback product creation if variants fail
+        await supabase.from('products').delete().eq('id', newProduct.id);
+        throw variantsError;
     }
     
-    const combinedProduct = {
-        ...productData,
-        variants: variantsData || []
-    };
-    
-    return formatProduct(combinedProduct);
+    return { ...newProduct, variants: variantsData };
 };
 
-// Fetch quantities for product variants
-export const getProductQuantities = async ({ fields, product_ids }) => {
-    const { data, error } = await supabase
+export const updateProduct = async (productId, productData, variantsData) => {
+    // 1. Update the product details
+    const { error: productError } = await supabase
+        .from('products')
+        .update(productData)
+        .eq('id', productId);
+
+    if (productError) throw productError;
+
+    // 2. Upsert variants (update existing, insert new ones)
+    const variantsToUpsert = variantsData.map(v => ({ ...v, product_id: productId }));
+    const { error: variantsError } = await supabase
         .from('variants')
-        .select(`id, ${fields}`)
-        .in('product_id', product_ids);
-    
-    if (error) {
-        console.error('Error fetching product quantities:', error);
-        throw new Error('Failed to load product quantities.');
-    }
+        .upsert(variantsToUpsert, { onConflict: 'id' });
+        
+    if (variantsError) throw variantsError;
 
-    return { variants: data };
+    // 3. Delete variants that were removed
+    const variantIdsToKeep = variantsData.map(v => v.id).filter(Boolean);
+    const { error: deleteError } = await supabase
+        .from('variants')
+        .delete()
+        .eq('product_id', productId)
+        .not('id', 'in', `(${variantIdsToKeep.join(',')})`);
+        
+    if (deleteError) console.error("Error deleting old variants:", deleteError);
 };
+
+export const deleteProduct = async (productId) => {
+    const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+    
+    if (error) throw error;
+};
+
+// ===== Order Management (Admin) =====
+
+export const updateOrderStatus = async (orderId, newStatus) => {
+    const { data, error } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    return data;
+};
+
+// ===== Customer Management (Admin) =====
+
+export const getCustomersWithStats = async () => {
+    // This uses an RPC function in Supabase for better performance.
+    // You need to create this function in your Supabase SQL editor.
+    const { data, error } = await supabase.rpc('get_customer_stats');
+
+    if (error) {
+        console.error("Error fetching customer stats:", error);
+        // Fallback to client-side calculation if RPC fails or doesn't exist
+        console.warn("Falling back to client-side customer stat calculation. For better performance, create the 'get_customer_stats' RPC function in Supabase.");
+        
+        const { data: profiles, error: profileError } = await supabase.from('profiles').select('*');
+        if(profileError) throw profileError;
+        
+        const { data: orders, error: orderError } = await supabase.from('orders').select('user_id, total');
+        if(orderError) throw orderError;
+        
+        const statsMap = orders.reduce((acc, order) => {
+            if (!acc[order.user_id]) {
+                acc[order.user_id] = { totalSpent: 0, orderCount: 0 };
+            }
+            acc[order.user_id].totalSpent += order.total;
+            acc[order.user_id].orderCount += 1;
+            return acc;
+        }, {});
+
+        return profiles.map(profile => ({
+            ...profile,
+            total_spent: statsMap[profile.id]?.totalSpent || 0,
+            order_count: statsMap[profile.id]?.orderCount || 0,
+        }));
+    }
+    
+    return data;
+}
+
+// NOTE: You must add the following SQL function to your Supabase project
+// via the SQL Editor for the `getCustomersWithStats` function to work optimally.
+/*
+  CREATE OR REPLACE FUNCTION get_customer_stats()
+  RETURNS TABLE(id uuid, email text, role text, created_at timestamptz, total_spent bigint, order_count bigint)
+  LANGUAGE sql
+  AS $$
+    SELECT
+      p.id,
+      p.email,
+      p.role,
+      p.created_at,
+      COALESCE(SUM(o.total), 0)::bigint AS total_spent,
+      COALESCE(COUNT(o.id), 0)::bigint AS order_count
+    FROM
+      profiles p
+    LEFT JOIN
+      orders o ON p.id = o.user_id
+    GROUP BY
+      p.id;
+  $$;
+*/

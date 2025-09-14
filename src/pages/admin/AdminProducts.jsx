@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Search, Filter, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency } from '@/lib/utils';
+import { deleteProduct } from '@/api/EcommerceApi';
+import ProductFormDialog from '@/components/admin/ProductFormDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -16,25 +29,49 @@ const AdminProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, variants(price_in_cents, inventory_quantity)');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
-      if (error) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+
+  const fetchProducts = useCallback(async () => {
+    const { data, error } = await supabase
+        .from('products')
+        .select('*, variants(*)')
+        .order('created_at', { ascending: false });
+
+    if (error) {
         console.error("Error fetching products:", error);
         toast({ variant: "destructive", title: "Failed to load products." });
-      } else {
+    } else {
         setProducts(data);
         const uniqueCategories = ['All', ...new Set(data.map(p => p.category).filter(Boolean))];
         setCategories(uniqueCategories);
-      }
-      setLoading(false);
-    };
-    fetchProducts();
+    }
   }, [toast]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchProducts().finally(() => setLoading(false));
+
+    const channel = supabase.channel('public:products');
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, (payload) => {
+        console.log('Products change received!', payload);
+        fetchProducts();
+      })
+       .on('postgres_changes', { event: '*', schema: 'public', table: 'variants' }, (payload) => {
+        console.log('Variants change received!', payload);
+        fetchProducts();
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
+  }, [fetchProducts]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -42,22 +79,35 @@ const AdminProducts = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const handleEdit = (productId) => {
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setIsFormOpen(true);
   };
-
-  const handleDelete = (productId) => {
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
-  };
-
+  
   const handleAddProduct = () => {
-    toast({
-      title: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
-    });
+    setEditingProduct(null);
+    setIsFormOpen(true);
+  };
+
+  const confirmDelete = (product) => {
+    setProductToDelete(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!productToDelete) return;
+    try {
+        await deleteProduct(productToDelete.id);
+        toast({ title: "Product Deleted", description: `"${productToDelete.title}" has been removed.` });
+        setProductToDelete(null);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Deletion Failed", description: error.message });
+    }
+  };
+
+  const onFormSubmit = () => {
+    fetchProducts();
+    setIsFormOpen(false);
   };
 
   return (
@@ -148,7 +198,7 @@ const AdminProducts = () => {
                   </thead>
                   <tbody>
                     {filteredProducts.map((product, index) => {
-                      const primaryVariant = product.variants[0];
+                      const primaryVariant = product.variants?.[0];
                       const stock = primaryVariant?.inventory_quantity || 0;
                       return (
                         <motion.tr
@@ -183,12 +233,12 @@ const AdminProducts = () => {
                             </span>
                           </td>
                           <td className="p-6">
-                            <span className={`px-3 py-1 rounded-full text-xs ${
-                              stock > 0 
-                                ? 'bg-green-500/20 text-green-300' 
-                                : 'bg-red-500/20 text-red-300'
+                             <span className={`px-3 py-1 rounded-full text-xs ${
+                              !product.purchasable ? 'bg-gray-500/20 text-gray-300' :
+                              stock > 0 ? 'bg-green-500/20 text-green-300' : 
+                              'bg-red-500/20 text-red-300'
                             }`}>
-                              {stock > 0 ? 'In Stock' : 'Out of Stock'}
+                              {!product.purchasable ? 'Archived' : stock > 0 ? 'In Stock' : 'Out of Stock'}
                             </span>
                           </td>
                           <td className="p-6">
@@ -196,7 +246,7 @@ const AdminProducts = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleEdit(product.id)}
+                                onClick={() => handleEdit(product)}
                                 className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
                               >
                                 <Edit className="h-4 w-4" />
@@ -204,7 +254,7 @@ const AdminProducts = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDelete(product.id)}
+                                onClick={() => confirmDelete(product)}
                                 className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -219,17 +269,30 @@ const AdminProducts = () => {
               )}
             </div>
           </motion.div>
-
-          {/* Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center text-white/70"
-          >
-            <p>Showing {filteredProducts.length} of {products.length} products</p>
-          </motion.div>
         </div>
+
+        <ProductFormDialog
+          isOpen={isFormOpen}
+          setIsOpen={setIsFormOpen}
+          product={editingProduct}
+          onSuccess={onFormSubmit}
+        />
+        
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the product "{productToDelete?.title}" and all its data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </AdminLayout>
     </>
   );

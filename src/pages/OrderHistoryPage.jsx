@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,20 @@ const OrderHistoryPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchOrders = useCallback(async (userId) => {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, created_at, total, status, order_items(id)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching orders:', error);
+    } else {
+      setOrders(data);
+    }
+  }, []);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/login');
@@ -21,26 +35,31 @@ const OrderHistoryPage = () => {
     }
 
     if (user) {
-      const fetchOrders = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('orders')
-          .select('id, created_at, total, status, order_items(id)')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+      setLoading(true);
+      fetchOrders(user.id).finally(() => setLoading(false));
 
-        if (error) {
-          console.error('Error fetching orders:', error);
-          // You might want to set an error state here
-        } else {
-          setOrders(data);
-        }
-        setLoading(false);
+      const channel = supabase
+        .channel(`user-orders-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log('Order change received!', payload);
+            fetchOrders(user.id);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
       };
-
-      fetchOrders();
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, fetchOrders]);
 
   const getStatusColor = (status) => {
     switch (status) {
