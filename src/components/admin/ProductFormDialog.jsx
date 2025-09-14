@@ -14,7 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { createProduct, updateProduct } from '@/api/EcommerceApi';
-import { Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { generateProductDescription } from '@/api/GeminiApi';
+import { Trash2, PlusCircle, Loader2, Sparkles } from 'lucide-react';
 
 const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -28,6 +29,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   });
   const [variants, setVariants] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -82,6 +84,35 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
     }
   };
 
+  const handleGenerateDescription = async () => {
+    if (!formData.title || !formData.category) {
+      toast({
+        variant: 'destructive',
+        title: 'Title and Category Needed',
+        description: 'Please provide a product title and category before generating a description.',
+      });
+      return;
+    }
+    setIsGeneratingDesc(true);
+    try {
+      const description = await generateProductDescription(formData.title, formData.category);
+      setFormData(prev => ({ ...prev, description }));
+      toast({
+        title: 'Description Generated!',
+        description: 'The AI-powered description has been added.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsGeneratingDesc(false);
+    }
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -135,7 +166,26 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <div className="flex justify-between items-center mb-1">
+              <Label htmlFor="description">Description</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescription}
+                disabled={isGeneratingDesc || !formData.title || !formData.category}
+                className="text-xs px-2 py-1 h-auto border-purple-400/50 text-purple-300 hover:bg-purple-400/10 hover:text-purple-200"
+              >
+                {isGeneratingDesc ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Generate with AI
+                  </>
+                )}
+              </Button>
+            </div>
             <Textarea id="description" name="description" value={formData.description} onChange={handleFormChange} />
           </div>
            <div className="grid grid-cols-2 gap-4">
