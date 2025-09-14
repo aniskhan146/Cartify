@@ -175,6 +175,8 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
                 onClick={handleGenerateDescription}
                 disabled={isGeneratingDesc || !formData.title || !formData.category}
                 className="text-xs px-2 py-1 h-auto border-purple-400/50 text-purple-300 hover:bg-purple-400/10 hover:text-purple-200"
+                aria-label={isGeneratingDesc ? "Generating description..." : "Generate product description with AI"}
+                aria-busy={isGeneratingDesc}
               >
                 {isGeneratingDesc ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

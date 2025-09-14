@@ -24,6 +24,7 @@ const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
         <button
           onClick={() => setSidebarOpen(false)}
           className="lg:hidden text-white"
+          aria-label="Close navigation menu"
         >
           <X className="h-6 w-6" />
         </button>

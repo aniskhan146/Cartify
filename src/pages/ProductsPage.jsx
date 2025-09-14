@@ -162,6 +162,7 @@ const ProductsPage = () => {
                       size="sm"
                       onClick={() => setViewMode('grid')}
                       className="rounded-none"
+                      aria-label="Grid view"
                     >
                       <Grid className="h-4 w-4" />
                     </Button>
@@ -170,6 +171,7 @@ const ProductsPage = () => {
                       size="sm"
                       onClick={() => setViewMode('list')}
                       className="rounded-none"
+                      aria-label="List view"
                     >
                       <List className="h-4 w-4" />
                     </Button>

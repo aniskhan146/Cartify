@@ -36,6 +36,7 @@ const AdminLayout = ({ children }) => {
             size="icon"
             onClick={() => setSidebarOpen(true)}
             className="text-white"
+            aria-label="Open navigation menu"
           >
             <Menu className="h-6 w-6" />
           </Button>
