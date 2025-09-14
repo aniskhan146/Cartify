@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Eye, Mail, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { getCustomersWithStats } from '../../api/EcommerceApi.js';
@@ -13,7 +13,7 @@ const AdminCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
   
   const fetchCustomers = useCallback(async () => {
       try {
@@ -21,11 +21,11 @@ const AdminCustomers = () => {
         setCustomers(data);
       } catch (error) {
          console.error("Error fetching customers:", error);
-         toast({ variant: "destructive", title: "Failed to load customers." });
+         addNotification({ type: "error", title: "Failed to load customers.", message: error.message });
       } finally {
         setLoading(false);
       }
-    }, [toast]);
+    }, [addNotification]);
 
   useEffect(() => {
     setLoading(true);
@@ -50,8 +50,10 @@ const AdminCustomers = () => {
   );
 
   const handleViewCustomer = (customerId) => {
-    toast({
-      description: "🚧 This feature isn't implemented yet—but don't worry! You can request it in your next prompt! 🚀",
+    addNotification({
+      type: 'info',
+      title: "Feature Coming Soon!",
+      message: "Viewing customer details isn't implemented yet, but you can request it!",
     });
   };
 

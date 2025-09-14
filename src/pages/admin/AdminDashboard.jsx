@@ -6,14 +6,14 @@ import { Package, ShoppingCart, Users, DollarSign, Eye, Loader2 } from 'lucide-r
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, revenue: 0 });
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
 
   const fetchData = useCallback(async () => {
     // Fetch stats
@@ -54,13 +54,12 @@ const AdminDashboard = () => {
 
     const channel = supabase.channel('dashboard-realtime');
     channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-          if(payload.eventType === 'INSERT') {
-            toast({
-              title: "🎉 New Order!",
-              description: `A new order was just placed.`,
-            });
-          }
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+          addNotification({
+            type: 'info',
+            title: "🎉 New Order!",
+            message: `A new order (#${payload.new.id}) was just placed for ${formatCurrency(payload.new.total)}.`,
+          });
           fetchData();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
@@ -71,7 +70,7 @@ const AdminDashboard = () => {
         supabase.removeChannel(channel);
     }
 
-  }, [fetchData, toast]);
+  }, [fetchData, addNotification]);
   
   if (loading) {
      return (

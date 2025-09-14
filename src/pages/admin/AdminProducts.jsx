@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { deleteProduct } from '../../api/EcommerceApi.js';
@@ -27,7 +27,7 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -43,11 +43,11 @@ const AdminProducts = () => {
 
     if (error) {
         console.error("Error fetching products:", error);
-        toast({ variant: "destructive", title: "Failed to load products." });
+        addNotification({ type: "error", title: "Failed to load products.", message: error.message });
     } else {
         setProducts(data);
     }
-  }, [toast]);
+  }, [addNotification]);
   
   const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase.from('categories').select('id, name');
@@ -96,10 +96,10 @@ const AdminProducts = () => {
     if (!productToDelete) return;
     try {
         await deleteProduct(productToDelete.id);
-        toast({ title: "Product Deleted", description: `"${productToDelete.title}" has been removed.` });
+        addNotification({ type: 'success', title: "Product Deleted", message: `"${productToDelete.title}" has been removed.` });
         setProductToDelete(null);
     } catch (error) {
-        toast({ variant: "destructive", title: "Deletion Failed", description: error.message });
+        addNotification({ type: 'error', title: "Deletion Failed", message: error.message });
     }
   };
 

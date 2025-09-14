@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Search, Eye, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { updateOrderStatus } from '../../api/EcommerceApi.js';
@@ -21,7 +21,7 @@ const AdminOrders = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
   
   const fetchOrders = useCallback(async () => {
       let query = supabase
@@ -36,12 +36,12 @@ const AdminOrders = () => {
 
       if (error) {
         console.error("Error fetching orders:", error);
-        toast({ variant: "destructive", title: "Failed to load orders." });
+        addNotification({ type: "error", title: "Failed to load orders.", message: error.message });
       } else {
         setOrders(data);
       }
       setLoading(false);
-    }, [statusFilter, toast]);
+    }, [statusFilter, addNotification]);
 
   useEffect(() => {
     setLoading(true);
@@ -49,11 +49,11 @@ const AdminOrders = () => {
 
     const channel = supabase.channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-          console.log('Order change received!', payload);
           if (payload.eventType === 'INSERT') {
-             toast({
+             addNotification({
+              type: "info",
               title: "🎉 New Order Received!",
-              description: "A new order has been placed and added to the list.",
+              message: "A new order has been placed and added to the list.",
             });
           }
           fetchOrders();
@@ -63,7 +63,7 @@ const AdminOrders = () => {
     return () => {
         supabase.removeChannel(channel);
     }
-  }, [statusFilter, toast, fetchOrders]);
+  }, [statusFilter, addNotification, fetchOrders]);
 
   const filteredOrders = orders.filter(order => {
     const customer = order.profiles;
@@ -77,15 +77,16 @@ const AdminOrders = () => {
         setOrders(currentOrders => 
             currentOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o)
         );
-        toast({
+        addNotification({
+            type: "success",
             title: "Status Updated",
-            description: `Order #${orderId} has been updated to ${newStatus}.`,
+            message: `Order #${orderId} has been updated to ${newStatus}.`,
         });
     } catch (error) {
-        toast({
-            variant: "destructive",
+        addNotification({
+            type: "error",
             title: "Update Failed",
-            description: "Could not update order status.",
+            message: error.message || "Could not update order status.",
         });
     }
   };

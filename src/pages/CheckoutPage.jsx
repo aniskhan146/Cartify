@@ -5,7 +5,7 @@ import { CreditCard, Lock, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 import { useCart } from '../hooks/useCart.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { useToast } from '../components/ui/use-toast.js';
+import { useNotification } from '../hooks/useNotification.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { decreaseInventory } from '../api/EcommerceApi.js';
@@ -13,7 +13,7 @@ import { decreaseInventory } from '../api/EcommerceApi.js';
 const CheckoutPage = () => {
   const { user } = useAuth();
   const { cartItems, getCartTotalRaw, clearCart } = useCart();
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
@@ -38,10 +38,10 @@ const CheckoutPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-        toast({
-            variant: "destructive",
+        addNotification({
+            type: "error",
             title: "Authentication Error",
-            description: "You must be logged in to place an order.",
+            message: "You must be logged in to place an order.",
         });
         navigate('/login');
         return;
@@ -91,18 +91,19 @@ const CheckoutPage = () => {
 
         // 4. Success
         clearCart();
-        toast({
+        addNotification({
+            type: "success",
             title: "Order placed successfully!",
-            description: "Thank you for your purchase. You'll receive a confirmation email shortly.",
+            message: "Thank you for your purchase. You'll receive a confirmation email shortly.",
         });
         navigate('/success');
 
     } catch (error) {
         console.error("Checkout error:", error);
-        toast({
-            variant: "destructive",
+        addNotification({
+            type: "error",
             title: "Checkout Failed",
-            description: "There was a problem processing your order. Please try again.",
+            message: "There was a problem processing your order. Please try again.",
         });
     } finally {
         setIsProcessing(false);

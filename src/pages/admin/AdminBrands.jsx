@@ -6,7 +6,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../api/EcommerceApi.js';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -18,7 +18,7 @@ import {
 const AdminBrands = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
@@ -32,11 +32,11 @@ const AdminBrands = () => {
       const data = await getBrands();
       setBrands(data);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Failed to load brands.', description: error.message });
+      addNotification({ type: 'error', title: 'Failed to load brands.', message: error.message });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [addNotification]);
 
   useEffect(() => {
     fetchBrands();
@@ -56,15 +56,15 @@ const AdminBrands = () => {
     try {
       if (editingBrand) {
         await updateBrand(editingBrand.id, formData);
-        toast({ title: 'Brand Updated' });
+        addNotification({ type: 'success', title: 'Brand Updated' });
       } else {
         await createBrand(formData);
-        toast({ title: 'Brand Created' });
+        addNotification({ type: 'success', title: 'Brand Created' });
       }
       setIsFormOpen(false);
       fetchBrands();
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Operation Failed', description: error.message });
+      addNotification({ type: 'error', title: 'Operation Failed', message: error.message });
       setLoading(false);
     }
   };
@@ -78,11 +78,11 @@ const AdminBrands = () => {
     if (!brandToDelete) return;
     try {
       await deleteBrand(brandToDelete.id);
-      toast({ title: "Brand Deleted", description: `"${brandToDelete.name}" has been removed.` });
+      addNotification({ type: 'success', title: "Brand Deleted", message: `"${brandToDelete.name}" has been removed.` });
       setBrandToDelete(null);
       fetchBrands();
     } catch (error) {
-      toast({ variant: "destructive", title: "Deletion Failed", description: "Make sure no products are using this brand." });
+      addNotification({ type: "error", title: "Deletion Failed", message: "Make sure no products are using this brand." });
     }
   };
 

@@ -4,6 +4,7 @@ import { Toaster } from './components/ui/toaster.jsx';
 import { CartProvider } from './hooks/useCart.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { WishlistProvider } from './hooks/useWishlist.jsx';
+import { NotificationProvider } from './hooks/useNotification.jsx';
 import Navbar from './components/Navbar.jsx';
 import ShoppingCart from './components/ShoppingCart.jsx';
 import { isSupabaseConfigured } from './lib/supabase.js';
@@ -46,39 +47,41 @@ function App() {
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          {!isSupabaseConfigured && <MissingEnvBanner />}
-          <Router>
-            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
-              <Navbar setIsCartOpen={setIsCartOpen} />
-              <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
-              <main className="pt-16">
-                <Suspense fallback={<LoadingFallback />}>
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/store" element={<StorePage />} />
-                    <Route path="/product/:id" element={<ProductDetailPage />} />
-                    <Route path="/cart" element={<CartPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/success" element={<SuccessPage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/orders" element={<OrderHistoryPage />} />
-                    <Route path="/order/:id" element={<OrderDetailsPage />} />
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/products" element={<AdminProducts />} />
-                    <Route path="/admin/orders" element={<AdminOrders />} />
-                    <Route path="/admin/customers" element={<AdminCustomers />} />
-                    <Route path="/admin/categories" element={<AdminCategories />} />
-                    <Route path="/admin/brands" element={<AdminBrands />} />
-                  </Routes>
-                </Suspense>
-              </main>
-              <Toaster />
-            </div>
-          </Router>
-        </WishlistProvider>
-      </CartProvider>
+      <NotificationProvider>
+        <CartProvider>
+          <WishlistProvider>
+            {!isSupabaseConfigured && <MissingEnvBanner />}
+            <Router>
+              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
+                <Navbar setIsCartOpen={setIsCartOpen} />
+                <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
+                <main className="pt-16">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/store" element={<StorePage />} />
+                      <Route path="/product/:id" element={<ProductDetailPage />} />
+                      <Route path="/cart" element={<CartPage />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/success" element={<SuccessPage />} />
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/orders" element={<OrderHistoryPage />} />
+                      <Route path="/order/:id" element={<OrderDetailsPage />} />
+                      <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="/admin/products" element={<AdminProducts />} />
+                      <Route path="/admin/orders" element={<AdminOrders />} />
+                      <Route path="/admin/customers" element={<AdminCustomers />} />
+                      <Route path="/admin/categories" element={<AdminCategories />} />
+                      <Route path="/admin/brands" element={<AdminBrands />} />
+                    </Routes>
+                  </Suspense>
+                </main>
+                <Toaster />
+              </div>
+            </Router>
+          </WishlistProvider>
+        </CartProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

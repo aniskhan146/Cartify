@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button.jsx';
 import { useCart } from '../hooks/useCart.jsx';
 import { useWishlist } from '../hooks/useWishlist.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { useToast } from '../components/ui/use-toast.js';
+import { useNotification } from '../hooks/useNotification.jsx';
 import { supabase } from '../lib/supabase.js';
 import ProductsList from '../components/ProductsList.jsx';
 import { ShoppingCart, Heart, Loader2, ArrowLeft, CheckCircle, Minus, Plus, XCircle } from 'lucide-react';
@@ -74,7 +74,7 @@ function ProductDetailPage() {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const { isWishlisted, addToWishlist, removeFromWishlist } = useWishlist();
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
   
   const availableStock = selectedVariant?.manage_inventory ? selectedVariant.inventory_quantity : Infinity;
 
@@ -82,19 +82,20 @@ function ProductDetailPage() {
     if (product && selectedVariant) {
       try {
         await addToCart(product, selectedVariant, quantity);
-        toast({
+        addNotification({
+          type: "success",
           title: "Added to Cart! 🛒",
-          description: `${quantity} x ${product.title} (${selectedVariant.title}) added.`,
+          message: `${quantity} x ${product.title} (${selectedVariant.title}) added.`,
         });
       } catch (error) {
-        toast({
-          variant: "destructive",
+        addNotification({
+          type: "error",
           title: "Oh no! Something went wrong.",
-          description: error.message,
+          message: error.message,
         });
       }
     }
-  }, [product, selectedVariant, quantity, addToCart, toast]);
+  }, [product, selectedVariant, quantity, addToCart, addNotification]);
 
   const handleQuantityChange = useCallback((amount) => {
     setQuantity(prevQuantity => {
@@ -107,19 +108,19 @@ function ProductDetailPage() {
 
   const handleWishlistToggle = useCallback(() => {
     if (!user) {
-      toast({ title: "Please login", description: "You need to be logged in to manage your wishlist."});
+      addNotification({ type: 'warning', title: "Please login", message: "You need to be logged in to manage your wishlist."});
       navigate('/login');
       return;
     }
     const wishlisted = isWishlisted(product.id);
     if (wishlisted) {
       removeFromWishlist(product.id);
-      toast({ title: "Removed from wishlist", description: `${product.title} removed from your wishlist.` });
+      addNotification({ type: 'info', title: "Removed from wishlist", message: `${product.title} removed from your wishlist.` });
     } else {
       addToWishlist(product.id);
-      toast({ title: "Added to wishlist!", description: `${product.title} added to your wishlist.` });
+      addNotification({ type: 'success', title: "Added to wishlist!", message: `${product.title} added to your wishlist.` });
     }
-  }, [user, product, isWishlisted, addToWishlist, removeFromWishlist, toast, navigate]);
+  }, [user, product, isWishlisted, addToWishlist, removeFromWishlist, addNotification, navigate]);
   
   const fetchProductData = useCallback(async () => {
       try {

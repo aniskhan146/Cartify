@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Search, Heart, Bell, CheckCircle, XCircle, Info, AlertTriangle } from 'lucide-react';
 import { useCart } from '../hooks/useCart.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useWishlist } from '../hooks/useWishlist.jsx';
+import { useNotification } from '../hooks/useNotification.jsx';
 import { useToast } from './ui/use-toast.js';
 import { Button } from './ui/button.jsx';
 import { Input } from './ui/input.jsx';
@@ -12,6 +13,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu.jsx"
@@ -23,6 +25,7 @@ const Navbar = ({ setIsCartOpen }) => {
   const { cartItems } = useCart();
   const { user, logout } = useAuth();
   const { wishlistCount } = useWishlist();
+  const { notifications, unreadCount, markAllAsRead } = useNotification();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -48,6 +51,59 @@ const Navbar = ({ setIsCartOpen }) => {
   };
 
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  const getIconForType = (type) => {
+    switch (type) {
+        case 'success': return <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />;
+        case 'error': return <XCircle className="h-5 w-5 text-red-400 flex-shrink-0" />;
+        case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0" />;
+        case 'info': default: return <Info className="h-5 w-5 text-blue-400 flex-shrink-0" />;
+    }
+  };
+
+  const NotificationPanel = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative text-white/80 hover:text-white" aria-label="Notifications">
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center text-[10px]">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 md:w-96">
+        <DropdownMenuLabel className="flex justify-between items-center">
+          <span>Notifications</span>
+          {notifications.length > 0 && (
+            <Button variant="link" className="p-0 h-auto text-xs text-purple-300" onClick={(e) => { e.stopPropagation(); markAllAsRead(); }}>
+              Mark all as read
+            </Button>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <div className="max-h-80 overflow-y-auto scrollbar-hide">
+          {notifications.length === 0 ? (
+            <DropdownMenuItem disabled className="text-center justify-center text-white/70">
+              No new notifications
+            </DropdownMenuItem>
+          ) : (
+            notifications.map(n => (
+              <DropdownMenuItem key={n.id} className={`flex items-start gap-3 w-full cursor-default focus:bg-white/10 ${!n.read ? 'bg-white/5' : ''}`}>
+                {getIconForType(n.type)}
+                <div className="flex-1">
+                  <p className="font-semibold text-sm text-white">{n.title}</p>
+                  <p className="text-xs text-white/70 whitespace-pre-wrap">{n.message}</p>
+                  <p className="text-[10px] text-white/50 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                </div>
+              </DropdownMenuItem>
+            ))
+          )}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <motion.nav
@@ -101,6 +157,7 @@ const Navbar = ({ setIsCartOpen }) => {
               <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
                 <Search className="h-5 w-5" />
               </Button>
+              <NotificationPanel />
               <div className="relative">
                 <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={handleWishlistClick} aria-label="View wishlist">
                   <Heart className="h-5 w-5" />
@@ -154,7 +211,8 @@ const Navbar = ({ setIsCartOpen }) => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-1">
+             <NotificationPanel />
              <div className="relative">
                 <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={() => setIsCartOpen(true)} aria-label="Open shopping cart">
                   <ShoppingCart className="h-5 w-5" />

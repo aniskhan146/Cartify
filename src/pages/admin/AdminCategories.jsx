@@ -6,7 +6,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { useToast } from '../../components/ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../api/EcommerceApi.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog.jsx";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog.jsx";
@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -28,11 +28,11 @@ const AdminCategories = () => {
       const data = await getCategories();
       setCategories(data);
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Failed to load categories.', description: error.message });
+      addNotification({ type: 'error', title: 'Failed to load categories.', message: error.message });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [addNotification]);
 
   useEffect(() => {
     fetchCategories();
@@ -80,15 +80,15 @@ const AdminCategories = () => {
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, payload);
-        toast({ title: 'Category Updated' });
+        addNotification({ type: 'success', title: 'Category Updated' });
       } else {
         await createCategory(payload);
-        toast({ title: 'Category Created' });
+        addNotification({ type: 'success', title: 'Category Created' });
       }
       setIsFormOpen(false);
       fetchCategories();
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Operation Failed', description: error.message });
+      addNotification({ type: 'error', title: 'Operation Failed', message: error.message });
       setLoading(false);
     }
   };
@@ -102,11 +102,11 @@ const AdminCategories = () => {
     if (!categoryToDelete) return;
     try {
       await deleteCategory(categoryToDelete.id);
-      toast({ title: "Category Deleted", description: `"${categoryToDelete.name}" has been removed.` });
+      addNotification({ type: 'success', title: "Category Deleted", message: `"${categoryToDelete.name}" has been removed.` });
       setCategoryToDelete(null);
       fetchCategories();
     } catch (error) {
-      toast({ variant: "destructive", title: "Deletion Failed", description: error.message });
+      addNotification({ type: "error", title: "Deletion Failed", message: error.message });
     }
   };
 

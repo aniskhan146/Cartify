@@ -5,7 +5,7 @@ import { Input } from '../ui/input.jsx';
 import { Label } from '../ui/label.jsx';
 import { Textarea } from '../ui/textarea.jsx';
 import { Switch } from '../ui/switch.jsx';
-import { useToast } from '../ui/use-toast.js';
+import { useNotification } from '../../hooks/useNotification.jsx';
 import { createProduct, updateProduct, getCategories, getBrands } from '../../api/EcommerceApi.js';
 import { generateProductDescription } from '../../api/GeminiApi.js';
 import { Trash2, PlusCircle, Loader2, Sparkles } from 'lucide-react';
@@ -18,7 +18,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   const [brands, setBrands] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
 
   const resetForm = () => {
     setFormData({
@@ -36,7 +36,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
           setCategories(fetchedCategories);
           setBrands(fetchedBrands);
         } catch (error) {
-          toast({ variant: 'destructive', title: 'Failed to load data', description: 'Could not fetch categories or brands.' });
+          addNotification({ type: 'error', title: 'Failed to load data', message: 'Could not fetch categories or brands.' });
         }
       };
       fetchData();
@@ -58,7 +58,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
         resetForm();
       }
     }
-  }, [product, isOpen, toast]);
+  }, [product, isOpen, addNotification]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
@@ -95,7 +95,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
     if (variants.length > 1) {
       setVariants(prev => prev.filter(v => v.id !== id));
     } else {
-      toast({ variant: 'destructive', title: "Cannot remove the last variant." });
+      addNotification({ type: 'warning', title: "Cannot remove the last variant." });
     }
   };
 
@@ -105,16 +105,16 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   const handleGenerateDescription = async () => {
     const categoryName = categories.find(c => c.id === formData.category_id)?.name;
     if (!formData.title || !categoryName) {
-      toast({ variant: 'destructive', title: 'Title and Category Needed', description: 'Please provide a product title and select a category.' });
+      addNotification({ type: 'warning', title: 'Title and Category Needed', message: 'Please provide a product title and select a category.' });
       return;
     }
     setIsGeneratingDesc(true);
     try {
       const description = await generateProductDescription(formData.title, categoryName);
       setFormData(prev => ({ ...prev, description }));
-      toast({ title: 'Description Generated!', description: 'The AI-powered description has been added.' });
+      addNotification({ type: 'success', title: 'Description Generated!', message: 'The AI-powered description has been added.' });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Generation Failed', description: error.message });
+      addNotification({ type: 'error', title: 'Generation Failed', message: error.message });
     } finally {
       setIsGeneratingDesc(false);
     }
@@ -124,21 +124,36 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const productPayload = { ...formData, specifications: specifications.reduce((acc, spec) => { if (spec.key) acc[spec.key] = spec.value; return acc; }, {}) };
-    const variantsPayload = variants.map(v => ({ ...(typeof v.id === 'number' && { id: v.id }), title: v.title, price_in_cents: Math.round(v.price_in_cents), sale_price_in_cents: v.sale_price_in_cents ? Math.round(v.sale_price_in_cents) : null, inventory_quantity: v.inventory_quantity, manage_inventory: v.manage_inventory, sku: v.sku, color_hex: v.color_hex }));
+    const productPayload = { 
+      ...formData,
+      category_id: formData.category_id || null,
+      brand_id: formData.brand_id || null,
+      specifications: specifications.reduce((acc, spec) => { if (spec.key) acc[spec.key] = spec.value; return acc; }, {}) 
+    };
+    
+    const variantsPayload = variants.map(v => ({ 
+        ...(typeof v.id === 'number' && { id: v.id }), 
+        title: v.title, 
+        price_in_cents: Math.round(v.price_in_cents || 0), 
+        sale_price_in_cents: v.sale_price_in_cents ? Math.round(v.sale_price_in_cents) : null, 
+        inventory_quantity: v.inventory_quantity || 0, 
+        manage_inventory: v.manage_inventory, 
+        sku: v.sku, 
+        color_hex: v.color_hex 
+    }));
 
     try {
       if (product) {
         await updateProduct(product.id, productPayload, variantsPayload);
-        toast({ title: 'Product Updated', description: `"${formData.title}" has been successfully updated.` });
+        addNotification({ type: 'success', title: 'Product Updated', message: `"${formData.title}" has been successfully updated.` });
       } else {
         await createProduct(productPayload, variantsPayload);
-        toast({ title: 'Product Created', description: `"${formData.title}" has been successfully created.` });
+        addNotification({ type: 'success', title: 'Product Created', message: `"${formData.title}" has been successfully created.` });
       }
       onSuccess();
     } catch (error) {
       console.error("Form submission error:", error);
-      toast({ variant: 'destructive', title: 'Submission Failed', description: error.message });
+      addNotification({ type: 'error', title: 'Submission Failed', message: error.message });
     } finally {
       setIsLoading(false);
     }
@@ -171,7 +186,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
           
           <div className="space-y-2"><h3 className="text-lg font-semibold border-b border-white/10 pb-2">Specifications</h3>{specifications.map((spec) => (<div key={spec.id} className="flex items-center gap-2"><Input placeholder="Key (e.g., Weight)" value={spec.key} onChange={(e) => handleSpecChange(spec.id, 'key', e.target.value)} /><Input placeholder="Value (e.g., 250g)" value={spec.value} onChange={(e) => handleSpecChange(spec.id, 'value', e.target.value)} /><Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300" onClick={() => removeSpecification(spec.id)}><Trash2 className="h-4 w-4" /></Button></div>))}<Button type="button" variant="outline" className="border-white/30" onClick={addSpecification}><PlusCircle className="h-4 w-4 mr-2" /> Add Specification</Button></div>
           
-          <div className="space-y-4"><h3 className="text-lg font-semibold border-b border-white/10 pb-2">Variants</h3>{variants.map((variant) => (<div key={variant.id} className="glass-card p-4 rounded-lg space-y-3 relative">{variants.length > 1 && (<Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)}><Trash2 className="h-4 w-4" /></Button>)}<div className="grid grid-cols-2 md:grid-cols-3 gap-4"><div className="space-y-2"><Label>Variant Title</Label><Input placeholder="e.g., Small, Blue" value={variant.title} onChange={(e) => handleVariantChange(variant.id, 'title', e.target.value)} required /></div><div className="space-y-2"><Label>SKU</Label><Input value={variant.sku || '(auto-generated)'} disabled /></div><div className="space-y-2"><Label>Color</Label><div className="flex items-center gap-2"><input type="color" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} className="w-10 h-10 p-1 bg-transparent border-none rounded-md cursor-pointer" /><Input className="flex-1" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} /></div></div><div className="space-y-2"><Label>Price (Cents)</Label><Input type="number" value={variant.price_in_cents} onChange={(e) => handleVariantChange(variant.id, 'price_in_cents', parseInt(e.target.value, 10))} /></div><div className="space-y-2"><Label>Sale Price (Cents)</Label><Input type="number" placeholder="Optional" value={variant.sale_price_in_cents || ''} onChange={(e) => handleVariantChange(variant.id, 'sale_price_in_cents', e.target.value ? parseInt(e.target.value, 10) : null)} /></div><div className="space-y-2"><Label>Inventory</Label><Input type="number" value={variant.inventory_quantity} onChange={(e) => handleVariantChange(variant.id, 'inventory_quantity', parseInt(e.target.value, 10))} /></div></div></div>))}<Button type="button" variant="outline" className="border-white/30" onClick={addVariant}><PlusCircle className="h-4 w-4 mr-2" />Add Variant</Button></div>
+          <div className="space-y-4"><h3 className="text-lg font-semibold border-b border-white/10 pb-2">Variants</h3>{variants.map((variant) => (<div key={variant.id} className="glass-card p-4 rounded-lg space-y-3 relative">{variants.length > 1 && (<Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)}><Trash2 className="h-4 w-4" /></Button>)}<div className="grid grid-cols-2 md:grid-cols-3 gap-4"><div className="space-y-2"><Label>Variant Title</Label><Input placeholder="e.g., Small, Blue" value={variant.title} onChange={(e) => handleVariantChange(variant.id, 'title', e.target.value)} required /></div><div className="space-y-2"><Label>SKU</Label><Input value={variant.sku || '(auto-generated)'} disabled /></div><div className="space-y-2"><Label>Color</Label><div className="flex items-center gap-2"><input type="color" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} className="w-10 h-10 p-1 bg-transparent border-none rounded-md cursor-pointer" /><Input className="flex-1" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} /></div></div><div className="space-y-2"><Label>Price (Cents)</Label><Input type="number" value={variant.price_in_cents} onChange={(e) => handleVariantChange(variant.id, 'price_in_cents', parseInt(e.target.value, 10) || 0)} /></div><div className="space-y-2"><Label>Sale Price (Cents)</Label><Input type="number" placeholder="Optional" value={variant.sale_price_in_cents || ''} onChange={(e) => handleVariantChange(variant.id, 'sale_price_in_cents', e.target.value ? parseInt(e.target.value, 10) : null)} /></div><div className="space-y-2"><Label>Inventory</Label><Input type="number" value={variant.inventory_quantity} onChange={(e) => handleVariantChange(variant.id, 'inventory_quantity', parseInt(e.target.value, 10) || 0)} /></div></div></div>))}<Button type="button" variant="outline" className="border-white/30" onClick={addVariant}><PlusCircle className="h-4 w-4 mr-2" />Add Variant</Button></div>
           
           <DialogFooter><Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button><Button type="submit" className="bg-gradient-to-r from-purple-500 to-pink-500" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{product ? 'Save Changes' : 'Create Product'}</Button></DialogFooter>
         </form>

@@ -5,7 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Lock, Mail } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { useToast } from '../components/ui/use-toast.js';
+import { useNotification } from '../hooks/useNotification.jsx';
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -16,7 +16,7 @@ const LoginPage = () => {
   });
   const [loading, setLoading] = useState(false);
   const { login, signUp } = useAuth();
-  const { toast } = useToast();
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -33,9 +33,10 @@ const LoginPage = () => {
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
-        toast({
+        addNotification({
+          type: "success",
           title: "Welcome back!",
-          description: "Successfully logged in.",
+          message: "Successfully logged in.",
         });
         // Redirect logic is handled by AuthContext on state change
         // For admin, we can add a specific redirect here after login
@@ -46,19 +47,20 @@ const LoginPage = () => {
         }
       } else {
         await signUp(formData.email, formData.password, formData.name);
-        toast({
+        addNotification({
+          type: "success",
           title: "Account created!",
-          description: "Please check your email for a confirmation link.",
+          message: "Please check your email for a confirmation link.",
         });
         // You might want to stay on the page and show a success message
         // or redirect to a "please confirm email" page.
         setIsLogin(true); 
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
+      addNotification({
+        type: "error",
         title: "Authentication Error",
-        description: error.message,
+        message: error.message,
       });
     } finally {
       setLoading(false);
