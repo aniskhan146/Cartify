@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, XCircle, Home, Truck, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, XCircle, Home, Truck, CheckCircle, CreditCard } from 'lucide-react';
 import { getOrderDetails } from '../api/EcommerceApi.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatCurrency } from '../lib/utils.js';
@@ -139,14 +139,24 @@ const OrderDetailsPage = () => {
                                     </div>
                                 </div>
                             </div>
-                            {/* Shipping Address */}
-                            <div className="h-fit">
+                            {/* Shipping & Payment Details */}
+                            <div className="h-fit space-y-6">
                                 <div className="glass-effect rounded-2xl p-6">
                                     <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Home size={20} /> Shipping Address</h2>
                                     <div className="space-y-1 text-white/90">
                                         <p>{address.first_name} {address.last_name}</p>
                                         <p>{address.address}</p>
                                         <p>{address.city}, {address.zip_code}</p>
+                                    </div>
+                                </div>
+                                 <div className="glass-effect rounded-2xl p-6">
+                                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><CreditCard size={20} /> Payment Method</h2>
+                                    <div className="space-y-1 text-white/90">
+                                        {order.payment_method === 'cod' ? (
+                                            <p className="flex items-center gap-2"><Truck className="h-5 w-5 text-blue-300"/> Cash on Delivery</p>
+                                        ) : (
+                                            <p className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-green-300"/> Credit Card</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

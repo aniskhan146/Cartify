@@ -113,6 +113,10 @@ CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
+-- 9. Add Payment Method to Orders
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'card';
+
+
 */
 
 // =================================================================

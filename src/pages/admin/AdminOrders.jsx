@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Search, Eye, Loader2 } from 'lucide-react';
+import { Search, Eye, Loader2, CreditCard, Truck } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useNotification } from '../../hooks/useNotification.jsx';
@@ -26,7 +26,7 @@ const AdminOrders = () => {
   const fetchOrders = useCallback(async () => {
       let query = supabase
         .from('orders')
-        .select('id, created_at, total, status, profiles(email), order_items(id)');
+        .select('id, created_at, total, status, payment_method, profiles(email), order_items(id)');
 
       if (statusFilter !== 'All') {
         query = query.eq('status', statusFilter);
@@ -179,6 +179,7 @@ const AdminOrders = () => {
                       <th className="text-left p-4 text-white font-semibold">Date</th>
                       <th className="text-left p-4 text-white font-semibold">Items</th>
                       <th className="text-left p-4 text-white font-semibold">Total</th>
+                      <th className="text-left p-4 text-white font-semibold">Payment</th>
                       <th className="text-left p-4 text-white font-semibold">Status</th>
                       <th className="text-left p-4 text-white font-semibold">Actions</th>
                     </tr>
@@ -208,6 +209,19 @@ const AdminOrders = () => {
                         </td>
                         <td className="p-4">
                           <span className="text-white font-semibold">{formatCurrency(order.total)}</span>
+                        </td>
+                        <td className="p-4">
+                          {order.payment_method === 'cod' ? (
+                            <span className="flex items-center gap-2 text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-300">
+                                <Truck className="h-3 w-3" />
+                                COD
+                            </span>
+                          ) : (
+                             <span className="flex items-center gap-2 text-xs text-white/80">
+                                <CreditCard className="h-3 w-3" />
+                                Card
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
                            <DropdownMenu>

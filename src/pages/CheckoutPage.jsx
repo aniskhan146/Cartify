@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
-import { CreditCard, Lock, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, Lock, CheckCircle, Truck } from 'lucide-react';
 import { Button } from '../components/ui/button.jsx';
 import { useCart } from '../hooks/useCart.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -9,6 +9,7 @@ import { useNotification } from '../hooks/useNotification.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase.js';
 import { decreaseInventory } from '../api/EcommerceApi.js';
+import { cn } from '../lib/utils.js';
 
 const CheckoutPage = () => {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ const CheckoutPage = () => {
   const { addNotification } = useNotification();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('card');
   const [formData, setFormData] = useState({
     email: user?.email || '',
     firstName: '',
@@ -59,6 +61,7 @@ const CheckoutPage = () => {
                 user_id: user.id,
                 total: total,
                 status: 'Processing',
+                payment_method: paymentMethod, // Save the payment method
                 shipping_address: {
                     first_name: formData.firstName,
                     last_name: formData.lastName,
@@ -89,33 +92,12 @@ const CheckoutPage = () => {
         // 3. Decrease inventory for each item
         await decreaseInventory(orderData.id);
 
-        // 4. Trigger the order confirmation email function (fire-and-forget)
-        // =================================================================================
-        // BACKEND SETUP REQUIRED: Brevo Order Confirmation Email
-        // =================================================================================
-        // The code below calls a Supabase Edge Function named 'send-order-confirmation'.
-        // The code for this function has been added to your project under:
-        //   - supabase/functions/send-order-confirmation/index.ts
-        //   - supabase/functions/_shared/cors.ts
-        //
-        // To make this work, you must:
-        // 1. Set Supabase Secrets:
-        //    - In your terminal, run the following commands with your actual keys:
-        //    - supabase secrets set BREVO_API_KEY=YOUR_BREVO_V3_API_KEY
-        //    - supabase secrets set BREVO_TEMPLATE_ID=YOUR_BREVO_TRANSACTIONAL_TEMPLATE_ID
-        //
-        // 2. Deploy the function:
-        //    - In your terminal, run: supabase functions deploy
-        //
-        // The function will then automatically handle sending the confirmation email.
-        // =================================================================================
+        // 4. Trigger the order confirmation email function
         supabase.functions.invoke('send-order-confirmation', {
             body: { orderId: orderData.id },
         }).then(({ error }) => {
             if (error) {
                 console.error("Failed to invoke send-order-confirmation function:", error);
-                // This error typically means the function doesn't exist or has an issue.
-                // The user's checkout is NOT blocked, but you may want to log this for monitoring.
             }
         });
 
@@ -262,54 +244,95 @@ const CheckoutPage = () => {
                     </div>
                   </div>
 
-                  {/* Payment Information */}
+                  {/* Payment Method */}
                   <div>
-                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <CreditCard className="h-5 w-5 mr-2" />
-                      Payment Information
-                    </h2>
-                    <div>
-                      <label htmlFor="cardNumber" className="sr-only">Card number</label>
-                      <input
-                        type="text"
-                        id="cardNumber"
-                        name="cardNumber"
-                        placeholder="Card number"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        required
-                        className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label htmlFor="expiryDate" className="sr-only">Expiry date (MM/YY)</label>
-                        <input
-                          type="text"
-                          id="expiryDate"
-                          name="expiryDate"
-                          placeholder="MM/YY"
-                          value={formData.expiryDate}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="cvv" className="sr-only">CVV</label>
-                        <input
-                          type="text"
-                          id="cvv"
-                          name="cvv"
-                          placeholder="CVV"
-                          value={formData.cvv}
-                          onChange={handleInputChange}
-                          required
-                          className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
+                    <h2 className="text-lg font-semibold text-white mb-4">Payment Method</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('card')}
+                        className={cn(
+                          'flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
+                          paymentMethod === 'card' ? 'bg-purple-500/20 border-purple-400' : 'bg-white/10 border-white/20 hover:border-white/40'
+                        )}
+                      >
+                        <CreditCard className="h-5 w-5" />
+                        <span>Credit Card</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('cod')}
+                        className={cn(
+                          'flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all',
+                          paymentMethod === 'cod' ? 'bg-purple-500/20 border-purple-400' : 'bg-white/10 border-white/20 hover:border-white/40'
+                        )}
+                      >
+                        <Truck className="h-5 w-5" />
+                        <span>Cash on Delivery</span>
+                      </button>
                     </div>
                   </div>
+                  
+                  {/* Payment Information */}
+                  <AnimatePresence>
+                    {paymentMethod === 'card' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginTop: '24px' }}
+                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div>
+                          <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <CreditCard className="h-5 w-5 mr-2" />
+                            Card Details
+                          </h2>
+                          <div>
+                            <label htmlFor="cardNumber" className="sr-only">Card number</label>
+                            <input
+                              type="text"
+                              id="cardNumber"
+                              name="cardNumber"
+                              placeholder="Card number"
+                              value={formData.cardNumber}
+                              onChange={handleInputChange}
+                              required={paymentMethod === 'card'}
+                              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <label htmlFor="expiryDate" className="sr-only">Expiry date (MM/YY)</label>
+                              <input
+                                type="text"
+                                id="expiryDate"
+                                name="expiryDate"
+                                placeholder="MM/YY"
+                                value={formData.expiryDate}
+                                onChange={handleInputChange}
+                                required={paymentMethod === 'card'}
+                                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="cvv" className="sr-only">CVV</label>
+                              <input
+                                type="text"
+                                id="cvv"
+                                name="cvv"
+                                placeholder="CVV"
+                                value={formData.cvv}
+                                onChange={handleInputChange}
+                                required={paymentMethod === 'card'}
+                                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <Button
                     type="submit"
@@ -331,7 +354,7 @@ const CheckoutPage = () => {
 
                   <div className="flex items-center justify-center space-x-2 text-sm text-white/70">
                     <Lock className="h-4 w-4" />
-                    <span>Your payment information is secure and encrypted</span>
+                    <span>Your information is secure and encrypted</span>
                   </div>
                 </form>
               </motion.div>

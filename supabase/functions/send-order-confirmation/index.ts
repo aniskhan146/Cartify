@@ -1,5 +1,5 @@
-// Fix: Updated the Deno types reference to use the Supabase Edge Runtime types, which correctly defines the Deno global object.
-/// <reference types="https://esm.sh/v135/@supabase/functions-js@2.3.1/src/edge-runtime.d.ts" />
+// Fix: Corrected the Deno types reference to use the Supabase Edge Runtime types, which correctly defines the Deno global object. The path was incorrect.
+/// <reference types="https://esm.sh/v135/@supabase/functions-js@2.3.1/edge-runtime.d.ts" />
 
 // Follow this tutorial to get started with Supabase Edge Functions:
 // https://supabase.com/docs/guides/functions
