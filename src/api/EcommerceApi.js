@@ -1,15 +1,28 @@
 import { supabase } from '../lib/supabase.js';
 import { formatCurrency } from '../lib/utils.js';
 
+const MAX_PRICE_CENTS = 500000; // Corresponds to StorePage constant
+
+// Helper to transform Supabase image URLs for optimization
+const transformSupabaseImage = (url, width, height) => {
+    if (!url || !url.includes('/storage/v1/object/public/')) {
+        return url; // Not a transformable Supabase URL
+    }
+    const transformedUrl = url.replace('/object/public/', '/render/image/public/');
+    return `${transformedUrl}?width=${width}&height=${height}&resize=cover`;
+};
+
 // Helper to format product data into the structure expected by components
 const formatProduct = (product) => {
     if (!product) return null;
     
+    const mainImage = product.image || product.images?.[0]?.url;
+
     return {
         ...product,
-        image: product.image || product.images?.[0]?.url,
+        image: transformSupabaseImage(mainImage, 500, 500),
         // Assumes an 'images' jsonb column like [{ "url": "..." }]
-        galleryImages: product.images?.map(img => img.url) || [],
+        galleryImages: (product.images?.map(img => img.url) || []),
         variants: (product.variants || []).map(variant => ({
             ...variant,
             price_formatted: formatCurrency(variant.price_in_cents),
@@ -20,8 +33,29 @@ const formatProduct = (product) => {
 };
 
 // Fetch all products with their variants, with pagination and filtering
-export const getProducts = async ({ page = 1, limit = 8, category = 'All', searchTerm = '', sortBy = 'name' }) => {
+export const getProducts = async ({ page = 1, limit = 8, category = 'All', searchTerm = '', sortBy = 'name', priceRange = [0, MAX_PRICE_CENTS] }) => {
     const offset = (page - 1) * limit;
+
+    let productIdsFromPriceFilter = null;
+
+    // Only run the price filter query if the user has adjusted the slider from its max range
+    if (priceRange[0] > 0 || priceRange[1] < MAX_PRICE_CENTS) {
+        let priceQuery = supabase
+            .from('variants')
+            .select('product_id')
+            .gte('price_in_cents', priceRange[0])
+            .lte('price_in_cents', priceRange[1]);
+
+        const { data: variantData, error: variantError } = await priceQuery;
+        if (variantError) throw new Error('Failed to filter by price.');
+        
+        productIdsFromPriceFilter = [...new Set(variantData.map(v => v.product_id))];
+        
+        // If price filter returns no IDs, no need to query for products.
+        if (productIdsFromPriceFilter.length === 0) {
+            return { products: [], count: 0 };
+        }
+    }
 
     let query = supabase
         .from('products')
@@ -35,11 +69,16 @@ export const getProducts = async ({ page = 1, limit = 8, category = 'All', searc
         query = query.ilike('title', `%${searchTerm}%`);
     }
 
+    // Apply price filter IDs if they exist
+    if (productIdsFromPriceFilter) {
+        query = query.in('id', productIdsFromPriceFilter);
+    }
+
     if (sortBy === 'name') {
         query = query.order('title', { ascending: true });
     }
-    // Note: Sorting by price is complex with multiple variants per product
-    // and would ideally be handled by a dedicated database function (RPC).
+    // Note: Sorting by price is complex with multiple variants and is best handled by an RPC.
+    // The current implementation sorts by name.
 
     query = query.range(offset, offset + (limit - 1));
     

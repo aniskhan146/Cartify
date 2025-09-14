@@ -24,12 +24,16 @@ const StorePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  
+  // Separate states for slider UI and committed filter value
   const [priceRange, setPriceRange] = useState([0, MAX_PRICE_CENTS]);
+  const [uiPriceRange, setUiPriceRange] = useState([0, MAX_PRICE_CENTS]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedPriceRange = useDebounce(priceRange, 500);
 
   const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
 
@@ -55,6 +59,7 @@ const StorePage = () => {
         category: selectedCategory,
         searchTerm: debouncedSearchTerm,
         sortBy,
+        priceRange: debouncedPriceRange,
       });
 
       setProducts(fetchedProducts);
@@ -64,7 +69,7 @@ const StorePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, selectedCategory, debouncedSearchTerm, sortBy]);
+  }, [currentPage, selectedCategory, debouncedSearchTerm, sortBy, debouncedPriceRange]);
 
   useEffect(() => {
     fetchCategories();
@@ -77,15 +82,7 @@ const StorePage = () => {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, debouncedSearchTerm, sortBy]);
-  
-  const clientFilteredProducts = useMemo(() => {
-    return products.filter(p => {
-        const variantPrice = p.variants[0]?.sale_price_in_cents ?? p.variants[0]?.price_in_cents;
-        return variantPrice >= priceRange[0] && variantPrice <= priceRange[1];
-    });
-  }, [products, priceRange]);
-
+  }, [selectedCategory, debouncedSearchTerm, sortBy, debouncedPriceRange]);
 
   return (
     <>
@@ -156,14 +153,15 @@ const StorePage = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-4">Price Range</h3>
                     <Slider
-                      defaultValue={[0, MAX_PRICE_CENTS]}
+                      value={uiPriceRange}
+                      onValueChange={setUiPriceRange}
+                      onValueCommit={setPriceRange}
                       max={MAX_PRICE_CENTS}
                       step={100}
-                      onValueCommit={setPriceRange}
                     />
                      <div className="flex justify-between text-xs text-white/70 mt-2">
-                      <span>{formatCurrency(priceRange[0])}</span>
-                      <span>{formatCurrency(priceRange[1])}</span>
+                      <span>{formatCurrency(uiPriceRange[0])}</span>
+                      <span>{formatCurrency(uiPriceRange[1])}</span>
                     </div>
                   </div>
                 </div>
@@ -172,7 +170,7 @@ const StorePage = () => {
               {/* Products Grid */}
               <main className="lg:col-span-3">
                 <ProductsList
-                  products={clientFilteredProducts}
+                  products={products}
                   loading={loading}
                   error={error}
                   skeletonCount={PRODUCTS_PER_PAGE}

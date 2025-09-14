@@ -1,105 +1,21 @@
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from './ui/button.jsx';
-import { ShoppingCart, Loader2 } from 'lucide-react';
-import { useCart } from '../hooks/useCart.jsx';
-import { useToast } from './ui/use-toast.js';
-
-const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
-
-const ProductCard = ({ product, index }) => {
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const displayVariant = useMemo(() => product.variants[0], [product]);
-  const hasSale = useMemo(() => displayVariant && displayVariant.sale_price_in_cents !== null, [displayVariant]);
-  const displayPrice = useMemo(() => hasSale ? displayVariant.sale_price_formatted : displayVariant.price_formatted, [displayVariant, hasSale]);
-  const originalPrice = useMemo(() => hasSale ? displayVariant.price_formatted : null, [displayVariant, hasSale]);
-
-  const handleAddToCart = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!product.variants || product.variants.length === 0) {
-       toast({
-        title: "Currently Unavailable",
-        description: "This product has no purchase options.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (product.variants.length > 1) {
-      navigate(`/product/${product.id}`);
-      return;
-    }
-
-    const defaultVariant = product.variants[0];
-
-    try {
-      await addToCart(product, defaultVariant, 1);
-      toast({
-        title: "Added to Cart! 🛒",
-        description: `${product.title} has been added to your cart.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error adding to cart",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.05 }}
-    >
-      <Link to={`/product/${product.id}`}>
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm glass-card border-0 text-white overflow-hidden group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-          <div className="relative">
-            <img
-              src={product.image ||placeholderImage}
-              alt={product.title}
-              className="w-full h-56 object-cover transition-transform duration-300"
-            />
-            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all duration-300" />
-            {product.ribbon_text && (
-              <div className="absolute top-3 left-3 bg-pink-500/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                {product.ribbon_text}
-              </div>
-            )}
-            <div className="absolute top-3 right-3 bg-purple-500/80 text-white text-xs font-bold px-3 py-1 rounded-full flex items-baseline gap-1.5">
-              {hasSale && (
-                <span className="line-through opacity-70">{originalPrice}</span>
-              )}
-              <span>{displayPrice}</span>
-            </div>
-          </div>
-          <div className="p-4">
-            <h3 className="text-base font-bold truncate">{product.title}</h3>
-            <p className="text-xs text-gray-300 h-8 overflow-hidden">{product.subtitle || 'Check out this amazing product!'}</p>
-            <Button onClick={handleAddToCart} className="w-full mt-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold">
-              <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-            </Button>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-};
+import React from 'react';
+import ProductCard from './ProductCard.jsx';
 
 const ProductCardSkeleton = () => (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm glass-card border-0 text-white overflow-hidden animate-pulse">
-        <div className="w-full h-56 bg-slate-700/50" />
-        <div className="p-4">
-            <div className="h-5 bg-slate-700/50 rounded w-3/4 mb-2" />
-            <div className="h-8 bg-slate-700/50 rounded w-full" />
-            <div className="mt-3 h-10 bg-slate-700/50 rounded w-full" />
+    <div className="group animate-pulse">
+        <div className="glass-effect rounded-2xl overflow-hidden h-full flex flex-col">
+            <div className="relative overflow-hidden h-48 bg-slate-700/50" />
+            <div className="p-4 flex flex-col flex-grow">
+                <div className="flex items-center justify-between mb-1">
+                    <div className="h-4 w-1/4 bg-slate-700/50 rounded" />
+                    <div className="h-4 w-1/6 bg-slate-700/50 rounded" />
+                </div>
+                <div className="h-5 w-3/4 bg-slate-700/50 rounded my-2 flex-grow" />
+                <div className="flex items-center justify-between mt-auto">
+                    <div className="h-7 w-1/3 bg-slate-700/50 rounded" />
+                    <div className="h-8 w-8 bg-slate-700/50 rounded-full" />
+                </div>
+            </div>
         </div>
     </div>
 );
