@@ -59,7 +59,7 @@ const CartPage = () => {
               transition={{ duration: 0.8 }}
               className="mb-8"
             >
-              <h1 className="text-4xl font-bold text-white mb-4">Shopping Cart</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Shopping Cart</h1>
               <p className="text-white/70">Review your items and proceed to checkout</p>
             </motion.div>
 
@@ -72,19 +72,19 @@ const CartPage = () => {
                     initial={{ opacity: 0, x: -50 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                    className="glass-effect rounded-2xl p-6"
+                    className="glass-effect rounded-2xl p-4"
                   >
                     <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
                       <img
                         src={item.product.image}
                         alt={item.product.title}
-                        className="w-24 h-24 object-cover rounded-xl"
+                        className="w-20 h-20 object-cover rounded-xl"
                       />
                       
                       <div className="flex-1 text-center sm:text-left">
-                        <h3 className="text-lg font-semibold text-white">{item.product.title}</h3>
-                        <p className="text-purple-300">{item.variant.title}</p>
-                        <p className="text-2xl font-bold text-white mt-2">
+                        <h3 className="text-base font-semibold text-white">{item.product.title}</h3>
+                        <p className="text-sm text-purple-300">{item.variant.title}</p>
+                        <p className="text-xl font-bold text-white mt-1">
                           {item.variant.sale_price_formatted || item.variant.price_formatted}
                         </p>
                       </div>
@@ -99,7 +99,7 @@ const CartPage = () => {
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <span className="px-4 py-2 text-white">{item.quantity}</span>
+                          <span className="px-3 py-1 text-white">{item.quantity}</span>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -151,9 +151,9 @@ const CartPage = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="glass-effect rounded-2xl p-6 h-fit"
               >
-                <h2 className="text-2xl font-bold text-white mb-6">Order Summary</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Order Summary</h2>
                 
-                <div className="space-y-4 mb-6">
+                <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-white/80">
                     <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                     <span>${subtotal.toFixed(2)}</span>
@@ -166,8 +166,8 @@ const CartPage = () => {
                     <span>Tax</span>
                     <span>${tax.toFixed(2)}</span>
                   </div>
-                  <div className="border-t border-white/20 pt-4">
-                    <div className="flex justify-between text-xl font-bold text-white">
+                  <div className="border-t border-white/20 pt-4 mt-2">
+                    <div className="flex justify-between text-lg font-bold text-white">
                       <span>Total</span>
                       <span>${total.toFixed(2)}</span>
                     </div>

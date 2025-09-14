@@ -124,7 +124,7 @@ const CheckoutPage = () => {
               transition={{ duration: 0.8 }}
               className="mb-8"
             >
-              <h1 className="text-4xl font-bold text-white mb-4">Checkout</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Checkout</h1>
               <p className="text-white/70">Complete your purchase securely</p>
             </motion.div>
 
@@ -139,7 +139,7 @@ const CheckoutPage = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Contact Information */}
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-4">Contact Information</h2>
+                    <h2 className="text-lg font-semibold text-white mb-4">Contact Information</h2>
                     <input
                       type="email"
                       name="email"
@@ -147,13 +147,13 @@ const CheckoutPage = () => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
 
                   {/* Shipping Address */}
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-4">Shipping Address</h2>
+                    <h2 className="text-lg font-semibold text-white mb-4">Shipping Address</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <input
                         type="text"
@@ -162,7 +162,7 @@ const CheckoutPage = () => {
                         value={formData.firstName}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                       <input
                         type="text"
@@ -171,7 +171,7 @@ const CheckoutPage = () => {
                         value={formData.lastName}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
                     <input
@@ -181,7 +181,7 @@ const CheckoutPage = () => {
                       value={formData.address}
                       onChange={handleInputChange}
                       required
-                      className="w-full mt-4 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full mt-4 px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                       <input
@@ -191,7 +191,7 @@ const CheckoutPage = () => {
                         value={formData.city}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                       <input
                         type="text"
@@ -200,14 +200,14 @@ const CheckoutPage = () => {
                         value={formData.zipCode}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
                   </div>
 
                   {/* Payment Information */}
                   <div>
-                    <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                    <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                       <CreditCard className="h-5 w-5 mr-2" />
                       Payment Information
                     </h2>
@@ -218,7 +218,7 @@ const CheckoutPage = () => {
                       value={formData.cardNumber}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <div className="grid grid-cols-2 gap-4 mt-4">
                       <input
@@ -228,7 +228,7 @@ const CheckoutPage = () => {
                         value={formData.expiryDate}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                       <input
                         type="text"
@@ -237,7 +237,7 @@ const CheckoutPage = () => {
                         value={formData.cvv}
                         onChange={handleInputChange}
                         required
-                        className="px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
                   </div>
@@ -245,7 +245,7 @@ const CheckoutPage = () => {
                   <Button
                     type="submit"
                     disabled={isProcessing || cartItems.length === 0}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 rounded-xl neon-glow text-lg"
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl neon-glow text-base"
                   >
                     {isProcessing ? (
                       <div className="flex items-center">
@@ -274,7 +274,7 @@ const CheckoutPage = () => {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="glass-effect rounded-2xl p-8 h-fit"
               >
-                <h2 className="text-2xl font-bold text-white mb-6">Order Summary</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Order Summary</h2>
                 
                 <div className="space-y-4 mb-6">
                   {cartItems.map((item) => (

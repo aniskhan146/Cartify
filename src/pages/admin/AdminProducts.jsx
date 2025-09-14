@@ -118,7 +118,7 @@ const AdminProducts = () => {
       </Helmet>
       
       <AdminLayout>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -127,7 +127,7 @@ const AdminProducts = () => {
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
           >
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Products</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">Products</h1>
               <p className="text-white/70">Manage your product catalog</p>
             </div>
             <Button
@@ -144,7 +144,7 @@ const AdminProducts = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="glass-effect rounded-2xl p-6"
+            className="glass-effect rounded-xl p-4"
           >
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 max-w-md">
@@ -154,7 +154,7 @@ const AdminProducts = () => {
                   placeholder="Search products..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
               
@@ -162,7 +162,7 @@ const AdminProducts = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-xl text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   {categories.map(category => (
                     <option key={category} value={category}>{category}</option>
@@ -177,7 +177,7 @@ const AdminProducts = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="glass-effect rounded-2xl overflow-hidden"
+            className="glass-effect rounded-xl overflow-hidden"
           >
             <div className="overflow-x-auto">
               {loading ? (
@@ -185,15 +185,15 @@ const AdminProducts = () => {
                   <Loader2 className="h-12 w-12 text-white animate-spin" />
                 </div>
               ) : (
-                <table className="w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="text-left p-6 text-white font-semibold">Product</th>
-                      <th className="text-left p-6 text-white font-semibold">Category</th>
-                      <th className="text-left p-6 text-white font-semibold">Price</th>
-                      <th className="text-left p-6 text-white font-semibold">Stock</th>
-                      <th className="text-left p-6 text-white font-semibold">Status</th>
-                      <th className="text-left p-6 text-white font-semibold">Actions</th>
+                      <th className="text-left p-4 text-white font-semibold">Product</th>
+                      <th className="text-left p-4 text-white font-semibold">Category</th>
+                      <th className="text-left p-4 text-white font-semibold">Price</th>
+                      <th className="text-left p-4 text-white font-semibold">Stock</th>
+                      <th className="text-left p-4 text-white font-semibold">Status</th>
+                      <th className="text-left p-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -208,31 +208,31 @@ const AdminProducts = () => {
                           transition={{ duration: 0.4, delay: index * 0.05 }}
                           className="border-t border-white/10 hover:bg-white/5 transition-colors"
                         >
-                          <td className="p-6">
-                            <div className="flex items-center space-x-4">
+                          <td className="p-4">
+                            <div className="flex items-center space-x-3">
                               <img
                                 src={product.image}
                                 alt={product.title}
-                                className="w-12 h-12 object-cover rounded-lg"
+                                className="w-10 h-10 object-cover rounded-md"
                               />
                               <div>
                                 <h3 className="text-white font-medium">{product.title}</h3>
-                                <p className="text-white/70 text-sm">ID: {product.id}</p>
+                                <p className="text-white/70 text-xs">ID: {product.id}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-6">
+                          <td className="p-4">
                             <span className="text-purple-300">{product.category}</span>
                           </td>
-                          <td className="p-6">
+                          <td className="p-4">
                             <span className="text-white font-semibold">{formatCurrency(primaryVariant?.price_in_cents)}</span>
                           </td>
-                          <td className="p-6">
+                          <td className="p-4">
                             <span className={`${stock > 10 ? 'text-green-400' : 'text-yellow-400'}`}>
                               {stock}
                             </span>
                           </td>
-                          <td className="p-6">
+                          <td className="p-4">
                              <span className={`px-3 py-1 rounded-full text-xs ${
                               !product.purchasable ? 'bg-gray-500/20 text-gray-300' :
                               stock > 0 ? 'bg-green-500/20 text-green-300' : 
@@ -241,7 +241,7 @@ const AdminProducts = () => {
                               {!product.purchasable ? 'Archived' : stock > 0 ? 'In Stock' : 'Out of Stock'}
                             </span>
                           </td>
-                          <td className="p-6">
+                          <td className="p-4">
                             <div className="flex items-center space-x-2">
                               <Button
                                 variant="ghost"

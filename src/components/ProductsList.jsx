@@ -67,7 +67,7 @@ const ProductCard = ({ product, index }) => {
             <img
               src={product.image ||placeholderImage}
               alt={product.title}
-              className="w-full h-64 object-cover transition-transform duration-300"
+              className="w-full h-56 object-cover transition-transform duration-300"
             />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all duration-300" />
             {product.ribbon_text && (
@@ -83,9 +83,9 @@ const ProductCard = ({ product, index }) => {
             </div>
           </div>
           <div className="p-4">
-            <h3 className="text-lg font-bold truncate">{product.title}</h3>
-            <p className="text-sm text-gray-300 h-10 overflow-hidden">{product.subtitle || 'Check out this amazing product!'}</p>
-            <Button onClick={handleAddToCart} className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold">
+            <h3 className="text-base font-bold truncate">{product.title}</h3>
+            <p className="text-xs text-gray-300 h-8 overflow-hidden">{product.subtitle || 'Check out this amazing product!'}</p>
+            <Button onClick={handleAddToCart} className="w-full mt-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold">
               <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
             </Button>
           </div>
@@ -97,11 +97,11 @@ const ProductCard = ({ product, index }) => {
 
 const ProductCardSkeleton = () => (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm glass-card border-0 text-white overflow-hidden animate-pulse">
-        <div className="w-full h-64 bg-slate-700/50" />
+        <div className="w-full h-56 bg-slate-700/50" />
         <div className="p-4">
             <div className="h-5 bg-slate-700/50 rounded w-3/4 mb-2" />
-            <div className="h-10 bg-slate-700/50 rounded w-full" />
-            <div className="mt-4 h-10 bg-slate-700/50 rounded w-full" />
+            <div className="h-8 bg-slate-700/50 rounded w-full" />
+            <div className="mt-3 h-10 bg-slate-700/50 rounded w-full" />
         </div>
     </div>
 );

@@ -16,7 +16,7 @@ const HomePage = () => {
       <div className="min-h-screen">
         
         {/* Hero Section */}
-        <section className="py-24 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
+        <section className="py-20 px-4 sm:px-6 lg:px-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 opacity-70"></div>
             <div className="absolute inset-0 pattern-bg"></div>
             <div className="relative z-10 max-w-4xl mx-auto">
@@ -24,7 +24,7 @@ const HomePage = () => {
                     initial={{ opacity: 0, y: -50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, type: 'spring' }}
-                    className="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight"
+                    className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight"
                 >
                     <span className="gradient-text">AYExpress</span>: Your Store, Reimagined.
                 </motion.h1>
@@ -32,7 +32,7 @@ const HomePage = () => {
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.2, type: 'spring' }}
-                    className="text-lg md:text-xl text-white/80 mb-10"
+                    className="text-base md:text-lg text-white/80 mb-10"
                 >
                     Explore a curated collection of premium products, delivered with exceptional service.
                 </motion.p>
@@ -42,7 +42,7 @@ const HomePage = () => {
                     transition={{ duration: 0.5, delay: 0.4 }}
                 >
                     <Link to="/store">
-                        <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-4 px-8 rounded-full text-lg shadow-lg transform hover:scale-105 transition-transform">
+                        <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 px-8 rounded-full text-base shadow-lg transform hover:scale-105 transition-transform">
                             Explore The Store
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
@@ -52,7 +52,7 @@ const HomePage = () => {
         </section>
         
         {/* Featured Products */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <motion.div initial={{
             opacity: 0,
@@ -62,16 +62,16 @@ const HomePage = () => {
             y: 0
           }} transition={{
             duration: 0.8
-          }} className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-white mb-4">Featured Products</h2>
-              <p className="text-xl text-white/70">Handpicked premium items just for you</p>
+          }} className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-3">Featured Products</h2>
+              <p className="text-lg text-white/70">Handpicked premium items just for you</p>
             </motion.div>
             
             <ProductsList />
             
             <div className="text-center mt-12">
               <Link to="/store">
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8 py-4 rounded-full">
+                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8 py-3 rounded-full">
                   View All Products
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -81,7 +81,7 @@ const HomePage = () => {
         </section>
 
         {/* Testimonials */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <section className="py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <motion.div initial={{
             opacity: 0,
@@ -91,9 +91,9 @@ const HomePage = () => {
             y: 0
           }} transition={{
             duration: 0.8
-          }} className="text-center mb-16">
-              <h2 className="text-4xl font-bold text-white mb-4">What Our Customers Say</h2>
-              <p className="text-xl text-white/70">Join thousands of satisfied customers</p>
+          }} className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-white mb-3">What Our Customers Say</h2>
+              <p className="text-lg text-white/70">Join thousands of satisfied customers</p>
             </motion.div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

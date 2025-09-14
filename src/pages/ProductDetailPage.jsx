@@ -177,13 +177,13 @@ function ProductDetailPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="flex flex-col">
-            <h1 className="text-4xl font-bold text-white mb-2">{product.title}</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">{product.title}</h1>
             <p className="text-lg text-gray-300 mb-4">{product.subtitle}</p>
 
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-4xl font-bold text-purple-400">{price}</span>
+              <span className="text-3xl font-bold text-purple-400">{price}</span>
               {selectedVariant?.sale_price_in_cents && (
-                <span className="text-2xl text-gray-400 line-through">{originalPrice}</span>
+                <span className="text-xl text-gray-400 line-through">{originalPrice}</span>
               )}
             </div>
 

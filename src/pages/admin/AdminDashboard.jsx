@@ -118,14 +118,14 @@ const AdminDashboard = () => {
       </Helmet>
       
       <AdminLayout>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-white mb-1">Dashboard</h1>
             <p className="text-white/70">Welcome back! Here's what's happening with your store.</p>
           </motion.div>
 
@@ -137,29 +137,29 @@ const AdminDashboard = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="glass-effect rounded-2xl p-6 card-hover"
+                className="glass-effect rounded-xl p-5 card-hover"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`bg-gradient-to-r ${stat.color} rounded-xl p-3`}>
-                    <stat.icon className="h-6 w-6 text-white" />
+                  <div className={`bg-gradient-to-r ${stat.color} rounded-lg p-2.5`}>
+                    <stat.icon className="h-5 w-5 text-white" />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-1">{stat.value}</h3>
+                <h3 className="text-xl font-bold text-white mb-1">{stat.value}</h3>
                 <p className="text-white/70 text-sm">{stat.title}</p>
               </motion.div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Orders */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="glass-effect rounded-2xl p-6"
+              className="glass-effect rounded-xl p-5"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Recent Orders</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white">Recent Orders</h2>
                 <Link to="/admin/orders">
                   <button className="text-purple-300 hover:text-purple-200 text-sm flex items-center">
                     <Eye className="h-4 w-4 mr-1" />
@@ -167,16 +167,16 @@ const AdminDashboard = () => {
                   </button>
                 </Link>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentOrders.length > 0 ? recentOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                  <div key={order.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                     <div>
-                      <p className="text-white font-medium">Order #{order.id}</p>
-                      <p className="text-white/70 text-sm">{order.profiles?.email || 'N/A'}</p>
+                      <p className="text-white font-medium text-sm">Order #{order.id}</p>
+                      <p className="text-white/70 text-xs">{order.profiles?.email || 'N/A'}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-semibold">{formatCurrency(order.total)}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
+                      <p className="text-white font-semibold text-sm">{formatCurrency(order.total)}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
                         order.status === 'Completed' ? 'bg-green-500/20 text-green-300' :
                         order.status === 'Processing' ? 'bg-yellow-500/20 text-yellow-300' :
                         order.status === 'Shipped' ? 'bg-blue-500/20 text-blue-300' :
@@ -186,7 +186,7 @@ const AdminDashboard = () => {
                       </span>
                     </div>
                   </div>
-                )) : <p className="text-white/50 text-center py-4">No recent orders.</p>}
+                )) : <p className="text-white/50 text-center text-sm py-4">No recent orders.</p>}
               </div>
             </motion.div>
 
@@ -195,10 +195,10 @@ const AdminDashboard = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="glass-effect rounded-2xl p-6"
+              className="glass-effect rounded-xl p-5"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Recent Products</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white">Recent Products</h2>
                 <Link to="/admin/products">
                   <button className="text-purple-300 hover:text-purple-200 text-sm flex items-center">
                     <Eye className="h-4 w-4 mr-1" />
@@ -206,24 +206,24 @@ const AdminDashboard = () => {
                   </button>
                 </Link>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {topProducts.length > 0 ? topProducts.map((product) => (
-                  <div key={product.id} className="flex items-center space-x-4 p-4 bg-white/5 rounded-xl">
+                  <div key={product.id} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
                     <img
                       src={product.image}
                       alt={product.title}
-                      className="w-12 h-12 object-cover rounded-lg"
+                      className="w-10 h-10 object-cover rounded-md"
                     />
                     <div className="flex-1">
-                      <p className="text-white font-medium">{product.title}</p>
-                      <p className="text-white/70 text-sm">{product.category}</p>
+                      <p className="text-white font-medium text-sm">{product.title}</p>
+                      <p className="text-white/70 text-xs">{product.category}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-semibold">{formatCurrency(product.variants[0]?.price_in_cents)}</p>
-                      <p className="text-green-400 text-sm">{product.variants[0]?.inventory_quantity} in stock</p>
+                      <p className="text-white font-semibold text-sm">{formatCurrency(product.variants[0]?.price_in_cents)}</p>
+                      <p className="text-green-400 text-xs">{product.variants[0]?.inventory_quantity} in stock</p>
                     </div>
                   </div>
-                )) : <p className="text-white/50 text-center py-4">No recent products.</p>}
+                )) : <p className="text-white/50 text-center text-sm py-4">No recent products.</p>}
               </div>
             </motion.div>
           </div>

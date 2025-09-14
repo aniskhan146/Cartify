@@ -20,7 +20,7 @@ const StorePage = () => {
               transition={{ duration: 0.8 }}
               className="text-center mb-12"
             >
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 <span className="gradient-text">Our Store</span>
               </h1>
               <p className="text-xl text-white/80 max-w-2xl mx-auto">

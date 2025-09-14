@@ -74,7 +74,7 @@ const AdminCustomers = () => {
       </Helmet>
       
       <AdminLayout>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -83,7 +83,7 @@ const AdminCustomers = () => {
             className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
           >
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Customers</h1>
+              <h1 className="text-2xl font-bold text-white mb-1">Customers</h1>
               <p className="text-white/70">View and manage your customer base</p>
             </div>
           </motion.div>
@@ -93,7 +93,7 @@ const AdminCustomers = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="glass-effect rounded-2xl p-6"
+            className="glass-effect rounded-xl p-4"
           >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-5 w-5" />
@@ -102,7 +102,7 @@ const AdminCustomers = () => {
                 placeholder="Search customers by email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
             </div>
           </motion.div>
@@ -112,7 +112,7 @@ const AdminCustomers = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="glass-effect rounded-2xl overflow-hidden"
+            className="glass-effect rounded-xl overflow-hidden"
           >
             <div className="overflow-x-auto">
               {loading ? (
@@ -120,15 +120,15 @@ const AdminCustomers = () => {
                   <Loader2 className="h-12 w-12 text-white animate-spin" />
                 </div>
               ) : (
-                <table className="w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="text-left p-6 text-white font-semibold">Customer</th>
-                      <th className="text-left p-6 text-white font-semibold">Join Date</th>
-                      <th className="text-left p-6 text-white font-semibold">Orders</th>
-                      <th className="text-left p-6 text-white font-semibold">Total Spent</th>
-                      <th className="text-left p-6 text-white font-semibold">Role</th>
-                      <th className="text-left p-6 text-white font-semibold">Actions</th>
+                      <th className="text-left p-4 text-white font-semibold">Customer</th>
+                      <th className="text-left p-4 text-white font-semibold">Join Date</th>
+                      <th className="text-left p-4 text-white font-semibold">Orders</th>
+                      <th className="text-left p-4 text-white font-semibold">Total Spent</th>
+                      <th className="text-left p-4 text-white font-semibold">Role</th>
+                      <th className="text-left p-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -140,9 +140,9 @@ const AdminCustomers = () => {
                         transition={{ duration: 0.4, delay: index * 0.05 }}
                         className="border-t border-white/10 hover:bg-white/5 transition-colors"
                       >
-                        <td className="p-6">
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 flex items-center justify-center bg-purple-500 rounded-full font-bold text-white">
+                        <td className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-9 h-9 flex items-center justify-center bg-purple-500 rounded-full font-bold text-white text-xs">
                               {customer.email?.charAt(0).toUpperCase() || 'U'}
                             </div>
                             <div>
@@ -150,21 +150,21 @@ const AdminCustomers = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white/80">{new Date(customer.created_at).toLocaleDateString()}</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white/80">{customer.order_count} orders</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white font-semibold">{formatCurrency(customer.total_spent)}</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className={`capitalize px-3 py-1 rounded-full text-xs ${getStatusColor(customer.role)}`}>
                             {customer.role}
                           </span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
@@ -189,7 +189,7 @@ const AdminCustomers = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="text-center text-white/70"
+            className="text-center text-white/70 text-sm"
           >
             <p>Showing {filteredCustomers.length} of {customers.length} customers</p>
           </motion.div>

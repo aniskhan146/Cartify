@@ -114,14 +114,14 @@ const AdminOrders = () => {
       </Helmet>
       
       <AdminLayout>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-3xl font-bold text-white mb-2">Orders</h1>
+            <h1 className="text-2xl font-bold text-white mb-1">Orders</h1>
             <p className="text-white/70">Manage and track customer orders</p>
           </motion.div>
 
@@ -130,7 +130,7 @@ const AdminOrders = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="glass-effect rounded-2xl p-6"
+            className="glass-effect rounded-xl p-4"
           >
             <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 max-w-md">
@@ -140,7 +140,7 @@ const AdminOrders = () => {
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
               
@@ -148,7 +148,7 @@ const AdminOrders = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-xl text-white px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="bg-white/10 border border-white/20 rounded-lg text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="All">All Status</option>
                   {orderStatuses.map(status => <option key={status} value={status}>{status}</option>)}
@@ -162,7 +162,7 @@ const AdminOrders = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="glass-effect rounded-2xl overflow-hidden"
+            className="glass-effect rounded-xl overflow-hidden"
           >
             <div className="overflow-x-auto">
               {loading ? (
@@ -170,16 +170,16 @@ const AdminOrders = () => {
                       <Loader2 className="h-12 w-12 text-white animate-spin" />
                   </div>
               ) : (
-                <table className="w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-white/5">
                     <tr>
-                      <th className="text-left p-6 text-white font-semibold">Order ID</th>
-                      <th className="text-left p-6 text-white font-semibold">Customer</th>
-                      <th className="text-left p-6 text-white font-semibold">Date</th>
-                      <th className="text-left p-6 text-white font-semibold">Items</th>
-                      <th className="text-left p-6 text-white font-semibold">Total</th>
-                      <th className="text-left p-6 text-white font-semibold">Status</th>
-                      <th className="text-left p-6 text-white font-semibold">Actions</th>
+                      <th className="text-left p-4 text-white font-semibold">Order ID</th>
+                      <th className="text-left p-4 text-white font-semibold">Customer</th>
+                      <th className="text-left p-4 text-white font-semibold">Date</th>
+                      <th className="text-left p-4 text-white font-semibold">Items</th>
+                      <th className="text-left p-4 text-white font-semibold">Total</th>
+                      <th className="text-left p-4 text-white font-semibold">Status</th>
+                      <th className="text-left p-4 text-white font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -191,24 +191,24 @@ const AdminOrders = () => {
                         transition={{ duration: 0.4, delay: index * 0.05 }}
                         className="border-t border-white/10 hover:bg-white/5 transition-colors"
                       >
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white font-medium">#{order.id}</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <div>
                             <p className="text-white font-medium">{order.profiles?.email || 'N/A'}</p>
                           </div>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white/80">{new Date(order.created_at).toLocaleDateString()}</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white/80">{order.order_items.length} items</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <span className="text-white font-semibold">{formatCurrency(order.total)}</span>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className={`px-3 py-1 h-auto rounded-full text-xs ${getStatusColor(order.status)}`}>
@@ -224,7 +224,7 @@ const AdminOrders = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="p-6">
+                        <td className="p-4">
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
@@ -249,7 +249,7 @@ const AdminOrders = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center text-white/70"
+            className="text-center text-white/70 text-sm"
           >
             <p>Showing {filteredOrders.length} of {orders.length} orders</p>
           </motion.div>
