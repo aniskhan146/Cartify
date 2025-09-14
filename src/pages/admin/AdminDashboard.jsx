@@ -89,24 +89,28 @@ const AdminDashboard = () => {
       value: formatCurrency(stats.revenue),
       icon: DollarSign,
       color: 'from-yellow-500 to-yellow-600',
+      link: null, // No link for revenue
     },
     {
       title: 'Total Orders',
       value: stats.orders,
       icon: ShoppingCart,
       color: 'from-green-500 to-green-600',
+      link: '/admin/orders',
     },
      {
       title: 'Total Customers',
       value: stats.customers,
       icon: Users,
       color: 'from-purple-500 to-purple-600',
+      link: '/admin/customers',
     },
     {
       title: 'Total Products',
       value: stats.products,
       icon: Package,
       color: 'from-blue-500 to-blue-600',
+      link: '/admin/products',
     }
   ];
 
@@ -131,23 +135,34 @@ const AdminDashboard = () => {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statsCards.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="glass-effect rounded-xl p-5 card-hover"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`bg-gradient-to-r ${stat.color} rounded-lg p-2.5`}>
-                    <stat.icon className="h-5 w-5 text-white" />
+            {statsCards.map((stat, index) => {
+              const cardContent = (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="glass-effect rounded-xl p-5 card-hover h-full"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`bg-gradient-to-r ${stat.color} rounded-lg p-2.5`}>
+                      <stat.icon className="h-5 w-5 text-white" />
+                    </div>
                   </div>
+                  <h3 className="text-xl font-bold text-white mb-1">{stat.value}</h3>
+                  <p className="text-white/70 text-sm">{stat.title}</p>
+                </motion.div>
+              );
+
+              return stat.link ? (
+                <Link to={stat.link} key={stat.title} className="block">
+                  {cardContent}
+                </Link>
+              ) : (
+                <div key={stat.title}>
+                  {cardContent}
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{stat.value}</h3>
-                <p className="text-white/70 text-sm">{stat.title}</p>
-              </motion.div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
