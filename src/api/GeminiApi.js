@@ -1,5 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
+let ai;
+
+function getAiClient() {
+    if (!ai) {
+        if (!process.env.API_KEY) {
+            console.error("API_KEY environment variable is not set.");
+            throw new Error("Gemini API key is not configured. This feature is unavailable.");
+        }
+        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    }
+    return ai;
+}
+
 /**
  * Generates a compelling, SEO-friendly product description using Gemini.
  * @param {string} title - The title of the product.
@@ -7,18 +20,11 @@ import { GoogleGenAI, Type } from "@google/genai";
  * @returns {Promise<string>} The generated product description in HTML format.
  */
 export const generateProductDescription = async (title, category) => {
-    // Check for process object existence before trying to access it.
-    if (typeof process === 'undefined' || !process.env || !process.env.API_KEY) {
-        console.error("API_KEY environment variable is not set or process is not defined.");
-        throw new Error("Gemini API key is not configured. This feature is unavailable.");
-    }
-
     if (!title || !category) {
         throw new Error("Product title and category are required to generate a description.");
     }
     
-    // Initialize AI client here, lazily.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const client = getAiClient();
 
     const prompt = `
         You are a world-class e-commerce copywriter.
@@ -33,7 +39,7 @@ export const generateProductDescription = async (title, category) => {
     `;
     
     try {
-        const response = await ai.models.generateContent({
+        const response = await client.models.generateContent({
             model: "gemini-2.5-flash",
             contents: prompt,
             config: {
@@ -51,7 +57,6 @@ export const generateProductDescription = async (title, category) => {
             },
         });
 
-        // Trim the response text to avoid parsing errors with leading/trailing whitespace.
         const jsonString = response.text.trim();
         const result = JSON.parse(jsonString);
 
