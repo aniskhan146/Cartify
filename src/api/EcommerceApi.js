@@ -9,25 +9,29 @@ import { formatCurrency } from '../lib/utils.js';
 
 /*
 -- 1. Brands Table
-CREATE TABLE public.brands (
+CREATE TABLE IF NOT EXISTS public.brands (
     id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name text NOT NULL UNIQUE,
     logo_url text,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to brands" ON public.brands;
 CREATE POLICY "Allow public read access to brands" ON public.brands FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to brands" ON public.brands;
 CREATE POLICY "Allow admin full access to brands" ON public.brands FOR ALL USING (auth.jwt() ->> 'user_role' = 'admin') WITH CHECK (auth.jwt() ->> 'user_role' = 'admin');
 
 -- 2. Categories Table (with self-referencing for nesting)
-CREATE TABLE public.categories (
+CREATE TABLE IF NOT EXISTS public.categories (
     id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name text NOT NULL,
     parent_id bigint REFERENCES public.categories(id) ON DELETE SET NULL,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to categories" ON public.categories;
 CREATE POLICY "Allow public read access to categories" ON public.categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to categories" ON public.categories;
 CREATE POLICY "Allow admin full access to categories" ON public.categories FOR ALL USING (auth.jwt() ->> 'user_role' = 'admin') WITH CHECK (auth.jwt() ->> 'user_role' = 'admin');
 
 -- 3. Products Table Modifications
@@ -45,7 +49,7 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS specifications jsonb;
 ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS sku text UNIQUE;
 ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS color_hex text;
 
--- 5. Cart Items Table (If not already created)
+-- 5. Cart Items Table
 CREATE TABLE IF NOT EXISTS public.cart_items (
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     variant_id bigint NOT NULL REFERENCES public.variants(id) ON DELETE CASCADE,
@@ -61,7 +65,7 @@ CREATE POLICY "Users can manage their own cart items" ON public.cart_items
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- 6. Inventory Decrease Function (If not already created)
+-- 6. Inventory Decrease Function
 CREATE OR REPLACE FUNCTION decrease_inventory_for_order(p_order_id bigint)
 RETURNS void
 LANGUAGE plpgsql
@@ -81,7 +85,7 @@ BEGIN
 END;
 $$;
 
--- 7. Customer Stats Function (If not already created)
+-- 7. Customer Stats Function
 CREATE OR REPLACE FUNCTION get_customer_stats()
 RETURNS TABLE(id uuid, email text, role text, created_at timestamptz, total_spent bigint, order_count bigint)
 LANGUAGE sql
@@ -102,13 +106,14 @@ AS $$
 $$;
 
 -- 8. Wishlist Table
-CREATE TABLE public.wishlist (
+CREATE TABLE IF NOT EXISTS public.wishlist (
     user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     product_id bigint NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
     created_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, product_id)
 );
 ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own wishlist" ON public.wishlist;
 CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
