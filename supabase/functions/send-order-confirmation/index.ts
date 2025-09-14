@@ -1,5 +1,5 @@
-// Fix: Updated the Deno types reference to a stable, versioned URL to resolve TypeScript errors related to the Deno runtime.
-/// <reference types="https://esm.sh/v135/@deno/types@0.1.43/index.d.ts" />
+// Fix: Updated the Deno types reference to use the Supabase Edge Runtime types, which correctly defines the Deno global object.
+/// <reference types="https://esm.sh/v135/@supabase/functions-js@2.3.1/src/edge-runtime.d.ts" />
 
 // Follow this tutorial to get started with Supabase Edge Functions:
 // https://supabase.com/docs/guides/functions
