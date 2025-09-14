@@ -53,7 +53,7 @@ function App() {
           <WishlistProvider>
             {!isSupabaseConfigured && <MissingEnvBanner />}
             <Router>
-              <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900">
+              <div className="min-h-screen bg-background text-foreground">
                 <Navbar setIsCartOpen={setIsCartOpen} />
                 <ShoppingCart isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />
                 <main className="pt-16">

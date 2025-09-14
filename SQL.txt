@@ -1,0 +1,189 @@
+-- =================================================================
+-- AYEXPRESS E-COMMERCE: DATABASE SCHEMA SETUP
+-- =================================================================
+-- Instructions:
+-- 1. Go to your Supabase project dashboard.
+-- 2. Navigate to the "SQL Editor".
+-- 3. Click "New query".
+-- 4. Copy and paste the entire content of this file into the editor.
+-- 5. Click "Run".
+-- =================================================================
+
+-- 0. Helper function to get the current user's role
+-- This is more reliable than JWT claims for RLS, resolving permission issues for admins.
+CREATE OR REPLACE FUNCTION get_user_role(user_id uuid)
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public -- Important for security definer functions
+AS $$
+  SELECT role FROM public.profiles WHERE id = user_id;
+$$;
+
+
+-- 1. Brands Table
+CREATE TABLE IF NOT EXISTS public.brands (
+    id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name text NOT NULL UNIQUE,
+    logo_url text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.brands ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to brands" ON public.brands;
+CREATE POLICY "Allow public read access to brands" ON public.brands FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to brands" ON public.brands;
+-- Use the get_user_role function for a more reliable role check.
+CREATE POLICY "Allow admin full access to brands" ON public.brands FOR ALL 
+    USING (get_user_role(auth.uid()) = 'admin') 
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
+
+-- 2. Categories Table (with self-referencing for nesting)
+CREATE TABLE IF NOT EXISTS public.categories (
+    id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name text NOT NULL,
+    parent_id bigint REFERENCES public.categories(id) ON DELETE SET NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to categories" ON public.categories;
+CREATE POLICY "Allow public read access to categories" ON public.categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to categories" ON public.categories;
+-- Use the get_user_role function for a more reliable role check.
+CREATE POLICY "Allow admin full access to categories" ON public.categories FOR ALL 
+    USING (get_user_role(auth.uid()) = 'admin') 
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
+
+-- 3. Products Table Modifications
+-- First, remove the old text-based 'category' column
+ALTER TABLE public.products DROP COLUMN IF EXISTS category;
+-- Add new foreign key columns
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS category_id bigint REFERENCES public.categories(id) ON DELETE SET NULL;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand_id bigint REFERENCES public.brands(id) ON DELETE SET NULL;
+-- Add specifications column to store product details
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS specifications jsonb;
+
+-- Add RLS for products
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to products" ON public.products;
+CREATE POLICY "Allow public read access to products" ON public.products FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to products" ON public.products;
+CREATE POLICY "Allow admin full access to products" ON public.products FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin')
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
+
+-- 4. Variants Table Modifications
+-- Add SKU for unique product tracking and color hex for color picker
+ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS sku text UNIQUE;
+ALTER TABLE public.variants ADD COLUMN IF NOT EXISTS color_hex text;
+
+-- Add RLS for variants
+ALTER TABLE public.variants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read access to variants" ON public.variants;
+CREATE POLICY "Allow public read access to variants" ON public.variants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow admin full access to variants" ON public.variants;
+CREATE POLICY "Allow admin full access to variants" ON public.variants FOR ALL
+    USING (get_user_role(auth.uid()) = 'admin')
+    WITH CHECK (get_user_role(auth.uid()) = 'admin');
+
+-- 5. Cart Items Table
+CREATE TABLE IF NOT EXISTS public.cart_items (
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    variant_id bigint NOT NULL REFERENCES public.variants(id) ON DELETE CASCADE,
+    quantity integer NOT NULL CHECK (quantity > 0),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, variant_id)
+);
+-- Ensure RLS is enabled and policies are set for the cart
+ALTER TABLE public.cart_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own cart items" ON public.cart_items;
+CREATE POLICY "Users can manage their own cart items" ON public.cart_items
+    FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 6. Inventory Decrease Function
+CREATE OR REPLACE FUNCTION decrease_inventory_for_order(p_order_id bigint)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    item RECORD;
+BEGIN
+    FOR item IN
+        SELECT oi.variant_id, oi.quantity
+        FROM public.order_items oi
+        WHERE oi.order_id = p_order_id
+    LOOP
+        UPDATE public.variants
+        SET inventory_quantity = inventory_quantity - item.quantity
+        WHERE id = item.variant_id AND manage_inventory = true;
+    END LOOP;
+END;
+$$;
+
+-- 7. Customer Stats Function
+CREATE OR REPLACE FUNCTION get_customer_stats()
+RETURNS TABLE(id uuid, email text, role text, created_at timestamptz, total_spent bigint, order_count bigint)
+LANGUAGE sql
+AS $$
+  SELECT
+    p.id,
+    p.email,
+    p.role,
+    (SELECT created_at FROM auth.users WHERE id = p.id) as created_at,
+    COALESCE(SUM(o.total), 0)::bigint AS total_spent,
+    COALESCE(COUNT(o.id), 0)::bigint AS order_count
+  FROM
+    public.profiles p
+  LEFT JOIN
+    public.orders o ON p.id = o.user_id
+  GROUP BY
+    p.id;
+$$;
+
+-- 8. Wishlist Table
+CREATE TABLE IF NOT EXISTS public.wishlist (
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    product_id bigint NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, product_id)
+);
+ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own wishlist" ON public.wishlist;
+CREATE POLICY "Users can manage their own wishlist" ON public.wishlist FOR ALL
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+-- 9. Add Payment Method to Orders
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'card';
+
+-- 10. Profiles Table RLS (Fix for Customer List)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow admin full read access to profiles" ON public.profiles;
+CREATE POLICY "Allow admin full read access to profiles" ON public.profiles FOR SELECT
+    USING (get_user_role(auth.uid()) = 'admin');
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT
+    USING (auth.uid() = id);
+
+-- 11. Function to update user role (Admin only)
+CREATE OR REPLACE FUNCTION update_user_role(target_user_id uuid, new_role text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF get_user_role(auth.uid()) != 'admin' THEN
+        RAISE EXCEPTION 'Only admins can change user roles.';
+    END IF;
+
+    IF new_role NOT IN ('admin', 'user') THEN
+        RAISE EXCEPTION 'Invalid role specified. Must be ''admin'' or ''user''.';
+    END IF;
+
+    UPDATE public.profiles
+    SET role = new_role
+    WHERE id = target_user_id;
+END;
+$$;
