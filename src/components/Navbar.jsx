@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+import { useCart } from '../hooks/useCart.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { Button } from './ui/button.jsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "./ui/dropdown-menu.jsx"
 
 const Navbar = ({ setIsCartOpen }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

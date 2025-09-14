@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { CreditCard, Lock, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/useCart';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '../components/ui/button.jsx';
+import { useCart } from '../hooks/useCart.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../components/ui/use-toast.js';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase.js';
 
 const CheckoutPage = () => {
   const { user } = useAuth();

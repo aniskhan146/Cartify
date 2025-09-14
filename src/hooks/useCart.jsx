@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from '../lib/utils.js';
 
 const CartContext = createContext();
 

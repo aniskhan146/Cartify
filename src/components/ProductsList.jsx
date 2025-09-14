@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from './ui/button.jsx';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/components/ui/use-toast';
-import { getProducts } from '@/api/EcommerceApi';
-import { supabase } from '@/lib/supabase';
+import { useCart } from '../hooks/useCart.jsx';
+import { useToast } from './ui/use-toast.js';
+import { getProducts } from '../api/EcommerceApi.js';
+import { supabase } from '../lib/supabase.js';
 
 const placeholderImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzc0MTUxIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4K";
 

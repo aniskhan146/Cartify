@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Search, Filter, Eye, Mail, Loader2 } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
-import { getCustomersWithStats } from '@/api/EcommerceApi';
+import AdminLayout from '../../components/admin/AdminLayout.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { useToast } from '../../components/ui/use-toast.js';
+import { supabase } from '../../lib/supabase.js';
+import { formatCurrency } from '../../lib/utils.js';
+import { getCustomersWithStats } from '../../api/EcommerceApi.js';
 
 const AdminCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');

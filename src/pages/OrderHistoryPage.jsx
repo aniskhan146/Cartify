@@ -3,10 +3,10 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, ArrowRight, Loader2, ListOrdered } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
+import { Button } from '../components/ui/button.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { supabase } from '../lib/supabase.js';
+import { formatCurrency } from '../lib/utils.js';
 
 const OrderHistoryPage = () => {
   const { user, isLoading: authLoading } = useAuth();

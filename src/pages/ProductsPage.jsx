@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Filter, Search, Grid, List, Loader2 } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
-import { Button } from '@/components/ui/button';
-import { getProducts } from '@/api/EcommerceApi';
-import { supabase } from '@/lib/supabase';
+import ProductCard from '../components/ProductCard.jsx';
+import { Button } from '../components/ui/button.jsx';
+import { getProducts } from '../api/EcommerceApi.js';
+import { supabase } from '../lib/supabase.js';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);

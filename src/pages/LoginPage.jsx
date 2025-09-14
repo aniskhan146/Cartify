@@ -3,9 +3,9 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Lock, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '../components/ui/button.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { useToast } from '../components/ui/use-toast.js';
 
 const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);

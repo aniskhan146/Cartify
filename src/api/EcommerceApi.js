@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
+import { supabase } from '../lib/supabase.js';
+import { formatCurrency } from '../lib/utils.js';
 
 // Helper to format product data into the structure expected by components
 const formatProduct = (product) => {

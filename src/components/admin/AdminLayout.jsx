@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminSidebar from './AdminSidebar.jsx';
 import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button.jsx';
 
 const AdminLayout = ({ children }) => {
   const { user, isAdmin, isLoading } = useAuth();

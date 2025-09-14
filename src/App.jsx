@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
-import { CartProvider } from '@/hooks/useCart';
-import { AuthProvider } from '@/contexts/AuthContext';
-import HomePage from '@/pages/HomePage';
-import StorePage from '@/pages/StorePage';
-import ProductDetailPage from '@/pages/ProductDetailPage';
-import SuccessPage from '@/pages/SuccessPage';
-import AdminDashboard from '@/pages/admin/AdminDashboard';
-import AdminProducts from '@/pages/admin/AdminProducts';
-import AdminOrders from '@/pages/admin/AdminOrders';
-import AdminCustomers from '@/pages/admin/AdminCustomers';
-import LoginPage from '@/pages/LoginPage';
-import Navbar from '@/components/Navbar';
-import ShoppingCart from '@/components/ShoppingCart';
-import ProductsPage from '@/pages/ProductsPage';
-import CartPage from '@/pages/CartPage';
-import CheckoutPage from '@/pages/CheckoutPage';
-import OrderHistoryPage from '@/pages/OrderHistoryPage';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { Toaster } from './components/ui/toaster.jsx';
+import { CartProvider } from './hooks/useCart.jsx';
+import { AuthProvider } from './contexts/AuthContext.jsx';
+import HomePage from './pages/HomePage.jsx';
+import StorePage from './pages/StorePage.jsx';
+import ProductDetailPage from './pages/ProductDetailPage.jsx';
+import SuccessPage from './pages/SuccessPage.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+import AdminProducts from './pages/admin/AdminProducts.jsx';
+import AdminOrders from './pages/admin/AdminOrders.jsx';
+import AdminCustomers from './pages/admin/AdminCustomers.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import Navbar from './components/Navbar.jsx';
+import ShoppingCart from './components/ShoppingCart.jsx';
+import ProductsPage from './pages/ProductsPage.jsx';
+import CartPage from './pages/CartPage.jsx';
+import CheckoutPage from './pages/CheckoutPage.jsx';
+import OrderHistoryPage from './pages/OrderHistoryPage.jsx';
+import { isSupabaseConfigured } from './lib/supabase.js';
 
 const MissingEnvBanner = () => (
     <div className="bg-red-800 text-white p-3 text-center fixed top-0 left-0 right-0 z-[2000] shadow-lg">

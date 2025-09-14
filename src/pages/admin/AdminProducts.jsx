@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
-import { deleteProduct } from '@/api/EcommerceApi';
-import ProductFormDialog from '@/components/admin/ProductFormDialog';
+import AdminLayout from '../../components/admin/AdminLayout.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { useToast } from '../../components/ui/use-toast.js';
+import { supabase } from '../../lib/supabase.js';
+import { formatCurrency } from '../../lib/utils.js';
+import { deleteProduct } from '../../api/EcommerceApi.js';
+import ProductFormDialog from '../../components/admin/ProductFormDialog.jsx';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "../../components/ui/alert-dialog.jsx";
 
 
 const AdminProducts = () => {

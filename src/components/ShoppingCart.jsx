@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart as ShoppingCartIcon, X } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
-import { Button } from '@/components/ui/button';
+import { useCart } from '../hooks/useCart.jsx';
+import { Button } from './ui/button.jsx';
 
 const ShoppingCart = ({ isCartOpen, setIsCartOpen }) => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();

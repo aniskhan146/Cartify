@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../components/ui/button.jsx';
 
 const SuccessPage = () => {
   return (

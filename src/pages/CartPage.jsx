@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/useCart';
+import { Button } from '../components/ui/button.jsx';
+import { useCart } from '../hooks/useCart.jsx';
 
 const CartPage = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotalRaw, clearCart } = useCart();

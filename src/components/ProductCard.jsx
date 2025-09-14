@@ -2,9 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/useCart';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from './ui/button.jsx';
+import { useCart } from '../hooks/useCart.jsx';
+import { useToast } from './ui/use-toast.js';
 
 const ProductCard = ({ product, index = 0 }) => {
   const { addToCart } = useCart();

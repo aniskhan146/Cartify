@@ -3,10 +3,10 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Package, ShoppingCart, Users, DollarSign, Eye, Loader2 } from 'lucide-react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { supabase } from '@/lib/supabase';
-import { formatCurrency } from '@/lib/utils';
-import { useToast } from '@/components/ui/use-toast';
+import AdminLayout from '../../components/admin/AdminLayout.jsx';
+import { supabase } from '../../lib/supabase.js';
+import { formatCurrency } from '../../lib/utils.js';
+import { useToast } from '../../components/ui/use-toast.js';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, revenue: 0 });

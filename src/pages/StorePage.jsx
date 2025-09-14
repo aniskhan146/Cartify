@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import ProductsList from '@/components/ProductsList';
+import ProductsList from '../components/ProductsList.jsx';
 
 const StorePage = () => {
   return (

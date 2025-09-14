@@ -6,15 +6,15 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/components/ui/use-toast';
-import { createProduct, updateProduct } from '@/api/EcommerceApi';
-import { generateProductDescription } from '@/api/GeminiApi';
+} from '../ui/dialog.jsx';
+import { Button } from '../ui/button.jsx';
+import { Input } from '../ui/input.jsx';
+import { Label } from '../ui/label.jsx';
+import { Textarea } from '../ui/textarea.jsx';
+import { Switch } from '../ui/switch.jsx';
+import { useToast } from '../ui/use-toast.js';
+import { createProduct, updateProduct } from '../../api/EcommerceApi.js';
+import { generateProductDescription } from '../../api/GeminiApi.js';
 import { Trash2, PlusCircle, Loader2, Sparkles } from 'lucide-react';
 
 const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
