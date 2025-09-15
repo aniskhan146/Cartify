@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Search, Edit, Trash2, MoreVertical, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Edit, Trash2, MoreVertical, Loader2, ListOrdered } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useNotification } from '../../hooks/useNotification.jsx';
@@ -25,6 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "../../components/ui/dropdown-menu.jsx";
 
 
@@ -214,10 +216,17 @@ const AdminCustomers = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild className="cursor-pointer">
+                                  <Link to={`/admin/orders?customer_email=${encodeURIComponent(customer.email)}`}>
+                                    <ListOrdered className="mr-2 h-4 w-4" />
+                                    <span>View Orders</span>
+                                  </Link>
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleEdit(customer)} className="cursor-pointer">
                                   <Edit className="mr-2 h-4 w-4" />
                                   <span>Edit Role</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => confirmDelete(customer)} className="text-red-400 focus:text-red-300 focus:bg-red-400/10 cursor-pointer">
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   <span>Delete User</span>

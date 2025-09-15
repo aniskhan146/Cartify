@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { Search, Eye, Loader2, CreditCard, Truck, MoreVertical, Mail } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Search, Eye, Loader2, CreditCard, Truck, MoreVertical, Mail, User, X } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useNotification } from '../../hooks/useNotification.jsx';
@@ -23,14 +23,21 @@ const AdminOrders = () => {
   const [loading, setLoading] = useState(true);
   const [isResending, setIsResending] = useState(null); // Holds the ID of the order being resent
   const { addNotification } = useNotification();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const customerEmailFilter = searchParams.get('customer_email');
   
   const fetchOrders = useCallback(async () => {
       let query = supabase
         .from('orders')
-        .select('id, created_at, total, status, payment_method, profiles(email), order_items(id)');
+        .select('id, created_at, total, status, payment_method, profiles!inner(email), order_items(id)');
 
       if (statusFilter !== 'All') {
         query = query.eq('status', statusFilter);
+      }
+      
+      if (customerEmailFilter) {
+        query = query.eq('profiles.email', customerEmailFilter);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -42,7 +49,7 @@ const AdminOrders = () => {
         setOrders(data);
       }
       setLoading(false);
-    }, [statusFilter, addNotification]);
+    }, [statusFilter, addNotification, customerEmailFilter]);
 
   useEffect(() => {
     setLoading(true);
@@ -181,6 +188,16 @@ const AdminOrders = () => {
                 </select>
               </div>
             </div>
+             {customerEmailFilter && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-white bg-purple-500/20 p-2 rounded-lg border border-purple-500/30">
+                  <User className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">Showing orders for: <strong>{customerEmailFilter}</strong></span>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/admin/orders')} className="ml-auto text-white/70 hover:text-white flex-shrink-0">
+                      <X className="h-4 w-4 mr-1" />
+                      Clear
+                  </Button>
+              </div>
+            )}
           </motion.div>
 
           {/* Orders Table */}
