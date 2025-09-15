@@ -1,0 +1,24 @@
+{
+  "name": "AYExpress E-Commerce Platform",
+  "short_name": "AYExpress",
+  "description": "A comprehensive e-commerce platform with a user-facing storefront and a powerful admin dashboard.",
+  "icons": [
+    {
+      "src": "https://imagedelivery.net/LqiWLm-3MGbYHtFuUbcBtA/9c5b248a-8a6a-4718-d762-38e024227900/icon192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://imagedelivery.net/LqiWLm-3MGbYHtFuUbcBtA/8d1d365f-6a75-4b4d-16a8-6f60a9226d00/icon512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#581c87",
+  "scope": "/"
+}
