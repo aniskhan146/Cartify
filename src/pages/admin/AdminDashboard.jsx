@@ -7,6 +7,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
+import AiSalesAnalyst from '../../components/admin/AiSalesAnalyst.jsx';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ products: 0, orders: 0, customers: 0, revenue: 0 });
@@ -179,6 +180,15 @@ const AdminDashboard = () => {
               );
             })}
           </div>
+
+          {/* AI Sales Analyst */}
+           <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <AiSalesAnalyst />
+            </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Orders */}

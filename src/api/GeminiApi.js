@@ -137,3 +137,63 @@ export const getSearchParamsFromNaturalLanguage = async (query, availableCategor
         throw new Error("The AI assistant could not process your request. Please try a different query.");
     }
 };
+
+/**
+ * Generates a sales analysis report based on provided sales data.
+ * @param {object} salesData - The aggregated sales data from the backend.
+ * @returns {Promise<{title: string, summary: string, keyInsights: string[]}>} The AI-generated sales analysis.
+ */
+export const generateSalesAnalysis = async (salesData) => {
+    if (!salesData) {
+        throw new Error("Sales data is required to generate an analysis.");
+    }
+
+    const client = getAiClient();
+    const dataString = JSON.stringify(salesData, null, 2);
+
+    const prompt = `
+        You are an expert e-commerce sales analyst.
+        I will provide you with a JSON object containing sales data for the last 7 days.
+        Your task is to analyze this data and provide a concise, insightful report.
+        
+        The report should include:
+        1. A "title" for the weekly report.
+        2. A "summary" paragraph (2-3 sentences) of the overall performance.
+        3. A list of 2-4 "keyInsights" as bullet points, highlighting important trends, top performers, or areas for improvement.
+
+        Here is the sales data:
+        ${dataString}
+
+        Analyze the data and return your report in the specified JSON format.
+    `;
+
+    try {
+        const response = await client.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        summary: { type: Type.STRING },
+                        keyInsights: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        }
+                    },
+                    required: ["title", "summary", "keyInsights"]
+                },
+            },
+        });
+
+        const jsonString = response.text.trim();
+        const result = JSON.parse(jsonString);
+        return result;
+
+    } catch (error) {
+        console.error("Error generating sales analysis with Gemini:", error);
+        throw new Error("The AI analyst could not process the sales data. Please check the console.");
+    }
+};

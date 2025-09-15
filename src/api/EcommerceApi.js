@@ -309,6 +309,17 @@ export const deleteUserByAdmin = async (userId) => {
     if (error) throw error;
 };
 
+// ===== Sales Analytics (Admin) =====
+export const getSalesSummary = async () => {
+    const { data, error } = await supabase.rpc('get_sales_summary_for_ai');
+    if (error) {
+        console.error("Error fetching sales summary:", error);
+        throw error;
+    }
+    // The RPC returns a single row with a JSON object
+    return data?.[0]?.summary_data;
+};
+
 
 // ===== Cart Management =====
 
