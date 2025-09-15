@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, Loader2, X, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Tag, PlusCircle } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
 import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { getProductOptions, upsertProductOption, deleteProductOption } from '../../api/EcommerceApi.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../../components/ui/dialog.jsx";
@@ -15,18 +14,20 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const AdminProductOptions = () => {
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [formLoading, setFormLoading] = useState(false);
   const { addAdminNotification } = useAdminNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOption, setEditingOption] = useState(null);
   const [optionName, setOptionName] = useState('');
-  const [valuesString, setValuesString] = useState('');
+  const [optionValues, setOptionValues] = useState([]);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [optionToDelete, setOptionToDelete] = useState(null);
 
   const fetchOptions = useCallback(async () => {
     try {
+      setLoading(true);
       const data = await getProductOptions();
       setOptions(data);
     } catch (error) {
@@ -39,36 +40,42 @@ const AdminProductOptions = () => {
   useEffect(() => {
     fetchOptions();
   }, [fetchOptions]);
-  
+
   const handleOpenForm = (option = null) => {
     setEditingOption(option);
-    if(option) {
-        setOptionName(option.name);
-        setValuesString(option.product_option_values.map(v => v.value).join(', '));
+    if (option) {
+      setOptionName(option.name);
+      setOptionValues(option.product_option_values.map(v => ({ ...v })));
     } else {
-        setOptionName('');
-        setValuesString('');
+      setOptionName('');
+      setOptionValues([{ id: `new-${Date.now()}`, value: '' }]);
     }
     setIsFormOpen(true);
   };
-  
+
+  const handleValueChange = (id, newValue) => {
+    setOptionValues(prev => prev.map(v => (v.id === id ? { ...v, value: newValue } : v)));
+  };
+
+  const addValue = () => {
+    setOptionValues(prev => [...prev, { id: `new-${Date.now()}`, value: '' }]);
+  };
+
+  const removeValue = (id) => {
+    if (optionValues.length > 1) {
+      setOptionValues(prev => prev.filter(v => v.id !== id));
+    } else {
+      setOptionValues([{ id: optionValues[0].id, value: '' }]);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setFormLoading(true);
 
-    const newValues = valuesString.split(',')
-        .map(v => v.trim())
-        .filter(v => v);
-
-    const originalValues = editingOption ? editingOption.product_option_values : [];
-
-    const valuesToUpsert = newValues.map(valueStr => {
-        const original = originalValues.find(ov => ov.value === valueStr);
-        return {
-            id: original ? original.id : undefined,
-            value: valueStr
-        };
-    });
+    const valuesToUpsert = optionValues
+      .map(v => ({ ...v, value: v.value.trim() }))
+      .filter(v => v.value);
 
     try {
       await upsertProductOption(optionName, valuesToUpsert);
@@ -78,7 +85,7 @@ const AdminProductOptions = () => {
     } catch (error) {
       addAdminNotification({ category: 'Errors', title: 'Operation Failed', message: error.message });
     } finally {
-        setLoading(false);
+      setFormLoading(false);
     }
   };
 
@@ -137,7 +144,7 @@ const AdminProductOptions = () => {
           <DialogContent className="glass-effect text-white border-white/20">
             <DialogHeader>
                 <DialogTitle>{editingOption ? 'Edit Option' : 'Add New Option'}</DialogTitle>
-                <DialogDescription>Define an option and its possible values.</DialogDescription>
+                <DialogDescription>Define an option and its possible values. Add new values one by one.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -145,19 +152,29 @@ const AdminProductOptions = () => {
                 <Input id="optionName" placeholder="e.g., Color" value={optionName} onChange={(e) => setOptionName(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="optionValues">Option Values</Label>
-                <DialogDescription className="text-xs">Enter values separated by a comma (e.g., Red, Green, Blue).</DialogDescription>
-                <Textarea 
-                    id="optionValues"
-                    placeholder="Red, Green, Blue"
-                    value={valuesString}
-                    onChange={(e) => setValuesString(e.target.value)}
-                    rows={3}
-                />
+                <Label>Option Values</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    {optionValues.map((val, index) => (
+                        <div key={val.id} className="flex items-center gap-2">
+                            <Input
+                                value={val.value}
+                                onChange={(e) => handleValueChange(val.id, e.target.value)}
+                                placeholder={`Value ${index + 1}`}
+                            />
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeValue(val.id)} className="text-red-400 hover:text-red-300 hover:bg-red-400/10 flex-shrink-0">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+                <Button type="button" variant="outline" onClick={addValue} className="w-full mt-2 border-dashed border-white/30 text-white/70 hover:bg-white/10">
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add Value
+                </Button>
               </div>
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Save'}</Button>
+                <Button type="submit" disabled={formLoading}>{formLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Save'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
