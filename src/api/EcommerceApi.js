@@ -88,14 +88,73 @@ export const getProducts = async ({ page = 1, limit = 8, categoryIds = null, sea
 export const getProduct = async (id) => {
     const { data: productData, error: productError } = await supabase
         .from('products')
-        .select('*, variants(*), categories(name), brands(name)')
+        .select(`
+            *,
+            categories(name),
+            brands(name),
+            variants (
+                *,
+                variant_options (
+                    option_value_id,
+                    product_option_values (
+                        value,
+                        option_id,
+                        product_options (name)
+                    )
+                )
+            )
+        `)
         .eq('id', id)
         .single();
+
     if (productError) {
         console.error('Error fetching product:', productError);
         throw new Error('Product not found.');
     }
-    return formatProduct(productData, 800, 800);
+    
+    // Structure the data for easier use on the frontend
+    const formattedProduct = formatProduct(productData, 800, 800);
+    formattedProduct.options = [];
+    const optionsMap = new Map();
+
+    formattedProduct.variants.forEach(variant => {
+        variant.options = [];
+        variant.variant_options.forEach(vo => {
+            const optionValue = vo.product_option_values;
+            const option = optionValue.product_options;
+
+            // Add to variant's direct options list
+            variant.options.push({
+                option_name: option.name,
+                option_id: option.id,
+                value: optionValue.value,
+                value_id: optionValue.id
+            });
+            
+            // Aggregate all available options for the product
+            if (!optionsMap.has(option.id)) {
+                optionsMap.set(option.id, {
+                    id: option.id,
+                    name: option.name,
+                    values: new Map()
+                });
+            }
+            if (!optionsMap.get(option.id).values.has(optionValue.id)) {
+                 optionsMap.get(option.id).values.set(optionValue.id, {
+                     id: optionValue.id,
+                     value: optionValue.value
+                 });
+            }
+        });
+    });
+    
+    formattedProduct.options = Array.from(optionsMap.values()).map(opt => ({
+        ...opt,
+        values: Array.from(opt.values.values())
+    }));
+
+
+    return formattedProduct;
 };
 
 export const getRelatedProducts = async (productId, categoryId) => {
@@ -116,14 +175,15 @@ export const getRelatedProducts = async (productId, categoryId) => {
 
 // ===== Product Management (Admin) =====
 
-const generateSku = (productTitle, variantTitle) => {
-    const titlePart = productTitle.substring(0, 4).toUpperCase();
-    const variantPart = variantTitle.substring(0, 3).toUpperCase();
-    const randomPart = Math.random().toString(36).substring(2, 6).toUpperCase();
+const generateSku = (productTitle, variantOptions) => {
+    const titlePart = productTitle.substring(0, 3).toUpperCase();
+    const variantPart = variantOptions.map(v => v.value.substring(0, 2)).join('').toUpperCase();
+    const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `AYX-${titlePart}-${variantPart}-${randomPart}`;
 };
 
 export const createProduct = async (productData, variantsData) => {
+    // 1. Create the product
     const { data: newProduct, error: productError } = await supabase
         .from('products')
         .insert(productData)
@@ -131,66 +191,112 @@ export const createProduct = async (productData, variantsData) => {
         .single();
     if (productError) throw productError;
 
-    const variantsWithSku = variantsData.map(v => ({ 
-        ...v, 
+    // 2. Create the variants
+    const variantsToInsert = variantsData.map(v => ({
         product_id: newProduct.id,
-        sku: v.sku || generateSku(newProduct.title, v.title)
-    }));
-    const { error: variantsError } = await supabase.from('variants').insert(variantsWithSku);
-    if (variantsError) {
-        await supabase.from('products').delete().eq('id', newProduct.id);
-        throw variantsError;
-    }
-    return { ...newProduct, variants: variantsWithSku };
-};
-
-export const updateProduct = async (productId, productData, variantsData) => {
-    const { error: productError } = await supabase.from('products').update(productData).eq('id', productId);
-    if (productError) throw productError;
-
-    const variantsToUpsert = variantsData.map(v => ({
-        ...(typeof v.id === 'number' && { id: v.id }),
-        product_id: productId,
-        title: v.title,
         price_in_cents: v.price_in_cents,
         sale_price_in_cents: v.sale_price_in_cents,
         inventory_quantity: v.inventory_quantity,
         manage_inventory: v.manage_inventory,
-        color_hex: v.color_hex,
-        sku: v.sku || generateSku(productData.title, v.title),
+        sku: v.sku || generateSku(newProduct.title, v.options),
     }));
-    const { error: variantsError } = await supabase.from('variants').upsert(variantsToUpsert, { onConflict: 'id' });
-    if (variantsError) throw variantsError;
+    const { data: newVariants, error: variantsError } = await supabase
+        .from('variants')
+        .insert(variantsToInsert)
+        .select();
+    if (variantsError) {
+        await supabase.from('products').delete().eq('id', newProduct.id); // Rollback
+        throw variantsError;
+    }
+    
+    // 3. Link variants to their option values
+    const variantOptionsToInsert = [];
+    newVariants.forEach((variant, index) => {
+        variantsData[index].options.forEach(option => {
+            variantOptionsToInsert.push({
+                variant_id: variant.id,
+                option_value_id: option.value_id
+            });
+        });
+    });
+    
+    const { error: voError } = await supabase.from('variant_options').insert(variantOptionsToInsert);
+    if (voError) {
+        await supabase.from('products').delete().eq('id', newProduct.id); // Rollback
+        throw voError;
+    }
 
-    const variantIdsToKeep = variantsData.map(v => v.id).filter(Boolean);
-    if (variantIdsToKeep.length > 0) {
-        const { error: deleteError } = await supabase.from('variants').delete().eq('product_id', productId).not('id', 'in', `(${variantIdsToKeep.join(',')})`);
-        if (deleteError) console.error("Error deleting old variants:", deleteError);
-    } else {
-        const { error: deleteAllError } = await supabase.from('variants').delete().eq('product_id', productId);
-        if (deleteAllError) console.error("Error deleting all variants:", deleteAllError);
+    return newProduct;
+};
+
+export const updateProduct = async (productId, productData, variantsData) => {
+    // 1. Update product details
+    const { error: productError } = await supabase.from('products').update(productData).eq('id', productId);
+    if (productError) throw productError;
+    
+    const incomingVariantIds = variantsData.map(v => v.id).filter(id => typeof id === 'number');
+
+    // 2. Delete variants that are no longer present
+    const { error: deleteError } = await supabase
+      .from('variants')
+      .delete()
+      .eq('product_id', productId)
+      .not('id', 'in', `(${incomingVariantIds.length > 0 ? incomingVariantIds.join(',') : '0'})`);
+    if (deleteError) console.error('Error deleting old variants:', deleteError);
+
+
+    // 3. Upsert variants
+    const variantsToUpsert = variantsData.map(v => ({
+        id: typeof v.id === 'number' ? v.id : undefined,
+        product_id: productId,
+        price_in_cents: v.price_in_cents,
+        sale_price_in_cents: v.sale_price_in_cents,
+        inventory_quantity: v.inventory_quantity,
+        manage_inventory: v.manage_inventory,
+        sku: v.sku || generateSku(productData.title, v.options),
+    }));
+    const { data: upsertedVariants, error: variantsError } = await supabase
+        .from('variants')
+        .upsert(variantsToUpsert)
+        .select();
+    if (variantsError) throw variantsError;
+    
+    // 4. Re-link variant options
+    // Easier to delete all and re-insert than to calculate the diff
+    const upsertedVariantIds = upsertedVariants.map(v => v.id);
+    const { error: voDeleteError } = await supabase
+      .from('variant_options')
+      .delete()
+      .in('variant_id', upsertedVariantIds);
+    if (voDeleteError) throw voDeleteError;
+      
+    const variantOptionsToInsert = [];
+    upsertedVariants.forEach(variant => {
+        // Find corresponding variant from input data
+        const originalVariant = variantsData.find(v => (v.id === variant.id) || (v.temp_id && upsertedVariants.length === variantsData.length));
+        if (originalVariant) {
+            originalVariant.options.forEach(option => {
+                variantOptionsToInsert.push({
+                    variant_id: variant.id,
+                    option_value_id: option.value_id
+                });
+            });
+        }
+    });
+
+    if(variantOptionsToInsert.length > 0) {
+        const { error: voInsertError } = await supabase.from('variant_options').insert(variantOptionsToInsert);
+        if (voInsertError) throw voInsertError;
     }
 };
 
+
 export const deleteProduct = async (productId) => {
-    // Soft delete: Instead of deleting, we archive the product by making it non-purchasable.
-    // This preserves historical data in orders that reference this product's variants,
-    // avoiding the foreign key constraint violation.
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('products')
         .update({ purchasable: false })
-        .eq('id', productId)
-        .select()
-        .single();
-    
-    if (error) {
-        console.error("Error archiving product:", error);
-        throw error;
-    }
-
-    if (!data) {
-        throw new Error("Product not found or could not be archived.");
-    }
+        .eq('id', productId);
+    if (error) throw error;
 };
 
 
@@ -215,16 +321,12 @@ export const updateCategory = async (id, categoryData) => {
     return data;
 };
 export const deleteCategory = async (id) => {
-    // Check for child categories first
     const { count: childCount, error: childError } = await supabase.from('categories').select('id', { count: 'exact' }).eq('parent_id', id);
     if (childError) throw childError;
     if (childCount > 0) throw new Error("Cannot delete category with sub-categories. Please reassign or delete them first.");
-
-    // Check for associated products
     const { count: productCount, error: productError } = await supabase.from('products').select('id', { count: 'exact' }).eq('category_id', id);
     if (productError) throw productError;
     if (productCount > 0) throw new Error(`Cannot delete category. It is in use by ${productCount} product(s).`);
-    
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) throw error;
 };
@@ -251,6 +353,61 @@ export const deleteBrand = async (id) => {
     if (error) throw error;
 };
 
+// ===== Product Option Management (Admin) =====
+export const getProductOptions = async () => {
+    const { data, error } = await supabase
+        .from('product_options')
+        .select('*, product_option_values(*)')
+        .order('name');
+    if (error) throw error;
+    return data;
+};
+export const upsertProductOption = async (optionName, optionValues) => {
+    // 1. Upsert option name
+    const { data: optionData, error: optionError } = await supabase
+        .from('product_options')
+        .upsert({ name: optionName }, { onConflict: 'name' })
+        .select()
+        .single();
+    if (optionError) throw optionError;
+
+    // 2. Upsert option values
+    const valuesToUpsert = optionValues.map(v => ({
+        id: typeof v.id === 'number' ? v.id : undefined,
+        option_id: optionData.id,
+        value: v.value
+    }));
+    const { error: valueError } = await supabase
+        .from('product_option_values')
+        .upsert(valuesToUpsert);
+    if (valueError) throw valueError;
+
+    // 3. Delete removed values
+    const valueIdsToKeep = optionValues.map(v => v.id).filter(Boolean);
+    if (valueIdsToKeep.length > 0) {
+        const { error: deleteError } = await supabase
+            .from('product_option_values')
+            .delete()
+            .eq('option_id', optionData.id)
+            .not('id', 'in', `(${valueIdsToKeep.join(',')})`);
+        if (deleteError) console.error("Error deleting old option values:", deleteError);
+    } else if (optionValues.length === 0) {
+        // If all values are removed, delete all for this option
+        const { error: deleteAllError } = await supabase
+            .from('product_option_values')
+            .delete()
+            .eq('option_id', optionData.id);
+        if (deleteAllError) console.error("Error deleting all option values:", deleteAllError);
+    }
+    
+    return optionData;
+};
+export const deleteProductOption = async (optionId) => {
+    // on_delete: CASCADE will handle deleting associated values
+    const { error } = await supabase.from('product_options').delete().eq('id', optionId);
+    if (error) throw error;
+};
+
 
 // ===== Order Management (Admin & Checkout) =====
 
@@ -263,13 +420,30 @@ export const updateOrderStatus = async (orderId, newStatus) => {
 export const getOrderDetails = async (orderId) => {
     const { data, error } = await supabase
         .from('orders')
-        .select('*, profiles(email), order_items(*, variants(*, products(title, image)))')
+        .select(`
+            *, 
+            profiles(email), 
+            order_items(*, 
+                variants(*, 
+                    products(title, image),
+                    variant_options(product_option_values(value, product_options(name)))
+                )
+            )
+        `)
         .eq('id', orderId)
         .single();
     if (error) {
         console.error('Error fetching order details:', error);
         throw new Error('Could not retrieve order details.');
     }
+    // Format variant titles for display
+    data.order_items.forEach(item => {
+        if(item.variants?.variant_options) {
+             item.variants.title = item.variants.variant_options
+                .map(vo => vo.product_option_values.value)
+                .join(' / ');
+        }
+    });
     return data;
 };
 
@@ -288,7 +462,6 @@ export const getCustomersWithStats = async () => {
     const { data, error } = await supabase.rpc('get_customer_stats');
     if (error) {
         console.error("Error fetching customer stats via RPC:", error);
-        // Throw the original error so the frontend can display a meaningful message.
         throw error;
     }
     return data;
@@ -316,39 +489,66 @@ export const getSalesSummary = async () => {
         console.error("Error fetching sales summary:", error);
         throw error;
     }
-    // The RPC returns a single row with a JSON object
     return data?.[0]?.summary_data;
 };
 
 
 // ===== Cart Management =====
 
+const formatCartItem = (item) => {
+    const product = item.variants.products;
+    const variantData = { ...item.variants, products: undefined };
+    const variantTitle = variantData.variant_options
+        .map(vo => vo.product_option_values.value)
+        .join(' / ');
+
+    return {
+        quantity: item.quantity,
+        product: { id: product.id, title: product.title, image: transformSupabaseImage(product.image, 100, 100) },
+        variant: { 
+            ...variantData,
+            title: variantTitle,
+            price_formatted: formatCurrency(variantData.price_in_cents), 
+            sale_price_formatted: variantData.sale_price_in_cents ? formatCurrency(variantData.sale_price_in_cents) : null 
+        }
+    };
+};
+
 export const getCartForUser = async (userId) => {
-    const { data, error } = await supabase.from('cart_items').select('quantity, variants(*, products(*))').eq('user_id', userId);
+    const { data, error } = await supabase
+        .from('cart_items')
+        .select(`
+            quantity, 
+            variants (
+                *, 
+                products(*),
+                variant_options(product_option_values(value, product_options(name)))
+            )
+        `)
+        .eq('user_id', userId);
     if (error) throw error;
-    return data.map(item => {
-        const product = item.variants.products;
-        const variant = { ...item.variants, products: undefined };
-        return {
-            quantity: item.quantity,
-            product: { id: product.id, title: product.title, image: transformSupabaseImage(product.image, 100, 100) },
-            variant: { ...variant, price_formatted: formatCurrency(variant.price_in_cents), sale_price_formatted: variant.sale_price_in_cents ? formatCurrency(variant.sale_price_in_cents) : null }
-        };
-    });
+    return data.map(formatCartItem);
 };
 
 export const addOrUpdateCartItem = async (userId, variantId, quantity) => {
     const { error: upsertError } = await supabase.from('cart_items').upsert({ user_id: userId, variant_id: variantId, quantity: quantity }, { onConflict: 'user_id,variant_id' });
     if (upsertError) throw upsertError;
-    const { data, error: fetchError } = await supabase.from('cart_items').select('quantity, variants(*, products(*))').eq('user_id', userId).eq('variant_id', variantId).single();
+    
+    const { data, error: fetchError } = await supabase
+        .from('cart_items')
+        .select(`
+            quantity, 
+            variants (
+                *, 
+                products(*),
+                variant_options(product_option_values(value, product_options(name)))
+            )
+        `)
+        .eq('user_id', userId)
+        .eq('variant_id', variantId)
+        .single();
     if (fetchError) throw fetchError;
-    const product = data.variants.products;
-    const variant = { ...data.variants, products: undefined };
-    return {
-        quantity: data.quantity,
-        product: { id: product.id, title: product.title, image: transformSupabaseImage(product.image, 100, 100) },
-        variant: { ...variant, price_formatted: formatCurrency(variant.price_in_cents), sale_price_formatted: variant.sale_price_in_cents ? formatCurrency(variant.sale_price_in_cents) : null }
-    };
+    return formatCartItem(data);
 };
 
 export const removeCartItem = async (userId, variantId) => {

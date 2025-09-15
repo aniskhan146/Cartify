@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { formatCurrency } from '../lib/utils.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { getCartForUser, addOrUpdateCartItem, removeCartItem, clearUserCart } from '../api/EcommerceApi.js'; // You'll need to create these API functions
+import { getCartForUser, addOrUpdateCartItem, removeCartItem, clearUserCart } from '../api/EcommerceApi.js';
 
 const CartContext = createContext();
 
@@ -14,21 +14,17 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Load cart from DB for logged-in user, or from localStorage for guest
   const loadCart = useCallback(async () => {
     setLoading(true);
     if (user) {
-        // User is logged in, fetch from database
         try {
             const dbCart = await getCartForUser(user.id);
             setCartItems(dbCart);
-            // Clear local guest cart after fetching from DB
             localStorage.removeItem(LOCAL_CART_STORAGE_KEY);
         } catch (error) {
             console.error("Failed to load user cart from database:", error);
         }
     } else {
-        // User is a guest, load from local storage
         try {
             const storedCart = localStorage.getItem(LOCAL_CART_STORAGE_KEY);
             setCartItems(storedCart ? JSON.parse(storedCart) : []);
@@ -40,13 +36,11 @@ export const CartProvider = ({ children }) => {
     setLoading(false);
   }, [user]);
   
-  // Sync local guest cart to DB upon login
   const syncLocalCartToDb = useCallback(async (userId) => {
     try {
       const localCart = JSON.parse(localStorage.getItem(LOCAL_CART_STORAGE_KEY) || '[]');
       if (localCart.length > 0) {
         for (const item of localCart) {
-          // This will either add the new item or update the quantity if it exists
           await addOrUpdateCartItem(userId, item.variant.id, item.quantity);
         }
         localStorage.removeItem(LOCAL_CART_STORAGE_KEY);
@@ -58,7 +52,6 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-        // Sync first, then load the full cart
         syncLocalCartToDb(user.id).then(() => {
             loadCart();
         });
@@ -68,7 +61,6 @@ export const CartProvider = ({ children }) => {
   }, [user, loadCart, syncLocalCartToDb]);
 
 
-  // Update localStorage whenever cart changes FOR GUESTS
   useEffect(() => {
     if (!user) {
       localStorage.setItem(LOCAL_CART_STORAGE_KEY, JSON.stringify(cartItems));
@@ -84,7 +76,6 @@ export const CartProvider = ({ children }) => {
     }
 
     if (user) {
-      // API call for logged-in user
       const updatedItem = await addOrUpdateCartItem(user.id, variant.id, newQuantity);
       setCartItems(prev => {
         const itemExists = prev.some(i => i.variant.id === updatedItem.variant.id);
@@ -94,7 +85,6 @@ export const CartProvider = ({ children }) => {
         return [...prev, updatedItem];
       });
     } else {
-      // Local storage for guest
       setCartItems(prev => {
         if (existingItem) {
           return prev.map(item =>
@@ -103,7 +93,9 @@ export const CartProvider = ({ children }) => {
               : item
           );
         }
-        return [...prev, { product, variant, quantity }];
+        // Guest cart needs the full variant details including options for display
+        const guestVariant = { ...variant, title: variant.options.map(o => o.value).join(' / ') };
+        return [...prev, { product, variant: guestVariant, quantity }];
       });
     }
   }, [cartItems, user]);
@@ -125,7 +117,6 @@ export const CartProvider = ({ children }) => {
     if (!itemToUpdate) return;
     
     if (itemToUpdate.variant.manage_inventory && quantity > itemToUpdate.variant.inventory_quantity) {
-       // Optionally throw an error or show a toast
        console.error("Cannot update quantity beyond available stock");
        return;
     }

@@ -39,6 +39,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 // Lazy-loaded admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProducts.jsx'));
+const AdminProductOptions = lazy(() => import('./pages/admin/AdminProductOptions.jsx'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx'));
 const AdminOrderDetailsPage = lazy(() => import('./pages/admin/AdminOrderDetailsPage.jsx'));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
@@ -77,6 +78,7 @@ function App() {
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/admin" element={<AdminDashboard />} />
                         <Route path="/admin/products" element={<AdminProducts />} />
+                        <Route path="/admin/options" element={<AdminProductOptions />} />
                         <Route path="/admin/orders" element={<AdminOrders />} />
                         <Route path="/admin/order/:id" element={<AdminOrderDetailsPage />} />
                         <Route path="/admin/customers" element={<AdminCustomers />} />
