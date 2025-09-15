@@ -39,10 +39,11 @@ const NotificationPage = lazy(() => import('./pages/NotificationPage.jsx'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
 const AdminProducts = lazy(() => import('./pages/admin/AdminProducts.jsx'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders.jsx'));
+const AdminOrderDetailsPage = lazy(() => import('./pages/admin/AdminOrderDetailsPage.jsx'));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers.jsx'));
 const AdminCategories = lazy(() => import('./pages/admin/AdminCategories.jsx'));
 const AdminBrands = lazy(() => import('./pages/admin/AdminBrands.jsx'));
-const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications.jsx')); // Add new admin page import
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications.jsx'));
 
 
 function App() {
@@ -75,10 +76,11 @@ function App() {
                         <Route path="/admin" element={<AdminDashboard />} />
                         <Route path="/admin/products" element={<AdminProducts />} />
                         <Route path="/admin/orders" element={<AdminOrders />} />
+                        <Route path="/admin/order/:id" element={<AdminOrderDetailsPage />} />
                         <Route path="/admin/customers" element={<AdminCustomers />} />
                         <Route path="/admin/categories" element={<AdminCategories />} />
                         <Route path="/admin/brands" element={<AdminBrands />} />
-                        <Route path="/admin/notifications" element={<AdminNotifications />} /> {/* Add new route */}
+                        <Route path="/admin/notifications" element={<AdminNotifications />} />
                       </Routes>
                     </Suspense>
                   </main>

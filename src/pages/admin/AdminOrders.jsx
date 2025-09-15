@@ -273,7 +273,7 @@ const AdminOrders = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link to={`/order/${order.id}`} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                                    <Link to={`/admin/order/${order.id}`} className="cursor-pointer">
                                         <Eye className="mr-2 h-4 w-4" />
                                         <span>View Details</span>
                                     </Link>

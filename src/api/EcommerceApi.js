@@ -263,7 +263,7 @@ export const updateOrderStatus = async (orderId, newStatus) => {
 export const getOrderDetails = async (orderId) => {
     const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, variants(*, products(title, image)))')
+        .select('*, profiles(email), order_items(*, variants(*, products(title, image)))')
         .eq('id', orderId)
         .single();
     if (error) {
