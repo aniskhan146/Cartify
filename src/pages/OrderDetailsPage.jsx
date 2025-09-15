@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, XCircle, Home, Truck, CheckCircle, CreditCard, Cog,
 import { getOrderDetails } from '../api/EcommerceApi.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatCurrency } from '../lib/utils.js';
+import { Button } from '../components/ui/button.jsx';
 
 const OrderStatusTracker = ({ currentStatus }) => {
     const statuses = ['Processing', 'Shipped', 'Completed'];
@@ -135,10 +136,12 @@ const OrderDetailsPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <Link to={isAdmin() ? "/admin/orders" : "/orders"} className="inline-flex items-center gap-2 text-white hover:text-purple-300 transition-colors mb-6">
-                            <ArrowLeft size={16} />
-                            {isAdmin() ? 'Back to All Orders' : 'Back to My Orders'}
-                        </Link>
+                         <Button asChild variant="outline" className="mb-6 self-start border-white/30 text-white hover:bg-white/10">
+                            <Link to={isAdmin() ? "/admin/orders" : "/orders"}>
+                                <ArrowLeft size={16} className="mr-2" />
+                                {isAdmin() ? 'Back to All Orders' : 'Back to My Orders'}
+                            </Link>
+                        </Button>
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                             <div>
                                 <h1 className="text-3xl font-bold text-white">Order #{order.id}</h1>
