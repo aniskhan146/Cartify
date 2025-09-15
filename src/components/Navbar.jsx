@@ -197,6 +197,9 @@ const Navbar = ({ setIsCartOpen }) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                       <DropdownMenuItem asChild>
+                        <Link to="/profile" className="cursor-pointer">My Profile</Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/orders" className="cursor-pointer">My Orders</Link>
                       </DropdownMenuItem>
@@ -263,6 +266,9 @@ const Navbar = ({ setIsCartOpen }) => {
               </Link>
               {user ? (
                 <>
+                  <Link to="/profile" className="text-white/80 hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>
+                    My Profile
+                  </Link>
                   <Link to="/orders" className="text-white/80 hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>
                     My Orders
                   </Link>
