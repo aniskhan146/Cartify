@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Order Confirmation - AYExpress</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!--[if mso]>
+    <style>
+        * {
+            font-family: sans-serif !important;
+        }
+    </style>
+    <![endif]-->
+    
+    <style>
+        html,
+        body {
+            margin: 0 auto !important;
+            padding: 0 !important;
+            height: 100% !important;
+            width: 100% !important;
+            background: #0f172a;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        * {
+            -ms-text-size-adjust: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        table,
+        td {
+            mso-table-lspace: 0pt !important;
+            mso-table-rspace: 0pt !important;
+        }
+        
+        table {
+            border-spacing: 0 !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+            margin: 0 auto !important;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                margin: auto !important;
+            }
+        }
+    </style>
+
+</head>
+<body width="100%" style="margin: 0; padding: 0 !important; mso-line-height-rule: exactly; background-color: #0f172a;">
+    <center style="width: 100%; background-color: #0f172a;">
+        <!--[if mso | IE]>
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #0f172a;">
+        <tr>
+        <td>
+        <![endif]-->
+
+        <div style="max-width: 600px; margin: 0 auto;" class="email-container">
+            <!--[if mso]>
+            <table align="center" role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: auto;">
+            <tr>
+            <td style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+            <![endif]-->
+            <table align="center" role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: auto; background-color: rgba(25, 33, 51, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+                <!-- Header -->
+                <tr>
+                    <td style="padding: 20px 40px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 32px; font-weight: bold; background: linear-gradient(135deg, #60a5fa 0%, #a855f7 50%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: transparent;">AYExpress</h1>
+                    </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                    <td style="padding: 0 40px 30px; color: #e2e8f0;">
+                        <h2 style="font-size: 24px; font-weight: bold; margin-top: 0; margin-bottom: 20px; text-align: center;">Your Order is Confirmed!</h2>
+                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Hi {{ params.CUSTOMER_NAME }},</p>
+                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Thank you for your purchase! We've received your order and are getting it ready for shipment. You can find the details below.</p>
+                        
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 30px; background-color: rgba(15, 23, 42, 0.7); border-radius: 8px; padding: 20px;">
+                            <tr>
+                                <td style="padding-bottom: 10px;">
+                                    <strong style="color: #93c5fd;">Order ID:</strong> #{{ params.ORDERID }}
+                                </td>
+                            </tr>
+                             <tr>
+                                <td>
+                                    <strong style="color: #93c5fd;">Order Date:</strong> {{ params.ORDER_DATE }}
+                                </td>
+                            </tr>
+                        </table>
+
+                        <h3 style="font-size: 20px; font-weight: bold; margin-bottom: 20px;">Order Summary</h3>
+                        
+                        <!-- Order Items Table -->
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th align="left" style="padding: 0 0 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); color: #a78bfa;">Product</th>
+                                    <th align="center" style="padding: 0 0 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); color: #a78bfa;">Quantity</th>
+                                    <th align="right" style="padding: 0 0 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); color: #a78bfa;">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Brevo Loop Start: Use `params.ITEMS` as the variable and `item` as the alias -->
+                                <tr>
+                                    <td valign="top" style="padding: 15px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">{{ item.name }}</td>
+                                    <td valign="top" align="center" style="padding: 15px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">{{ item.quantity }}</td>
+                                    <td valign="top" align="right" style="padding: 15px 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">${{ item.price }}</td>
+                                </tr>
+                                <!-- Brevo Loop End -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2" align="right" style="padding-top: 20px; font-weight: bold; color: #cbd5e1;">Subtotal</td>
+                                    <td align="right" style="padding-top: 20px;">${{ params.SUBTOTAL | default: '0.00' }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" align="right" style="padding-top: 5px; color: #cbd5e1;">Shipping</td>
+                                    <td align="right" style="padding-top: 5px; color: #4ade80;">Free</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" align="right" style="padding-top: 5px; color: #cbd5e1;">Tax</td>
+                                    <td align="right" style="padding-top: 5px;">${{ params.TAX | default: '0.00' }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2" align="right" style="padding-top: 10px; font-size: 18px; font-weight: bold; color: #ffffff; border-top: 1px solid rgba(255, 255, 255, 0.2); margin-top: 10px;">Total</td>
+                                    <td align="right" style="padding-top: 10px; font-size: 18px; font-weight: bold; color: #c084fc; border-top: 1px solid rgba(255, 255, 255, 0.2); margin-top: 10px;">${{ params.TOTAL }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- CTA Button -->
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 40px;">
+                            <tr>
+                                <td align="center">
+                                    <!--[if mso]>
+                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://ayexpress.netlify.app/order/{{ params.ORDERID }}" style="height:50px;v-text-anchor:middle;width:250px;" arcsize="50%" strokecolor="#a855f7" fillcolor="#a855f7">
+                                        <w:anchorlock/>
+                                        <center style="color:#ffffff;font-family:sans-serif;font-size:16px;font-weight:bold;">View Your Order</center>
+                                    </v:roundrect>
+                                    <![endif]-->
+                                    <a href="https://ayexpress.netlify.app/order/{{ params.ORDERID }}" style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); border-radius: 9999px; color: #ffffff; display: inline-block; font-size: 16px; font-weight: bold; line-height: 50px; text-align: center; text-decoration: none; width: 250px; -webkit-text-size-adjust: none; mso-hide: all;">View Your Order</a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="padding: 30px 40px; text-align: center; color: #94a3b8; font-size: 12px; line-height: 1.5; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <p style="margin: 0 0 10px;">You are receiving this email because you made a purchase on AYExpress.</p>
+                        <p style="margin: 0 0 20px;">AYExpress | SAVAR, DHAKA, 1340, BANGLADESH</p>
+                        
+                        <!-- Unsubscribe Button -->
+                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                                <td align="center">
+                                    <!--[if mso]>
+                                    <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ unsubscribe }}" style="height:40px;v-text-anchor:middle;width:180px;" arcsize="50%" strokecolor="#a855f7" fillcolor="#a855f7">
+                                        <w:anchorlock/>
+                                        <center style="color:#ffffff;font-family:sans-serif;font-size:14px;font-weight:bold;">Unsubscribe</center>
+                                    </v:roundrect>
+                                    <![endif]-->
+                                    <a href="{{ unsubscribe }}" style="background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%); border-radius: 9999px; color: #ffffff; display: inline-block; font-size: 14px; font-weight: bold; padding: 10px 24px; text-align: center; text-decoration: none; -webkit-text-size-adjust: none; mso-hide: all;">Unsubscribe</a>
+                                </td>
+                            </tr>
+                        </table>
+                        <p style="margin: 15px 0 0; font-size: 11px;">You will no longer receive marketing emails, but you will still receive transactional emails like order confirmations.</p>
+                    </td>
+                </tr>
+            </table>
+            <!--[if mso]>
+            </td>
+            </tr>
+            </table>
+            <![endif]-->
+        </div>
+        
+        <!--[if mso | IE]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
+    </center>
+</body>
+</html>
