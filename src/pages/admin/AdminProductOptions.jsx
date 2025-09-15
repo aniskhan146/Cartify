@@ -6,6 +6,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
 import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { getProductOptions, upsertProductOption, deleteProductOption } from '../../api/EcommerceApi.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "../../components/ui/dialog.jsx";
@@ -19,7 +20,7 @@ const AdminProductOptions = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOption, setEditingOption] = useState(null);
   const [optionName, setOptionName] = useState('');
-  const [optionValues, setOptionValues] = useState([]);
+  const [valuesString, setValuesString] = useState('');
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [optionToDelete, setOptionToDelete] = useState(null);
@@ -43,27 +44,34 @@ const AdminProductOptions = () => {
     setEditingOption(option);
     if(option) {
         setOptionName(option.name);
-        setOptionValues(option.product_option_values.map(v => ({...v, temp_id: v.id})));
+        setValuesString(option.product_option_values.map(v => v.value).join(', '));
     } else {
         setOptionName('');
-        setOptionValues([{ temp_id: Date.now(), value: '' }]);
+        setValuesString('');
     }
     setIsFormOpen(true);
   };
   
-  const handleValueChange = (temp_id, newValue) => {
-    setOptionValues(prev => prev.map(v => v.temp_id === temp_id ? {...v, value: newValue} : v));
-  };
-  
-  const addValue = () => setOptionValues(prev => [...prev, { temp_id: Date.now(), value: '' }]);
-  const removeValue = (temp_id) => setOptionValues(prev => prev.filter(v => v.temp_id !== temp_id));
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const nonEmptyValues = optionValues.filter(v => v.value.trim() !== '');
+
+    const newValues = valuesString.split(',')
+        .map(v => v.trim())
+        .filter(v => v);
+
+    const originalValues = editingOption ? editingOption.product_option_values : [];
+
+    const valuesToUpsert = newValues.map(valueStr => {
+        const original = originalValues.find(ov => ov.value === valueStr);
+        return {
+            id: original ? original.id : undefined,
+            value: valueStr
+        };
+    });
+
     try {
-      await upsertProductOption(optionName, nonEmptyValues);
+      await upsertProductOption(optionName, valuesToUpsert);
       addAdminNotification({ category: 'Products', title: `Option ${editingOption ? 'Updated' : 'Created'}` });
       setIsFormOpen(false);
       fetchOptions();
@@ -132,18 +140,25 @@ const AdminProductOptions = () => {
                 <DialogDescription>Define an option and its possible values.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2"><Label htmlFor="optionName">Option Name</Label><Input id="optionName" placeholder="e.g., Color" value={optionName} onChange={(e) => setOptionName(e.target.value)} required /></div>
               <div className="space-y-2">
-                <Label>Option Values</Label>
-                {optionValues.map((v) => (
-                    <div key={v.temp_id} className="flex items-center gap-2">
-                        <Input placeholder="e.g., Red" value={v.value} onChange={(e) => handleValueChange(v.temp_id, e.target.value)} />
-                        <Button type="button" variant="ghost" size="icon" className="text-red-400" onClick={() => removeValue(v.temp_id)}><X className="h-4 w-4"/></Button>
-                    </div>
-                ))}
-                <Button type="button" variant="outline" className="border-white/30 text-sm" onClick={addValue}><Plus className="h-4 w-4 mr-2"/>Add Value</Button>
+                <Label htmlFor="optionName">Option Name</Label>
+                <Input id="optionName" placeholder="e.g., Color" value={optionName} onChange={(e) => setOptionName(e.target.value)} required />
               </div>
-              <DialogFooter><Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancel</Button><Button type="submit" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Save'}</Button></DialogFooter>
+              <div className="space-y-2">
+                <Label htmlFor="optionValues">Option Values</Label>
+                <DialogDescription className="text-xs">Enter values separated by a comma (e.g., Red, Green, Blue).</DialogDescription>
+                <Textarea 
+                    id="optionValues"
+                    placeholder="Red, Green, Blue"
+                    value={valuesString}
+                    onChange={(e) => setValuesString(e.target.value)}
+                    rows={3}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Save'}</Button>
+              </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>

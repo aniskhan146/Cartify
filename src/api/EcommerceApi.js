@@ -99,7 +99,7 @@ export const getProduct = async (id) => {
                     product_option_values (
                         value,
                         option_id,
-                        product_options (name)
+                        product_options (id, name)
                     )
                 )
             )
@@ -273,9 +273,15 @@ export const updateProduct = async (productId, productData, variantsData) => {
     const variantOptionsToInsert = [];
     upsertedVariants.forEach(variant => {
         // Find corresponding variant from input data
-        const originalVariant = variantsData.find(v => (v.id === variant.id) || (v.temp_id && upsertedVariants.length === variantsData.length));
-        if (originalVariant) {
-            originalVariant.options.forEach(option => {
+        const originalVariantData = variantsData.find(v => {
+            // Find by matching all option values, as temp_id won't exist after upsert
+            return v.options.every(opt => 
+                variant.options?.some(vo => vo.value_id === opt.value_id)
+            ) || v.id === variant.id;
+        });
+
+        if (originalVariantData) {
+            originalVariantData.options.forEach(option => {
                 variantOptionsToInsert.push({
                     variant_id: variant.id,
                     option_value_id: option.value_id
@@ -372,15 +378,23 @@ export const upsertProductOption = async (optionName, optionValues) => {
     if (optionError) throw optionError;
 
     // 2. Upsert option values
-    const valuesToUpsert = optionValues.map(v => ({
-        id: typeof v.id === 'number' ? v.id : undefined,
-        option_id: optionData.id,
-        value: v.value
-    }));
-    const { error: valueError } = await supabase
-        .from('product_option_values')
-        .upsert(valuesToUpsert);
-    if (valueError) throw valueError;
+    const valuesToUpsert = optionValues.map(v => {
+        const payload = {
+            option_id: optionData.id,
+            value: v.value,
+        };
+        if (typeof v.id === 'number') {
+            payload.id = v.id;
+        }
+        return payload;
+    });
+    
+    if (valuesToUpsert.length > 0) {
+      const { error: valueError } = await supabase
+          .from('product_option_values')
+          .upsert(valuesToUpsert);
+      if (valueError) throw valueError;
+    }
 
     // 3. Delete removed values
     const valueIdsToKeep = optionValues.map(v => v.id).filter(Boolean);
