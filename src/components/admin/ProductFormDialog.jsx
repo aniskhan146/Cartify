@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog.jsx';
 import { Button } from '../ui/button.jsx';
 import { Input } from '../ui/input.jsx';
 import { Label } from '../ui/label.jsx';
@@ -186,7 +186,43 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
           
           <div className="space-y-2"><h3 className="text-lg font-semibold border-b border-white/10 pb-2">Specifications</h3>{specifications.map((spec) => (<div key={spec.id} className="flex items-center gap-2"><Input placeholder="Key (e.g., Weight)" value={spec.key} onChange={(e) => handleSpecChange(spec.id, 'key', e.target.value)} /><Input placeholder="Value (e.g., 250g)" value={spec.value} onChange={(e) => handleSpecChange(spec.id, 'value', e.target.value)} /><Button type="button" variant="ghost" size="icon" className="text-red-400 hover:text-red-300" onClick={() => removeSpecification(spec.id)}><Trash2 className="h-4 w-4" /></Button></div>))}<Button type="button" variant="outline" className="border-white/30" onClick={addSpecification}><PlusCircle className="h-4 w-4 mr-2" /> Add Specification</Button></div>
           
-          <div className="space-y-4"><h3 className="text-lg font-semibold border-b border-white/10 pb-2">Variants</h3>{variants.map((variant) => (<div key={variant.id} className="glass-card p-4 rounded-lg space-y-3 relative">{variants.length > 1 && (<Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)}><Trash2 className="h-4 w-4" /></Button>)}<div className="grid grid-cols-2 md:grid-cols-3 gap-4"><div className="space-y-2"><Label>Variant Title</Label><Input placeholder="e.g., Small, Blue" value={variant.title} onChange={(e) => handleVariantChange(variant.id, 'title', e.target.value)} required /></div><div className="space-y-2"><Label>SKU</Label><Input value={variant.sku || '(auto-generated)'} disabled /></div><div className="space-y-2"><Label>Color</Label><div className="flex items-center gap-2"><input type="color" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} className="w-10 h-10 p-1 bg-transparent border-none rounded-md cursor-pointer" /><Input className="flex-1" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} /></div></div><div className="space-y-2"><Label>Price (Cents)</Label><Input type="number" value={variant.price_in_cents} onChange={(e) => handleVariantChange(variant.id, 'price_in_cents', parseInt(e.target.value, 10) || 0)} /></div><div className="space-y-2"><Label>Sale Price (Cents)</Label><Input type="number" placeholder="Optional" value={variant.sale_price_in_cents || ''} onChange={(e) => handleVariantChange(variant.id, 'sale_price_in_cents', e.target.value ? parseInt(e.target.value, 10) : null)} /></div><div className="space-y-2"><Label>Inventory</Label><Input type="number" value={variant.inventory_quantity} onChange={(e) => handleVariantChange(variant.id, 'inventory_quantity', parseInt(e.target.value, 10) || 0)} /></div></div></div>))}<Button type="button" variant="outline" className="border-white/30" onClick={addVariant}><PlusCircle className="h-4 w-4 mr-2" />Add Variant</Button></div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b border-white/10 pb-2">Variants</h3>
+            {variants.map((variant) => (
+              <div key={variant.id} className="glass-card p-4 rounded-lg space-y-4 relative">
+                {variants.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-red-400 hover:text-red-300" onClick={() => removeVariant(variant.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Variant Title</Label><Input placeholder="e.g., Small, Blue" value={variant.title} onChange={(e) => handleVariantChange(variant.id, 'title', e.target.value)} required /></div>
+                    <div className="space-y-2"><Label>SKU</Label><Input value={variant.sku || '(auto-generated)'} disabled /></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2"><Label>Price ($)</Label><Input type="number" step="0.01" value={variant.price_in_cents / 100} onChange={(e) => handleVariantChange(variant.id, 'price_in_cents', Math.round(parseFloat(e.target.value) * 100) || 0)} /></div>
+                    <div className="space-y-2"><Label>Sale Price ($)</Label><Input type="number" step="0.01" placeholder="Optional" value={variant.sale_price_in_cents ? variant.sale_price_in_cents / 100 : ''} onChange={(e) => handleVariantChange(variant.id, 'sale_price_in_cents', e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null)} /></div>
+                    <div className="space-y-2"><Label>Color</Label><div className="flex items-center gap-2"><input type="color" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} className="w-10 h-10 p-1 bg-transparent border-none rounded-md cursor-pointer" /><Input className="flex-1" value={variant.color_hex} onChange={(e) => handleVariantChange(variant.id, 'color_hex', e.target.value)} /></div></div>
+                </div>
+
+                <div className="border-t border-white/10 pt-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                            <Switch id={`manage_inventory-${variant.id}`} checked={variant.manage_inventory} onCheckedChange={(checked) => handleVariantChange(variant.id, 'manage_inventory', checked)} />
+                            <Label htmlFor={`manage_inventory-${variant.id}`}>Track Inventory</Label>
+                        </div>
+                        <div className="space-y-2 w-1/3">
+                            <Label>Quantity</Label>
+                            <Input type="number" value={variant.inventory_quantity} disabled={!variant.manage_inventory} onChange={(e) => handleVariantChange(variant.id, 'inventory_quantity', parseInt(e.target.value, 10) || 0)} />
+                        </div>
+                    </div>
+                </div>
+              </div>
+            ))}
+            <Button type="button" variant="outline" className="border-white/30" onClick={addVariant}><PlusCircle className="h-4 w-4 mr-2" />Add Variant</Button>
+          </div>
           
           <DialogFooter><Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>Cancel</Button><Button type="submit" className="bg-gradient-to-r from-purple-500 to-pink-500" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{product ? 'Save Changes' : 'Create Product'}</Button></DialogFooter>
         </form>
