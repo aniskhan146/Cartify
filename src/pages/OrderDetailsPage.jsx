@@ -2,10 +2,67 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, XCircle, Home, Truck, CheckCircle, CreditCard } from 'lucide-react';
+import { ArrowLeft, Loader2, XCircle, Home, Truck, CheckCircle, CreditCard, Cog, PackageCheck, Check } from 'lucide-react';
 import { getOrderDetails } from '../api/EcommerceApi.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatCurrency } from '../lib/utils.js';
+
+const OrderStatusTracker = ({ currentStatus }) => {
+    const statuses = ['Processing', 'Shipped', 'Completed'];
+    const statusConfig = {
+        'Processing': { icon: <Cog size={24} />, text: 'Your order is being processed.' },
+        'Shipped': { icon: <Truck size={24} />, text: 'Your order has been shipped.' },
+        'Completed': { icon: <PackageCheck size={24} />, text: 'Your order is complete.' },
+        'Pending': { icon: <Cog size={24} />, text: 'Your order is pending.' }
+    };
+
+    let currentStatusIndex = statuses.indexOf(currentStatus);
+    // Handle 'Pending' status like 'Processing' for the tracker UI
+    if (currentStatus === 'Pending' || currentStatusIndex === -1) {
+        currentStatusIndex = 0;
+    }
+
+    return (
+        <div className="w-full">
+            <div className="flex items-center">
+                {statuses.map((status, index) => {
+                    const isCompleted = currentStatusIndex >= index;
+                    const isLastStep = index === statuses.length - 1;
+
+                    return (
+                        <React.Fragment key={status}>
+                            <div className="flex flex-col items-center text-center z-10 w-1/3">
+                                <div
+                                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-500
+                                        ${isCompleted ? 'bg-purple-500 border-purple-400 text-white' : 'bg-slate-800 border-slate-600 text-white/50'}
+                                    `}
+                                >
+                                    {isCompleted ? <Check size={28} /> : statusConfig[status].icon}
+                                </div>
+                                <p className={`mt-2 text-sm font-medium transition-colors duration-500 ${isCompleted ? 'text-white' : 'text-white/50'}`}>
+                                    {status}
+                                </p>
+                            </div>
+
+                            {!isLastStep && (
+                                <div className="flex-grow h-1 bg-slate-600 relative mx-2">
+                                    <div
+                                        className="absolute top-0 left-0 h-full bg-purple-500 transition-all duration-500"
+                                        style={{ width: currentStatusIndex > index ? '100%' : '0%' }}
+                                    />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+            </div>
+            <p className="text-center text-sm text-white/70 mt-4">
+                {statusConfig[currentStatus]?.text || 'Your order status is being updated.'}
+            </p>
+        </div>
+    );
+};
+
 
 const OrderDetailsPage = () => {
     const { id: orderId } = useParams();
@@ -64,18 +121,6 @@ const OrderDetailsPage = () => {
     const { shipping_address: address } = order;
     const subtotal = order.order_items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = order.total - subtotal;
-    
-    const getStatusInfo = (status) => {
-        const statuses = {
-            'Processing': { icon: <Loader2 className="h-5 w-5 animate-spin"/>, text: 'Your order is being processed.' },
-            'Shipped': { icon: <Truck className="h-5 w-5"/>, text: 'Your order has been shipped.' },
-            'Completed': { icon: <CheckCircle className="h-5 w-5 text-green-400"/>, text: 'Your order is complete.' },
-            'Pending': { icon: <Loader2 className="h-5 w-5"/>, text: 'Your order is pending.' }
-        };
-        return statuses[status] || statuses['Pending'];
-    }
-
-    const statusInfo = getStatusInfo(order.status);
 
     return (
         <>
@@ -94,18 +139,24 @@ const OrderDetailsPage = () => {
                             <ArrowLeft size={16} />
                             {isAdmin() ? 'Back to All Orders' : 'Back to My Orders'}
                         </Link>
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
                             <div>
                                 <h1 className="text-3xl font-bold text-white">Order #{order.id}</h1>
                                 <p className="text-white/70">
                                     Placed on {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                                 </p>
                             </div>
-                            <div className="text-lg font-semibold flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10">
-                                {statusInfo.icon}
-                                <span>{order.status}</span>
-                            </div>
                         </div>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="glass-effect rounded-2xl p-6 mb-8"
+                        >
+                            <OrderStatusTracker currentStatus={order.status} />
+                        </motion.div>
+
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {/* Items and Summary */}
