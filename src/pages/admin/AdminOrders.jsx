@@ -5,7 +5,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Eye, Loader2, CreditCard, Truck, MoreVertical, Mail, User, X } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { updateOrderStatus } from '../../api/EcommerceApi.js';
@@ -22,7 +22,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isResending, setIsResending] = useState(null); // Holds the ID of the order being resent
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const customerEmailFilter = searchParams.get('customer_email');
@@ -44,12 +44,12 @@ const AdminOrders = () => {
 
       if (error) {
         console.error("Error fetching orders:", error);
-        addNotification({ type: "error", title: "Failed to load orders.", message: error.message });
+        addAdminNotification({ category: 'Errors', title: "Failed to load orders.", message: error.message });
       } else {
         setOrders(data);
       }
       setLoading(false);
-    }, [statusFilter, addNotification, customerEmailFilter]);
+    }, [statusFilter, addAdminNotification, customerEmailFilter]);
 
   useEffect(() => {
     setLoading(true);
@@ -58,8 +58,8 @@ const AdminOrders = () => {
     const channel = supabase.channel('public:orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
           if (payload.eventType === 'INSERT') {
-             addNotification({
-              type: "info",
+             addAdminNotification({
+              category: "Orders",
               title: "🎉 New Order Received!",
               message: "A new order has been placed and added to the list.",
             });
@@ -71,7 +71,7 @@ const AdminOrders = () => {
     return () => {
         supabase.removeChannel(channel);
     }
-  }, [statusFilter, addNotification, fetchOrders]);
+  }, [statusFilter, addAdminNotification, fetchOrders]);
 
   const filteredOrders = orders.filter(order => {
     const customer = order.profiles;
@@ -85,14 +85,14 @@ const AdminOrders = () => {
         setOrders(currentOrders => 
             currentOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o)
         );
-        addNotification({
-            type: "success",
+        addAdminNotification({
+            category: "Orders",
             title: "Status Updated",
             message: `Order #${orderId} has been updated to ${newStatus}.`,
         });
     } catch (error) {
-        addNotification({
-            type: "error",
+        addAdminNotification({
+            category: "Errors",
             title: "Update Failed",
             message: error.message || "Could not update order status.",
         });
@@ -106,15 +106,15 @@ const AdminOrders = () => {
             body: { orderId },
         });
         if (error) throw error;
-        addNotification({
-            type: "success",
+        addAdminNotification({
+            category: "Orders",
             title: "Email Sent!",
             message: `Confirmation for order #${orderId} has been resent.`,
         });
     } catch (error) {
         console.error("Failed to resend confirmation email:", error);
-        addNotification({
-            type: "error",
+        addAdminNotification({
+            category: "Errors",
             title: "Failed to Send Email",
             message: "There was an issue resending the confirmation email.",
         });

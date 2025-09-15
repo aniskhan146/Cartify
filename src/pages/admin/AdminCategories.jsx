@@ -6,7 +6,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '../../api/EcommerceApi.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog.jsx";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog.jsx";
@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -28,11 +28,11 @@ const AdminCategories = () => {
       const data = await getCategories();
       setCategories(data);
     } catch (error) {
-      addNotification({ type: 'error', title: 'Failed to load categories.', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Failed to load categories.', message: error.message });
     } finally {
       setLoading(false);
     }
-  }, [addNotification]);
+  }, [addAdminNotification]);
 
   useEffect(() => {
     fetchCategories();
@@ -80,15 +80,15 @@ const AdminCategories = () => {
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, payload);
-        addNotification({ type: 'success', title: 'Category Updated' });
+        addAdminNotification({ category: 'Categories', title: 'Category Updated' });
       } else {
         await createCategory(payload);
-        addNotification({ type: 'success', title: 'Category Created' });
+        addAdminNotification({ category: 'Categories', title: 'Category Created' });
       }
       setIsFormOpen(false);
       fetchCategories();
     } catch (error) {
-      addNotification({ type: 'error', title: 'Operation Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Operation Failed', message: error.message });
       setLoading(false);
     }
   };
@@ -102,11 +102,11 @@ const AdminCategories = () => {
     if (!categoryToDelete) return;
     try {
       await deleteCategory(categoryToDelete.id);
-      addNotification({ type: 'success', title: "Category Deleted", message: `"${categoryToDelete.name}" has been removed.` });
+      addAdminNotification({ category: 'Categories', title: "Category Deleted", message: `"${categoryToDelete.name}" has been removed.` });
       setCategoryToDelete(null);
       fetchCategories();
     } catch (error) {
-      addNotification({ type: "error", title: "Deletion Failed", message: error.message });
+      addAdminNotification({ category: 'Errors', title: "Deletion Failed", message: error.message });
     }
   };
 

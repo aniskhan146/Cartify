@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
 import { deleteProduct } from '../../api/EcommerceApi.js';
@@ -27,7 +27,7 @@ const AdminProducts = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -43,11 +43,11 @@ const AdminProducts = () => {
 
     if (error) {
         console.error("Error fetching products:", error);
-        addNotification({ type: "error", title: "Failed to load products.", message: error.message });
+        addAdminNotification({ category: 'Errors', title: "Failed to load products.", message: error.message });
     } else {
         setProducts(data);
     }
-  }, [addNotification]);
+  }, [addAdminNotification]);
   
   const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase.from('categories').select('id, name');
@@ -96,11 +96,11 @@ const AdminProducts = () => {
     if (!productToDelete) return;
     try {
         await deleteProduct(productToDelete.id);
-        addNotification({ type: 'success', title: "Product Archived", message: `"${productToDelete.title}" has been archived and is no longer purchasable.` });
+        addAdminNotification({ category: 'Products', title: "Product Archived", message: `"${productToDelete.title}" has been archived and is no longer purchasable.` });
         setProductToDelete(null);
         fetchProducts(); // Refresh list immediately
     } catch (error) {
-        addNotification({ type: 'error', title: "Archive Failed", message: error.message });
+        addAdminNotification({ category: 'Errors', title: "Archive Failed", message: error.message });
     }
   };
 

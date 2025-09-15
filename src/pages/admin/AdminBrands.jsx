@@ -6,7 +6,7 @@ import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../api/EcommerceApi.js';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -18,7 +18,7 @@ import {
 const AdminBrands = () => {
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
@@ -32,11 +32,11 @@ const AdminBrands = () => {
       const data = await getBrands();
       setBrands(data);
     } catch (error) {
-      addNotification({ type: 'error', title: 'Failed to load brands.', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Failed to load brands.', message: error.message });
     } finally {
       setLoading(false);
     }
-  }, [addNotification]);
+  }, [addAdminNotification]);
 
   useEffect(() => {
     fetchBrands();
@@ -56,15 +56,15 @@ const AdminBrands = () => {
     try {
       if (editingBrand) {
         await updateBrand(editingBrand.id, formData);
-        addNotification({ type: 'success', title: 'Brand Updated' });
+        addAdminNotification({ category: 'Brands', title: 'Brand Updated' });
       } else {
         await createBrand(formData);
-        addNotification({ type: 'success', title: 'Brand Created' });
+        addAdminNotification({ category: 'Brands', title: 'Brand Created' });
       }
       setIsFormOpen(false);
       fetchBrands();
     } catch (error) {
-      addNotification({ type: 'error', title: 'Operation Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Operation Failed', message: error.message });
       setLoading(false);
     }
   };
@@ -78,11 +78,11 @@ const AdminBrands = () => {
     if (!brandToDelete) return;
     try {
       await deleteBrand(brandToDelete.id);
-      addNotification({ type: 'success', title: "Brand Deleted", message: `"${brandToDelete.name}" has been removed.` });
+      addAdminNotification({ category: 'Brands', title: "Brand Deleted", message: `"${brandToDelete.name}" has been removed.` });
       setBrandToDelete(null);
       fetchBrands();
     } catch (error) {
-      addNotification({ type: "error", title: "Deletion Failed", message: "Make sure no products are using this brand." });
+      addAdminNotification({ category: 'Errors', title: "Deletion Failed", message: error.message });
     }
   };
 

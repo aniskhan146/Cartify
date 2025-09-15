@@ -23,15 +23,6 @@ import { corsHeaders } from '../_shared/cors.ts'
 // Brevo API endpoint for sending transactional emails
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email'
 
-// Interface defining the dynamic data your Brevo template expects.
-interface BrevoTemplateParams {
-  ORDERID: string;
-  CUSTOMER_NAME: string;
-  TOTAL: string;
-  ITEMS: Array<{ name: string; quantity: number; price: string }>;
-  ORDER_DATE: string;
-}
-
 // The main Deno function that handles requests.
 Deno.serve(async (req) => {
   // Handle CORS preflight requests.
@@ -123,8 +114,12 @@ Deno.serve(async (req) => {
     const customerName = orderData.shipping_address.first_name || 'Valued Customer';
     console.log(`Prepared recipient: ${customerEmail}`);
 
+    // Calculate subtotal and tax to match template placeholders
+    const subtotal = orderData.order_items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    const tax = orderData.total - subtotal;
+
     // 6. Format the data to match the Brevo email template's parameters.
-    const params: BrevoTemplateParams = {
+    const params = {
       ORDERID: orderData.id.toString(),
       CUSTOMER_NAME: customerName,
       TOTAL: (orderData.total / 100).toFixed(2),
@@ -134,6 +129,8 @@ Deno.serve(async (req) => {
         price: (item.price / 100).toFixed(2),
       })),
       ORDER_DATE: new Date(orderData.created_at).toLocaleDateString(),
+      SUBTOTAL: (subtotal / 100).toFixed(2),
+      TAX: (tax / 100).toFixed(2),
     }
 
     // Sanitize and parse the template ID
@@ -148,6 +145,9 @@ Deno.serve(async (req) => {
       to: [{ email: customerEmail, name: customerName }],
       templateId: numericTemplateId,
       params: params,
+      headers: {
+        'X-Mailin-Unsubscribe': 'https://ayexpress.netlify.app/profile'
+      }
     }
     
     console.log('Sending request to Brevo API...');

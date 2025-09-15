@@ -5,7 +5,7 @@ import { Input } from '../ui/input.jsx';
 import { Label } from '../ui/label.jsx';
 import { Textarea } from '../ui/textarea.jsx';
 import { Switch } from '../ui/switch.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { createProduct, updateProduct, getCategories, getBrands } from '../../api/EcommerceApi.js';
 import { generateProductDescription } from '../../api/GeminiApi.js';
 import { Trash2, PlusCircle, Loader2, Sparkles } from 'lucide-react';
@@ -18,7 +18,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   const [brands, setBrands] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   const resetForm = () => {
     setFormData({
@@ -36,7 +36,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
           setCategories(fetchedCategories);
           setBrands(fetchedBrands);
         } catch (error) {
-          addNotification({ type: 'error', title: 'Failed to load data', message: 'Could not fetch categories or brands.' });
+          addAdminNotification({ category: 'Errors', title: 'Failed to load data', message: 'Could not fetch categories or brands.' });
         }
       };
       fetchData();
@@ -58,7 +58,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
         resetForm();
       }
     }
-  }, [product, isOpen, addNotification]);
+  }, [product, isOpen, addAdminNotification]);
 
   const categoryTree = useMemo(() => {
     const tree = [];
@@ -95,7 +95,7 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
     if (variants.length > 1) {
       setVariants(prev => prev.filter(v => v.id !== id));
     } else {
-      addNotification({ type: 'warning', title: "Cannot remove the last variant." });
+      addAdminNotification({ category: 'Products', title: "Cannot remove the last variant." });
     }
   };
 
@@ -105,16 +105,16 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
   const handleGenerateDescription = async () => {
     const categoryName = categories.find(c => c.id === formData.category_id)?.name;
     if (!formData.title || !categoryName) {
-      addNotification({ type: 'warning', title: 'Title and Category Needed', message: 'Please provide a product title and select a category.' });
+      addAdminNotification({ category: 'AI', title: 'Title and Category Needed', message: 'Please provide a product title and select a category.' });
       return;
     }
     setIsGeneratingDesc(true);
     try {
       const description = await generateProductDescription(formData.title, categoryName);
       setFormData(prev => ({ ...prev, description }));
-      addNotification({ type: 'success', title: 'Description Generated!', message: 'The AI-powered description has been added.' });
+      addAdminNotification({ category: 'AI', title: 'Description Generated!', message: 'The AI-powered description has been added.' });
     } catch (error) {
-      addNotification({ type: 'error', title: 'Generation Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Generation Failed', message: error.message });
     } finally {
       setIsGeneratingDesc(false);
     }
@@ -145,15 +145,15 @@ const ProductFormDialog = ({ isOpen, setIsOpen, product, onSuccess }) => {
     try {
       if (product) {
         await updateProduct(product.id, productPayload, variantsPayload);
-        addNotification({ type: 'success', title: 'Product Updated', message: `"${formData.title}" has been successfully updated.` });
+        addAdminNotification({ category: 'Products', title: 'Product Updated', message: `"${formData.title}" has been successfully updated.` });
       } else {
         await createProduct(productPayload, variantsPayload);
-        addNotification({ type: 'success', title: 'Product Created', message: `"${formData.title}" has been successfully created.` });
+        addAdminNotification({ category: 'Products', title: 'Product Created', message: `"${formData.title}" has been successfully created.` });
       }
       onSuccess();
     } catch (error) {
       console.error("Form submission error:", error);
-      addNotification({ type: 'error', title: 'Submission Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Submission Failed', message: error.message });
     } finally {
       setIsLoading(false);
     }

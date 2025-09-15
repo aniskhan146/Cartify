@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Search, Edit, Trash2, MoreVertical, Loader2, ListOrdered } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { supabase } from '../../lib/supabase.js';
 import { formatCurrency } from '../../lib/utils.js';
@@ -34,7 +34,7 @@ const AdminCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
   const { user } = useAuth();
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -48,11 +48,11 @@ const AdminCustomers = () => {
         setCustomers(data);
       } catch (error) {
          console.error("Error fetching customers:", error);
-         addNotification({ type: "error", title: "Failed to load customers.", message: error.message });
+         addAdminNotification({ category: 'Errors', title: "Failed to load customers.", message: error.message });
       } finally {
         setLoading(false);
       }
-    }, [addNotification]);
+    }, [addAdminNotification]);
 
   useEffect(() => {
     setLoading(true);
@@ -85,11 +85,11 @@ const AdminCustomers = () => {
     if (!userToDelete) return;
     try {
       await deleteUserByAdmin(userToDelete.id);
-      addNotification({ type: 'success', title: 'User Deleted', message: `${userToDelete.email} has been deleted.` });
+      addAdminNotification({ category: 'Customers', title: 'User Deleted', message: `${userToDelete.email} has been deleted.` });
       setUserToDelete(null);
       fetchCustomers(); // Refresh list
     } catch (error) {
-      addNotification({ type: 'error', title: 'Deletion Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Deletion Failed', message: error.message });
     }
   };
 

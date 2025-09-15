@@ -4,12 +4,12 @@ import { Button } from '../ui/button.jsx';
 import { Label } from '../ui/label.jsx';
 import { Loader2 } from 'lucide-react';
 import { updateUserRole } from '../../api/EcommerceApi.js';
-import { useNotification } from '../../hooks/useNotification.jsx';
+import { useAdminNotification } from '../../hooks/useAdminNotification.jsx';
 
 const EditUserRoleDialog = ({ user, isOpen, setIsOpen, onSuccess }) => {
   const [newRole, setNewRole] = useState('user');
   const [loading, setLoading] = useState(false);
-  const { addNotification } = useNotification();
+  const { addAdminNotification } = useAdminNotification();
 
   useEffect(() => {
     if (user) {
@@ -21,11 +21,11 @@ const EditUserRoleDialog = ({ user, isOpen, setIsOpen, onSuccess }) => {
     setLoading(true);
     try {
       await updateUserRole(user.id, newRole);
-      addNotification({ type: 'success', title: 'Role Updated', message: `${user.email}'s role has been changed to ${newRole}.` });
+      addAdminNotification({ category: 'Customers', title: 'Role Updated', message: `${user.email}'s role has been changed to ${newRole}.` });
       onSuccess();
       setIsOpen(false);
     } catch (error) {
-      addNotification({ type: 'error', title: 'Update Failed', message: error.message });
+      addAdminNotification({ category: 'Errors', title: 'Update Failed', message: error.message });
     } finally {
       setLoading(false);
     }
